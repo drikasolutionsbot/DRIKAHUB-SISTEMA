@@ -100,5 +100,19 @@ export function useRoles(tenantId: string | null) {
     fetchRoles();
   }, [fetchRoles]);
 
+  // Realtime subscription
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`tenant_roles:${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tenant_roles", filter: `tenant_id=eq.${tenantId}` },
+        () => { fetchRoles(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tenantId, fetchRoles]);
+
   return { roles, loading, fetchRoles, createRole, updateRole, deleteRole };
 }
