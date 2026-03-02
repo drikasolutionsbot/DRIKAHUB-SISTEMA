@@ -46,7 +46,7 @@ const LoginPage = () => {
       <div className="relative z-10 w-full max-w-md space-y-8 px-4">
         <div className="flex flex-col items-center space-y-4 animate-fade-in">
           {!imgError ? (
-            <img src="/logo.png" alt="Drika Solutions" className="h-24 w-24 object-contain" onError={() => setImgError(true)} />
+            <img src="/logo.png" alt="Drika Solutions" className="h-40 w-40 object-contain" onError={() => setImgError(true)} />
           ) : (
             <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-primary/10 text-4xl font-bold text-primary">D</div>
           )}
