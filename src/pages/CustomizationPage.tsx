@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTenant } from "@/contexts/TenantContext";
+import EmbedBuilder from "@/components/customization/EmbedBuilder";
 
 const CustomizationPage = () => {
   const { tenant, tenantId, refetch } = useTenant();
@@ -387,9 +388,7 @@ const CustomizationPage = () => {
         </TabsContent>
 
         <TabsContent value="embeds" className="mt-6">
-          <Card className="p-8 bg-sidebar border-border flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">Construtor de Embeds em breve.</p>
-          </Card>
+          <EmbedBuilder />
         </TabsContent>
       </Tabs>
     </div>
