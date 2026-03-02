@@ -36,3 +36,100 @@ export const defaultEmbed: EmbedData = {
   timestamp: false,
   fields: [],
 };
+
+export interface EmbedTemplate {
+  id: string;
+  name: string;
+  icon: string;
+  data: EmbedData;
+}
+
+export const embedTemplates: EmbedTemplate[] = [
+  {
+    id: "welcome",
+    name: "Boas-vindas",
+    icon: "👋",
+    data: {
+      color: "#57F287",
+      author_name: "",
+      author_icon_url: "",
+      author_url: "",
+      title: "Bem-vindo(a) ao servidor! 🎉",
+      url: "",
+      description: "Ficamos felizes em ter você aqui! Confira os canais abaixo para começar.\n\n**📜 Regras** — Leia nossas regras\n**💬 Chat** — Converse com a comunidade\n**🎫 Tickets** — Precisa de ajuda?",
+      thumbnail_url: "",
+      image_url: "",
+      footer_text: "Aproveite sua estadia!",
+      footer_icon_url: "",
+      timestamp: true,
+      fields: [],
+    },
+  },
+  {
+    id: "purchase",
+    name: "Compra",
+    icon: "🛒",
+    data: {
+      color: "#FFD700",
+      author_name: "",
+      author_icon_url: "",
+      author_url: "",
+      title: "Compra Confirmada ✅",
+      url: "",
+      description: "Sua compra foi processada com sucesso! Confira os detalhes abaixo.",
+      thumbnail_url: "",
+      image_url: "",
+      footer_text: "Obrigado pela compra!",
+      footer_icon_url: "",
+      timestamp: true,
+      fields: [
+        { id: "f1", name: "🛍️ Produto", value: "Nome do Produto", inline: true },
+        { id: "f2", name: "💰 Valor", value: "R$ 0,00", inline: true },
+        { id: "f3", name: "📦 Status", value: "Entregue", inline: true },
+      ],
+    },
+  },
+  {
+    id: "ticket",
+    name: "Ticket",
+    icon: "🎫",
+    data: {
+      color: "#5865F2",
+      author_name: "",
+      author_icon_url: "",
+      author_url: "",
+      title: "Ticket Aberto 🎫",
+      url: "",
+      description: "Um novo ticket foi aberto. Aguarde atendimento de nossa equipe.\n\n> Por favor, descreva seu problema com detalhes para agilizar o atendimento.",
+      thumbnail_url: "",
+      image_url: "",
+      footer_text: "Suporte",
+      footer_icon_url: "",
+      timestamp: true,
+      fields: [
+        { id: "f1", name: "👤 Aberto por", value: "{user}", inline: true },
+        { id: "f2", name: "📋 Categoria", value: "Geral", inline: true },
+      ],
+    },
+  },
+  {
+    id: "announcement",
+    name: "Anúncio",
+    icon: "📢",
+    data: {
+      color: "#ED4245",
+      author_name: "",
+      author_icon_url: "",
+      author_url: "",
+      title: "📢 Anúncio Importante",
+      url: "",
+      description: "Temos uma novidade para compartilhar com vocês!\n\nDescreva aqui o conteúdo do anúncio para a comunidade.",
+      thumbnail_url: "",
+      image_url: "",
+      footer_text: "Equipe de Administração",
+      footer_icon_url: "",
+      timestamp: true,
+      fields: [],
+    },
+  },
+];

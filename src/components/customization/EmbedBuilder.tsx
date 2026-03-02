@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { Code, Copy, Eye } from "lucide-react";
+import { Copy, Eye, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import EmbedForm from "./EmbedForm";
 import EmbedPreview from "./EmbedPreview";
-import { defaultEmbed, type EmbedData } from "./types";
+import { defaultEmbed, embedTemplates, type EmbedData } from "./types";
 
 const EmbedBuilder = () => {
   const [embed, setEmbed] = useState<EmbedData>({ ...defaultEmbed });
+
+  const applyTemplate = (templateId: string) => {
+    const tpl = embedTemplates.find(t => t.id === templateId);
+    if (tpl) {
+      setEmbed({ ...tpl.data, fields: tpl.data.fields.map(f => ({ ...f, id: crypto.randomUUID() })) });
+      toast.success(`Template "${tpl.name}" aplicado!`);
+    }
+  };
 
   const generateJson = () => {
     const obj: Record<string, any> = {};
@@ -56,6 +64,24 @@ const EmbedBuilder = () => {
           <Button variant="outline" size="sm" onClick={copyJson}>
             <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar JSON
           </Button>
+        </div>
+        {/* Templates */}
+        <div className="flex items-center gap-2 mb-4">
+          <LayoutTemplate className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground shrink-0">Templates:</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {embedTemplates.map(tpl => (
+              <Button
+                key={tpl.id}
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs px-2.5"
+                onClick={() => applyTemplate(tpl.id)}
+              >
+                {tpl.icon} {tpl.name}
+              </Button>
+            ))}
+          </div>
         </div>
         <EmbedForm embed={embed} onChange={setEmbed} />
       </Card>
