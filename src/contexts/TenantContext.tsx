@@ -35,15 +35,26 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       try {
         const tokenSession = JSON.parse(tokenSessionStr);
         if (tokenSession.tenant_id) {
-          setTenant({
-            id: tokenSession.tenant_id,
-            name: tokenSession.tenant_name || "Loja",
-            discord_guild_id: null,
-            logo_url: null,
-            primary_color: "#FF69B4",
-            secondary_color: "#FFD700",
-            plan: "free",
-          });
+          // Fetch full tenant data from Supabase using service key via edge or direct
+          const { data } = await supabase
+            .from("tenants")
+            .select("*")
+            .eq("id", tokenSession.tenant_id)
+            .single();
+
+          if (data) {
+            setTenant(data as Tenant);
+          } else {
+            setTenant({
+              id: tokenSession.tenant_id,
+              name: tokenSession.tenant_name || "Loja",
+              discord_guild_id: null,
+              logo_url: null,
+              primary_color: "#FF69B4",
+              secondary_color: "#FFD700",
+              plan: "free",
+            });
+          }
           setLoading(false);
           return;
         }
