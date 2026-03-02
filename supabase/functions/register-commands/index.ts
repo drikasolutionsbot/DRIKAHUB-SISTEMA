@@ -8,10 +8,24 @@ const corsHeaders = {
 
 const DISCORD_APP_ID = "1477916070508757092";
 
+interface CommandChoice {
+  name: string;
+  value: string | number;
+}
+
+interface CommandOption {
+  name: string;
+  description: string;
+  type: number;
+  required?: boolean;
+  choices?: CommandChoice[];
+}
+
 interface SlashCommand {
   name: string;
   description: string;
-  type: number; // 1 = CHAT_INPUT
+  type: number;
+  options?: CommandOption[];
 }
 
 Deno.serve(async (req) => {
@@ -37,12 +51,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build the slash commands payload
-    const slashCommands: SlashCommand[] = commands.map((cmd: { name: string; description: string }) => ({
-      name: cmd.name.replace(/^\//, "").toLowerCase(), // remove leading slash
-      description: cmd.description.substring(0, 100),
-      type: 1, // CHAT_INPUT
-    }));
+    const slashCommands: SlashCommand[] = commands.map((cmd: { name: string; description: string; options?: CommandOption[] }) => {
+      const built: SlashCommand = {
+        name: cmd.name.replace(/^\//, "").toLowerCase(),
+        description: cmd.description.substring(0, 100),
+        type: 1,
+      };
+
+      if (cmd.options && cmd.options.length > 0) {
+        built.options = cmd.options.map((opt) => {
+          const o: CommandOption = {
+            name: opt.name.toLowerCase().substring(0, 32),
+            description: opt.description.substring(0, 100),
+            type: opt.type,
+            required: opt.required ?? false,
+          };
+          if (opt.choices && opt.choices.length > 0) {
+            o.choices = opt.choices.slice(0, 25).map((c) => ({
+              name: String(c.name).substring(0, 100),
+              value: opt.type === 4 || opt.type === 10 ? Number(c.value) : String(c.value),
+            }));
+          }
+          return o;
+        });
+      }
+
+      return built;
+    });
 
     // Register globally or per-guild
     let url: string;
