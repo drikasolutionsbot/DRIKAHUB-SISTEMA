@@ -122,5 +122,19 @@ export function usePermissions(tenantId: string | null) {
     fetchPermissions();
   }, [fetchPermissions]);
 
+  // Realtime subscription
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`tenant_permissions:${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tenant_permissions", filter: `tenant_id=eq.${tenantId}` },
+        () => { fetchPermissions(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tenantId, fetchPermissions]);
+
   return { permissions, loading, fetchPermissions, addMember, savePermissions, removeMember };
 }
