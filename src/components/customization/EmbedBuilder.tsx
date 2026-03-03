@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Copy, Eye, LayoutTemplate, Save, FolderOpen, Trash2, Loader2 } from "lucide-react";
+import { Copy, Eye, LayoutTemplate, Save, FolderOpen, Trash2, Loader2, Send, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -19,7 +20,7 @@ interface SavedEmbed {
 }
 
 const EmbedBuilder = () => {
-  const { tenantId } = useTenant();
+  const { tenantId, tenant } = useTenant();
   const [embed, setEmbed] = useState<EmbedData>({ ...defaultEmbed });
   const [savedEmbeds, setSavedEmbeds] = useState<SavedEmbed[]>([]);
   const [loadingEmbeds, setLoadingEmbeds] = useState(false);
@@ -152,6 +153,87 @@ const EmbedBuilder = () => {
     setEmbedName("");
   };
 
+  // Send embed state
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [channels, setChannels] = useState<{ id: string; name: string }[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState("");
+  const [sending, setSending] = useState(false);
+  const [loadingChannels, setLoadingChannels] = useState(false);
+
+  const openSendDialog = async () => {
+    setSendDialogOpen(true);
+    setLoadingChannels(true);
+    try {
+      const guildId = (tenant as any)?.discord_guild_id;
+      if (!guildId) {
+        toast.error("Servidor Discord não configurado.");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("discord-channels", {
+        body: { guild_id: guildId },
+      });
+      if (error) throw error;
+      setChannels(data?.channels || []);
+    } catch (err: any) {
+      toast.error("Erro ao carregar canais: " + (err.message || ""));
+    } finally {
+      setLoadingChannels(false);
+    }
+  };
+
+  const buildDiscordEmbed = () => {
+    const obj: Record<string, any> = {};
+    if (embed.title) obj.title = embed.title;
+    if (embed.description) obj.description = embed.description;
+    if (embed.url) obj.url = embed.url;
+    if (embed.color) obj.color = parseInt(embed.color.replace("#", ""), 16);
+    if (embed.author_name) {
+      obj.author = { name: embed.author_name };
+      if (embed.author_icon_url) obj.author.icon_url = embed.author_icon_url;
+      if (embed.author_url) obj.author.url = embed.author_url;
+    }
+    if (embed.thumbnail_url) obj.thumbnail = { url: embed.thumbnail_url };
+    if (embed.image_url) obj.image = { url: embed.image_url };
+    if (embed.fields.length > 0) {
+      obj.fields = embed.fields.map(f => ({
+        name: f.name || "​",
+        value: f.value || "​",
+        inline: f.inline,
+      }));
+    }
+    if (embed.footer_text || embed.footer_icon_url) {
+      obj.footer = {};
+      if (embed.footer_text) obj.footer.text = embed.footer_text;
+      if (embed.footer_icon_url) obj.footer.icon_url = embed.footer_icon_url;
+    }
+    if (embed.timestamp) obj.timestamp = new Date().toISOString();
+    return obj;
+  };
+
+  const handleSend = async () => {
+    if (!tenantId || !selectedChannel) return;
+    setSending(true);
+    try {
+      const discordEmbed = buildDiscordEmbed();
+      const { data, error } = await supabase.functions.invoke("send-webhook-message", {
+        body: {
+          tenant_id: tenantId,
+          channel_id: selectedChannel,
+          embeds: [discordEmbed],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Embed enviado com sucesso!");
+      setSendDialogOpen(false);
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + (err.message || "Tente novamente"));
+    } finally {
+      setSending(false);
+    }
+  };
+
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {/* Form */}
@@ -178,6 +260,9 @@ const EmbedBuilder = () => {
             </Button>
             <Button variant="outline" size="sm" onClick={copyJson}>
               <Copy className="h-3.5 w-3.5 mr-1.5" /> JSON
+            </Button>
+            <Button size="sm" onClick={openSendDialog} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Send className="h-3.5 w-3.5 mr-1.5" /> Enviar
             </Button>
           </div>
         </div>
@@ -285,6 +370,52 @@ const EmbedBuilder = () => {
                 </div>
               ))
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Send Dialog */}
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent className="sm:max-w-sm bg-sidebar border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-4 w-4" /> Enviar Embed
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Canal de destino</label>
+              {loadingChannels ? (
+                <div className="flex items-center gap-2 py-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Carregando canais...</span>
+                </div>
+              ) : (
+                <Select value={selectedChannel} onValueChange={setSelectedChannel}>
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder="Selecione um canal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {channels.map(ch => (
+                      <SelectItem key={ch.id} value={ch.id}>
+                        <span className="flex items-center gap-1.5">
+                          <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                          {ch.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setSendDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleSend} disabled={sending || !selectedChannel}>
+                {sending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Enviar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
