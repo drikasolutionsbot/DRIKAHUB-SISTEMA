@@ -7,6 +7,7 @@ import { Key } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import WifiLoader from "@/components/ui/wifi-loader";
 import drikaBanner from "@/assets/drika_banner.png";
+import drikaLogo from "@/assets/drika_logo_crown.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -60,8 +61,17 @@ const LoginPage = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-lg px-4 space-y-6">
+        {/* Logo */}
+        <div className="animate-fade-in flex flex-col items-center gap-4">
+          <img
+            src={drikaLogo}
+            alt="Drika Solutions"
+            className="h-40 w-auto drop-shadow-[0_0_30px_hsl(330_100%_71%/0.3)]"
+          />
+        </div>
+
         {/* Banner */}
-        <div className="animate-fade-in">
+        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 border border-white/10">
             <img
               src={drikaBanner}
