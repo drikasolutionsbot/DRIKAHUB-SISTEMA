@@ -30,6 +30,7 @@ interface Product {
   name: string;
   type: string;
   price_cents: number;
+  compare_price_cents?: number | null;
   stock: number | null;
   active: boolean;
   description: string | null;

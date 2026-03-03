@@ -17,6 +17,7 @@ interface Product {
   name: string;
   type: string;
   price_cents: number;
+  compare_price_cents?: number | null;
   stock: number | null;
   active: boolean;
   description: string | null;
@@ -35,9 +36,13 @@ interface ProductDetailGeneralProps {
 export const ProductDetailGeneral = ({ product, onChange, categories = [] }: ProductDetailGeneralProps) => {
   const { tenantId } = useTenant();
   const [priceDisplay, setPriceDisplay] = useState((product.price_cents / 100).toFixed(2));
+  const [comparePriceDisplay, setComparePriceDisplay] = useState(
+    product.compare_price_cents ? (product.compare_price_cents / 100).toFixed(2) : ""
+  );
 
   useEffect(() => {
     setPriceDisplay((product.price_cents / 100).toFixed(2));
+    setComparePriceDisplay(product.compare_price_cents ? (product.compare_price_cents / 100).toFixed(2) : "");
   }, [product.id]);
 
   return (
@@ -154,11 +159,25 @@ export const ProductDetailGeneral = ({ product, onChange, categories = [] }: Pro
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-bold">Preço de Comparação <span className="font-normal text-muted-foreground">(Opcional)</span></Label>
+            <Label className="text-sm font-bold">Preço de Comparação <span className="font-normal text-muted-foreground">(Opcional — riscado)</span></Label>
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
+              value={comparePriceDisplay}
+              onChange={(e) => setComparePriceDisplay(e.target.value)}
+              onBlur={() => {
+                const raw = comparePriceDisplay.replace(/[^0-9.,]/g, "").replace(",", ".");
+                const num = parseFloat(raw);
+                if (!raw || isNaN(num) || num <= 0) {
+                  onChange({ compare_price_cents: null });
+                  setComparePriceDisplay("");
+                } else {
+                  const cents = Math.round(num * 100);
+                  onChange({ compare_price_cents: cents });
+                  setComparePriceDisplay((cents / 100).toFixed(2));
+                }
+              }}
               className="bg-muted border-border"
             />
           </div>
