@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface GuildInfo {
   id: string;
@@ -58,6 +59,23 @@ const ECloudPage = () => {
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const prevBotOnline = useRef<boolean | null>(null);
+
+  // Track status changes and notify
+  useEffect(() => {
+    if (prevBotOnline.current === true && botOnline === false) {
+      toast.error("⚠️ Bot Offline", {
+        description: "O Drika Bot ficou offline! Verifique a hospedagem.",
+        duration: 10000,
+      });
+    } else if (prevBotOnline.current === false && botOnline === true) {
+      toast.success("✅ Bot Online", {
+        description: "O Drika Bot voltou a ficar online!",
+        duration: 5000,
+      });
+    }
+    prevBotOnline.current = botOnline;
+  }, [botOnline]);
 
   const fetchData = async () => {
     if (!tenant?.discord_guild_id || !tenantId) return;
@@ -142,6 +160,9 @@ const ECloudPage = () => {
 
   useEffect(() => {
     fetchData();
+    // Poll every 60 seconds for real-time status monitoring
+    const interval = setInterval(fetchData, 60000);
+    return () => clearInterval(interval);
   }, [tenant?.discord_guild_id, tenantId]);
 
   const handleRefresh = async () => {
