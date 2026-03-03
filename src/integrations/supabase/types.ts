@@ -810,6 +810,85 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          description: string | null
+          id: string
+          pix_key: string | null
+          status: string
+          tenant_id: string
+          type: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          pix_key?: string | null
+          status?: string
+          tenant_id: string
+          type: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          pix_key?: string | null
+          status?: string
+          tenant_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance_cents: number
+          created_at: string
+          id: string
+          tenant_id: string
+          total_earned_cents: number
+          total_withdrawn_cents: number
+          updated_at: string
+        }
+        Insert: {
+          balance_cents?: number
+          created_at?: string
+          id?: string
+          tenant_id: string
+          total_earned_cents?: number
+          total_withdrawn_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          balance_cents?: number
+          created_at?: string
+          id?: string
+          tenant_id?: string
+          total_earned_cents?: number
+          total_withdrawn_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_logs: {
         Row: {
           created_at: string

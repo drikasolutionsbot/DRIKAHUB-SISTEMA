@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Upload, Palette, Users, CreditCard, QrCode, Loader2, Copy, CheckCircle2 } from "lucide-react";
+import { Upload, Palette, Users, CreditCard, QrCode, Loader2, Copy, CheckCircle2, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { WalletTab } from "@/components/wallet/WalletTab";
 
 interface UserRole {
   id: string;
@@ -141,6 +142,7 @@ const SettingsPage = () => {
           <TabsTrigger value="pix"><QrCode className="mr-2 h-4 w-4" /> PIX</TabsTrigger>
           <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" /> Usuários</TabsTrigger>
           <TabsTrigger value="plan"><CreditCard className="mr-2 h-4 w-4" /> Plano</TabsTrigger>
+          <TabsTrigger value="wallet"><Wallet className="mr-2 h-4 w-4" /> Carteira</TabsTrigger>
         </TabsList>
 
         {/* Branding Tab */}
@@ -371,6 +373,11 @@ const SettingsPage = () => {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Wallet Tab */}
+        <TabsContent value="wallet">
+          <WalletTab />
         </TabsContent>
       </Tabs>
     </div>
