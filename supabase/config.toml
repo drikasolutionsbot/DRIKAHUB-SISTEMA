@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.manage-product-hooks]
 verify_jwt = false
+
+[functions.manage-coupons]
+verify_jwt = false
