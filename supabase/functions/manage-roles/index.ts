@@ -58,7 +58,6 @@ serve(async (req) => {
         const { name, color = "#99AAB5" } = params;
         if (!name) throw new Error("Missing name");
 
-        // Create role in Discord
         const discordRes = await fetch(
           `https://discord.com/api/v10/guilds/${guildId}/roles`,
           {
@@ -83,7 +82,6 @@ serve(async (req) => {
 
         const discordRole = await discordRes.json();
 
-        // Save to DB
         const { data, error } = await supabase
           .from("tenant_roles")
           .insert({
@@ -106,7 +104,6 @@ serve(async (req) => {
         const { id, ...updates } = params;
         if (!id) throw new Error("Missing id");
 
-        // Get current role from DB
         const { data: role, error: roleErr } = await supabase
           .from("tenant_roles")
           .select("*")
@@ -116,7 +113,6 @@ serve(async (req) => {
 
         if (roleErr || !role) throw new Error("Role not found");
 
-        // If name or color changed, update in Discord too
         if (role.discord_role_id && (updates.name || updates.color)) {
           const discordBody: Record<string, unknown> = {};
           if (updates.name) discordBody.name = updates.name;
@@ -140,7 +136,6 @@ serve(async (req) => {
           }
         }
 
-        // Update permissions in DB
         const allowedKeys = [
           "name", "color",
           "can_view", "can_manage_app", "can_manage_resources",
@@ -167,11 +162,38 @@ serve(async (req) => {
         });
       }
 
+      case "update_discord_permissions": {
+        const { role_id, permissions } = params;
+        if (!role_id) throw new Error("Missing role_id");
+        if (permissions === undefined) throw new Error("Missing permissions");
+
+        const discordRes = await fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/roles/${role_id}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bot ${botToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ permissions: String(permissions) }),
+          }
+        );
+
+        if (!discordRes.ok) {
+          const text = await discordRes.text();
+          throw new Error(`Discord API error [${discordRes.status}]: ${text}`);
+        }
+
+        const updatedRole = await discordRes.json();
+        return new Response(JSON.stringify(updatedRole), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       case "delete": {
         const { id } = params;
         if (!id) throw new Error("Missing id");
 
-        // Get role to find discord_role_id
         const { data: role } = await supabase
           .from("tenant_roles")
           .select("discord_role_id")
@@ -179,7 +201,6 @@ serve(async (req) => {
           .eq("tenant_id", tenant_id)
           .single();
 
-        // Delete from Discord
         if (role?.discord_role_id) {
           const discordRes = await fetch(
             `https://discord.com/api/v10/guilds/${guildId}/roles/${role.discord_role_id}`,
@@ -193,7 +214,6 @@ serve(async (req) => {
           }
         }
 
-        // Delete from DB
         const { error } = await supabase
           .from("tenant_roles")
           .delete()
