@@ -78,6 +78,7 @@ async function generateViaMercadoPago(
       transaction_amount: amountBRL,
       payment_method_id: "pix",
       description,
+      statement_descriptor: "Drika Solutions",
       external_reference: externalRef,
       notification_url: webhookUrl,
       payer: { email: "customer@email.com" },
@@ -165,7 +166,7 @@ serve(async (req) => {
       const apiKey = activeProvider.api_key_encrypted;
       const externalRef = tx_id || `PIX${Date.now()}`;
       const webhookUrl = `${webhookBaseUrl}/${providerKey}/${tenant_id}`;
-      const description = product_name ? `Pgto ${product_name}` : "Pagamento PIX";
+      const description = product_name || "Pagamento PIX";
 
       let result: { brcode: string; qr_code_base64?: string; payment_id: string; expires_at?: string };
 

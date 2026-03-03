@@ -72,8 +72,13 @@ async function generateMercadoPagoPix(apiKey: string, amount: number, desc: stri
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "X-Idempotency-Key": ref },
     body: JSON.stringify({
-      transaction_amount: amount, payment_method_id: "pix", description: desc,
-      external_reference: ref, notification_url: webhook, payer: { email: "customer@email.com" },
+      transaction_amount: amount,
+      payment_method_id: "pix",
+      description: desc,
+      statement_descriptor: "Drika Solutions",
+      external_reference: ref,
+      notification_url: webhook,
+      payer: { email: "customer@email.com" },
     }),
   });
   if (!res.ok) throw new Error(`Mercado Pago error: ${res.status}`);
@@ -377,7 +382,7 @@ async function processPurchase(
     const externalRef = `order_${order.id}`;
 
     if (providerKey === "mercadopago") {
-      const result = await generateMercadoPagoPix(apiKey, amountBRL, `Pgto ${orderName}`, externalRef, webhookUrl);
+      const result = await generateMercadoPagoPix(apiKey, amountBRL, orderName, externalRef, webhookUrl);
       brcode = result.brcode;
       paymentId = result.payment_id;
     } else if (providerKey === "pushinpay") {
