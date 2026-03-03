@@ -730,6 +730,7 @@ export type Database = {
           auto_delivery: boolean
           banner_url: string | null
           category_id: string | null
+          compare_price_cents: number | null
           created_at: string
           description: string | null
           icon_url: string | null
@@ -746,6 +747,7 @@ export type Database = {
           auto_delivery?: boolean
           banner_url?: string | null
           category_id?: string | null
+          compare_price_cents?: number | null
           created_at?: string
           description?: string | null
           icon_url?: string | null
@@ -762,6 +764,7 @@ export type Database = {
           auto_delivery?: boolean
           banner_url?: string | null
           category_id?: string | null
+          compare_price_cents?: number | null
           created_at?: string
           description?: string | null
           icon_url?: string | null

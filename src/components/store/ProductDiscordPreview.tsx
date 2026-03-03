@@ -5,6 +5,7 @@ interface Product {
   name: string;
   type: string;
   price_cents: number;
+  compare_price_cents?: number | null;
   stock: number | null;
   active: boolean;
   description: string | null;
@@ -67,7 +68,12 @@ export const ProductDiscordPreview = ({ product, storeName }: ProductDiscordPrev
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
               <div>
                 <p className="text-[#00b0f4] text-[10px] font-semibold">💰 Preço</p>
-                <p className="text-[#dcddde] text-xs">{formatPrice(product.price_cents)}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[#dcddde] text-xs">{formatPrice(product.price_cents)}</p>
+                  {product.compare_price_cents && product.compare_price_cents > product.price_cents && (
+                    <p className="text-[#72767d] text-[10px] line-through">{formatPrice(product.compare_price_cents)}</p>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="text-[#00b0f4] text-[10px] font-semibold">📦 Tipo</p>

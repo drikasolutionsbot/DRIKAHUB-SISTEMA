@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN compare_price_cents integer DEFAULT NULL;
