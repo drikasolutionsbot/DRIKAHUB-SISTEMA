@@ -53,6 +53,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
   const [dirty, setDirty] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [previewFields, setPreviewFields] = useState<Array<{ id: string; name: string; emoji: string | null; price_cents: number; compare_price_cents: number | null }>>([]);
 
   const handleChange = (updates: Partial<Product>) => {
     setEdited((prev) => ({ ...prev, ...updates }));
@@ -159,10 +160,10 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
 
             <TabsContent value="campos" className="mt-0">
               <div className={showPreview ? "grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6" : ""}>
-                <ProductDetailFields productId={product.id} />
+                <ProductDetailFields productId={product.id} onFieldsChange={setPreviewFields} />
                 {showPreview && (
                   <div className="sticky top-4">
-                    <ProductDiscordPreview product={edited} />
+                    <ProductDiscordPreview product={edited} fields={previewFields} />
                   </div>
                 )}
               </div>

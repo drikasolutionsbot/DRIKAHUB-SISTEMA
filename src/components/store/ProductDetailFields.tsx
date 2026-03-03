@@ -34,9 +34,10 @@ interface ProductField {
 
 interface ProductDetailFieldsProps {
   productId: string;
+  onFieldsChange?: (fields: ProductField[]) => void;
 }
 
-export const ProductDetailFields = ({ productId }: ProductDetailFieldsProps) => {
+export const ProductDetailFields = ({ productId, onFieldsChange }: ProductDetailFieldsProps) => {
   const { tenantId } = useTenant();
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -65,6 +66,10 @@ export const ProductDetailFields = ({ productId }: ProductDetailFieldsProps) => 
   useEffect(() => {
     fetchFields();
   }, [fetchFields]);
+
+  useEffect(() => {
+    onFieldsChange?.(fields);
+  }, [fields]);
 
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
 
