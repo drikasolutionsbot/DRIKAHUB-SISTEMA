@@ -11,6 +11,7 @@ import {
 import {
   ExternalLink, Users, UserCheck, Settings2, Plus, UserPlus, Trash2, Loader2, Shield,
 } from "lucide-react";
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import MemberSearchModal from "@/components/dashboard/MemberSearchModal";
 import { usePermissions, PERMISSION_LABELS, type TenantPermission, type PermissionKey } from "@/hooks/usePermissions";
 import { useRoles, type TenantRole } from "@/hooks/useRoles";
@@ -216,7 +217,16 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+      {/* Dashboard Overview */}
+      <div>
+        <h1 className="font-display text-2xl font-bold">Visão Geral</h1>
+        <p className="text-muted-foreground mb-6">
+          Métricas e desempenho de <strong className="text-foreground">{tenant.name}</strong>
+        </p>
+        <DashboardOverview />
+      </div>
+
+      {/* Server Section */}
       <div>
         <h1 className="font-display text-2xl font-bold">Servidor de Operações</h1>
         <p className="text-muted-foreground">
