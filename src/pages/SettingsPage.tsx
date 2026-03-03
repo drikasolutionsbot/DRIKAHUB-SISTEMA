@@ -96,15 +96,18 @@ const SettingsPage = () => {
     if (!tenantId) return;
     setSavingPix(true);
     try {
-      const { error } = await (supabase as any)
-        .from("tenants")
-        .update({
-          pix_key: pixKey.trim() || null,
-          pix_key_type: pixKeyType || null,
-        })
-        .eq("id", tenantId);
+      const { data, error } = await supabase.functions.invoke("update-tenant", {
+        body: {
+          tenant_id: tenantId,
+          updates: {
+            pix_key: pixKey.trim() || null,
+            pix_key_type: pixKeyType || null,
+          },
+        },
+      });
       if (error) throw error;
-      refetchTenant();
+      if (data?.error) throw new Error(data.error);
+      await refetchTenant();
       toast({ title: "Chave PIX salva com sucesso!" });
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
@@ -278,8 +281,12 @@ const SettingsPage = () => {
                       onClick={async () => {
                         setSavingPix(true);
                         try {
-                          await (supabase as any).from("tenants").update({ pix_key: null, pix_key_type: null }).eq("id", tenantId);
-                          refetchTenant();
+                          const { data: d, error: e } = await supabase.functions.invoke("update-tenant", {
+                            body: { tenant_id: tenantId, updates: { pix_key: null, pix_key_type: null } },
+                          });
+                          if (e) throw e;
+                          if (d?.error) throw new Error(d.error);
+                          await refetchTenant();
                           toast({ title: "Chave PIX desativada" });
                         } catch (err: any) {
                           toast({ title: "Erro", description: err.message, variant: "destructive" });
