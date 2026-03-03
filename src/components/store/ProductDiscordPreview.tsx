@@ -16,9 +16,18 @@ interface Product {
   category_id?: string | null;
 }
 
+interface PreviewField {
+  id: string;
+  name: string;
+  emoji: string | null;
+  price_cents: number;
+  compare_price_cents: number | null;
+}
+
 interface ProductDiscordPreviewProps {
   product: Product;
   storeName?: string;
+  fields?: PreviewField[];
 }
 
 const formatPrice = (cents: number) =>
@@ -30,10 +39,27 @@ const typeLabels: Record<string, string> = {
   hybrid: "Híbrido",
 };
 
-export const ProductDiscordPreview = ({ product, storeName }: ProductDiscordPreviewProps) => {
+export const ProductDiscordPreview = ({ product, storeName, fields = [] }: ProductDiscordPreviewProps) => {
   const { tenant } = useTenant();
   const botName = storeName || tenant?.name || "Bot";
   const botAvatar = tenant?.logo_url;
+
+  // Helper to render emoji - handles both unicode and discord custom format
+  const renderEmoji = (emoji: string | null) => {
+    if (!emoji) return null;
+    const match = emoji.match(/^<a?:(\w+):(\d+)>$/);
+    if (match) {
+      const isAnimated = emoji.startsWith("<a:");
+      return (
+        <img
+          src={`https://cdn.discordapp.com/emojis/${match[2]}.${isAnimated ? "gif" : "png"}`}
+          alt={match[1]}
+          className="h-4 w-4 inline-block"
+        />
+      );
+    }
+    return <span>{emoji}</span>;
+  };
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -129,6 +155,33 @@ export const ProductDiscordPreview = ({ product, storeName }: ProductDiscordPrev
             />
           )}
         </div>
+
+        {/* Fields / Variations */}
+        {fields.length > 0 && (
+          <div className="mt-2 space-y-1 px-1">
+            {fields.map((field) => (
+              <div
+                key={field.id}
+                className="flex items-center justify-between bg-[#2b2d31] rounded px-2.5 py-1.5"
+              >
+                <div className="flex items-center gap-1.5">
+                  {field.emoji && <span className="text-sm">{renderEmoji(field.emoji)}</span>}
+                  <span className="text-[#dcddde] text-xs font-medium">{field.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {field.compare_price_cents && field.compare_price_cents > field.price_cents ? (
+                    <>
+                      <span className="text-[#57F287] text-xs font-semibold">{formatPrice(field.price_cents)}</span>
+                      <span className="text-[#72767d] text-[10px] line-through">{formatPrice(field.compare_price_cents)}</span>
+                    </>
+                  ) : (
+                    <span className="text-[#dcddde] text-xs">{formatPrice(field.price_cents)}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Button row */}
         <div className="flex gap-2 mt-2">
