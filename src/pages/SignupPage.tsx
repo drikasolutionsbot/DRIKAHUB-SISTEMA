@@ -92,7 +92,7 @@ const SignupPage = () => {
   };
 
   const handleGoToLogin = () => {
-    navigate("/login");
+    window.location.href = "/login";
   };
 
   // Token display screen — modal over same background
