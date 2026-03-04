@@ -472,15 +472,22 @@ const FinancePage = () => {
           </div>
           {ordersChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ordersChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 15% 18%)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(220 15% 55%)" }} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(220 15% 55%)" }} allowDecimals={false} />
+              <BarChart data={ordersChartData} barCategoryGap="25%">
+                <defs>
+                  <linearGradient id="ordersBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(330 100% 71%)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(280 80% 55%)" stopOpacity={0.8} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 15% 18%)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(220 15% 55%)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(220 15% 55%)" }} allowDecimals={false} axisLine={false} tickLine={false} />
                 <RechartsTooltip
+                  cursor={{ fill: "hsl(225 15% 18%)", opacity: 0.4, radius: 6 }}
                   contentStyle={{ backgroundColor: "hsl(225 25% 11%)", border: "1px solid hsl(225 15% 18%)", borderRadius: "12px", fontSize: 12 }}
                   formatter={(value: number) => [value, "Pedidos"]}
                 />
-                <Bar dataKey="count" fill="hsl(330 100% 71%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="url(#ordersBarGrad)" radius={[8, 8, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
