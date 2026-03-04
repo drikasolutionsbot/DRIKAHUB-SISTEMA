@@ -4,13 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Users, Store, CreditCard, DollarSign, TrendingUp, ShoppingCart, Crown, Ticket, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { format, subDays, startOfMonth } from "date-fns";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const PLAN_COLORS: Record<string, string> = {
-  free: "hsl(var(--muted-foreground))",
+  free: "#6b7280",
   starter: "#3b82f6",
   pro: "#10b981",
   business: "#f59e0b",
+};
+
+const PLAN_ICONS: Record<string, string> = {
+  free: "🆓",
+  starter: "🚀",
+  pro: "⚡",
+  business: "👑",
 };
 
 const AdminDashboardPage = () => {
@@ -201,37 +208,53 @@ const AdminDashboardPage = () => {
           </CardContent>
         </Card>
 
-        {/* Plan Distribution */}
+        {/* Plan Distribution - Donut */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Crown className="h-4 w-4 text-amber-400" />
-              Planos
+              Distribuição de Planos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-40 mb-4">
+            <div className="h-48 relative">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={planDistribution} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={65} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]} name="Clientes">
+                <PieChart>
+                  <Pie
+                    data={planDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
                     {planDistribution.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
-                  </Bar>
-                </BarChart>
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(value: number, name: string) => [`${value} clientes`, name]}
+                  />
+                </PieChart>
               </ResponsiveContainer>
+              {/* Center label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold text-foreground">{stats.tenants}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Total</span>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 mt-2">
               {planDistribution.map((p) => (
-                <div key={p.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                    <span className="text-muted-foreground">{p.name}</span>
+                <div key={p.name} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+                  <span className="text-sm">{PLAN_ICONS[p.name.toLowerCase()] || "📦"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground">{p.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.value} clientes</p>
                   </div>
-                  <span className="font-medium text-foreground">{p.value}</span>
+                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                 </div>
               ))}
             </div>
