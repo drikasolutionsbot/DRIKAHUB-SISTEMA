@@ -48,7 +48,18 @@ const SignupPage = () => {
       });
 
       if (error) {
-        const errMsg = error?.message || "Erro ao criar conta";
+        // Try to parse the actual error message from the response
+        let errMsg = "Erro ao criar conta";
+        try {
+          if (error.context?.body) {
+            const text = await new Response(error.context.body).text();
+            const parsed = JSON.parse(text);
+            if (parsed?.error) errMsg = parsed.error;
+          }
+        } catch {}
+        if (errMsg === "Erro ao criar conta" && error.message) {
+          errMsg = error.message;
+        }
         toast({ title: errMsg, variant: "destructive" });
         setLoading(false);
         return;
