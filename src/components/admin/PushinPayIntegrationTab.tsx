@@ -10,9 +10,8 @@ import { Key, Webhook, CheckCircle2, AlertCircle, ExternalLink, Copy, Shield, Za
 import { toast } from "sonner";
 
 const PLANS_PREVIEW = [
-  { name: "Starter", price: "—", features: ["Recursos básicos", "1 servidor"] },
-  { name: "Pro", price: "—", features: ["Recursos avançados", "3 servidores", "Suporte prioritário"] },
-  { name: "Business", price: "—", features: ["Todos os recursos", "Servidores ilimitados", "Suporte VIP"] },
+  { name: "Drika Solutions Free", price: "Grátis", features: ["Recursos básicos", "1 servidor"] },
+  { name: "Drika Solutions Pro", price: "—", features: ["Recursos avançados", "Servidores ilimitados", "Suporte prioritário"] },
 ];
 
 const PushinPayIntegrationTab = () => {

@@ -8,16 +8,12 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 
 const PLAN_COLORS: Record<string, string> = {
   free: "#6b7280",
-  starter: "#3b82f6",
   pro: "#10b981",
-  business: "#f59e0b",
 };
 
 const PLAN_ICONS: Record<string, string> = {
   free: "🆓",
-  starter: "🚀",
   pro: "⚡",
-  business: "👑",
 };
 
 const AdminDashboardPage = () => {

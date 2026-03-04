@@ -14,10 +14,8 @@ import { format } from "date-fns";
 import { Plus, Key, Copy, Trash2, Eye, EyeOff, Loader2, Users, Crown, Search, Settings, Mail, Phone } from "lucide-react";
 
 const PLANS = [
-  { value: "free", label: "Free", color: "text-muted-foreground bg-muted/50 border-border" },
-  { value: "starter", label: "Starter", color: "text-blue-500 bg-blue-500/10 border-blue-500" },
-  { value: "pro", label: "Pro", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500" },
-  { value: "business", label: "Business", color: "text-amber-500 bg-amber-500/10 border-amber-500" },
+  { value: "free", label: "Drika Solutions Free", color: "text-muted-foreground bg-muted/50 border-border" },
+  { value: "pro", label: "Drika Solutions Pro", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500" },
 ];
 
 const getPlanBadgeClass = (plan: string) => {
