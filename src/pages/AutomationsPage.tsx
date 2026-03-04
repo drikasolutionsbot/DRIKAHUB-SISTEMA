@@ -157,7 +157,7 @@ const ACTIONS: ActionDef[] = [
     { key: "color", label: "Cor (hex)", type: "text", placeholder: "#FF69B4" },
   ]},
   { key: "send_webhook", label: "Chamar Webhook / API", description: "Faz uma requisição HTTP para uma URL externa (ex: seu bot)", icon: Globe, color: "text-yellow-400 bg-yellow-500/10", configFields: [
-    { key: "url", label: "URL do Webhook", type: "text", placeholder: "https://seu-bot.onrender.com/send" },
+    { key: "url", label: "URL do Webhook", type: "text", placeholder: "https://drika-solutions24horas-production.up.railway.app/send" },
     { key: "method", label: "Método HTTP", type: "select", options: [
       { value: "POST", label: "POST" },
       { value: "GET", label: "GET" },
