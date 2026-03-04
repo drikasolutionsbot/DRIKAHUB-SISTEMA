@@ -290,14 +290,15 @@ async function executeAction(
 
     case "send_webhook": {
       if (!config.url) return "skip: no url";
+      const method = (config.method || "POST").toUpperCase();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (config.authorization) headers["Authorization"] = config.authorization;
       const payload = config.body_template
         ? JSON.parse(replaceVars(config.body_template))
         : { trigger_type: triggerData?.trigger_type, ...triggerData };
-      const res = await fetch(config.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const fetchOpts: any = { method, headers };
+      if (method !== "GET") fetchOpts.body = JSON.stringify(payload);
+      const res = await fetch(config.url, fetchOpts);
       return res.ok ? "webhook_sent" : `fail: ${res.status}`;
     }
 
