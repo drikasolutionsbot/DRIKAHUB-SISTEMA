@@ -9,9 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Plus, Key, Copy, Trash2, Eye, EyeOff, Loader2, Users, Crown, Search, Settings, Mail, Phone, Calendar, CalendarClock, ShieldCheck, ShieldOff } from "lucide-react";
+import { Plus, Key, Copy, Trash2, Eye, EyeOff, Loader2, Users, Crown, Search, Settings, Mail, Phone, Calendar, CalendarClock, ShieldCheck, ShieldOff, Download, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const PLANS = [
   { value: "free", label: "Drika Solutions Free", color: "text-muted-foreground bg-muted/50 border-border" },
@@ -231,6 +235,37 @@ const AdminClientsPage = () => {
       if (!tokens[tenantId]) fetchTokens(tenantId);
     }
   };
+  const getExportData = () => filteredTenants.map((t) => ({
+    Nome: t.name || "",
+    Email: t.email || "",
+    WhatsApp: t.whatsapp || "",
+  }));
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(getExportData());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+    XLSX.writeFile(wb, `clientes_${format(new Date(), "dd-MM-yyyy")}.xlsx`);
+    toast({ title: "Excel exportado!" });
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Clientes - Drika Solutions", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Exportado em ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+    const data = getExportData();
+    autoTable(doc, {
+      startY: 35,
+      head: [["Nome", "Email", "WhatsApp"]],
+      body: data.map((r) => [r.Nome, r.Email, r.WhatsApp]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [255, 40, 73] },
+    });
+    doc.save(`clientes_${format(new Date(), "dd-MM-yyyy")}.pdf`);
+    toast({ title: "PDF exportado!" });
+  };
 
   return (
     <div className="space-y-6">
@@ -239,12 +274,28 @@ const AdminClientsPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground">Gerencie clientes, planos e tokens de acesso</p>
         </div>
-        <Dialog open={tenantDialogOpen} onOpenChange={setTenantDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gradient-pink text-primary-foreground border-none hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" /> Novo Cliente
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" /> Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="mr-2 h-4 w-4" /> PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Dialog open={tenantDialogOpen} onOpenChange={setTenantDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gradient-pink text-primary-foreground border-none hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" /> Novo Cliente
+              </Button>
+            </DialogTrigger>
           <DialogContent className="bg-card border-border">
             <DialogHeader>
               <DialogTitle>Adicionar Cliente</DialogTitle>
@@ -299,6 +350,7 @@ const AdminClientsPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Plan Stats */}
