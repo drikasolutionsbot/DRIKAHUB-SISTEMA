@@ -495,15 +495,51 @@ const SettingsPage = () => {
                 <p className="text-[11px] text-white/30 mt-0.5">Detalhes da sua assinatura</p>
               </div>
             </div>
-            <div className="rounded-xl bg-white/5 border border-white/8 p-5">
+
+            {/* Plan info card */}
+            <div className="rounded-xl bg-white/5 border border-white/8 p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xl font-bold text-gradient-pink capitalize">{tenant.plan || "Free"}</p>
+                  <p className="text-xl font-bold text-gradient-pink capitalize">
+                    {tenant.plan === "pro" ? "Pro" : tenant.plan === "expired" ? "Expirado" : "Free (Trial)"}
+                  </p>
                   <p className="text-xs text-white/30 mt-1">Plano ativo</p>
                 </div>
-                <span className="wallet-tx-badge completed">Ativo</span>
+                <span className={`wallet-tx-badge ${tenant.plan === "expired" || (tenant.plan_expires_at && new Date(tenant.plan_expires_at) < new Date()) ? "failed" : "completed"}`}>
+                  {tenant.plan === "expired" || (tenant.plan_expires_at && new Date(tenant.plan_expires_at) < new Date()) ? "Expirado" : "Ativo"}
+                </span>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                {tenant.plan_started_at && (
+                  <div className="rounded-lg bg-white/5 border border-white/8 p-3">
+                    <p className="text-[10px] text-white/30 uppercase tracking-wider">Início</p>
+                    <p className="text-sm font-medium text-white mt-1">
+                      {new Date(tenant.plan_started_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                )}
+                {tenant.plan_expires_at && (
+                  <div className="rounded-lg bg-white/5 border border-white/8 p-3">
+                    <p className="text-[10px] text-white/30 uppercase tracking-wider">Expira em</p>
+                    <p className={`text-sm font-medium mt-1 ${new Date(tenant.plan_expires_at) < new Date() ? "text-destructive" : "text-emerald-400"}`}>
+                      {new Date(tenant.plan_expires_at).toLocaleDateString("pt-BR")}
+                    </p>
+                    <p className="text-[10px] text-white/20 mt-0.5">
+                      {(() => {
+                        const diff = Math.ceil((new Date(tenant.plan_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        if (diff < 0) return `Expirou há ${Math.abs(diff)} dia(s)`;
+                        if (diff === 0) return "Expira hoje";
+                        return `Faltam ${diff} dia(s)`;
+                      })()}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               <div className="rounded-xl bg-white/5 border border-white/8 p-4 text-center">
                 <p className="text-lg font-bold text-white">∞</p>
