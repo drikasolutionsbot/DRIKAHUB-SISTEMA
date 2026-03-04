@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, type RefObject } from "react";
-import { Crown, Zap, Check, ArrowRight, ShoppingCart, Shield, Lock } from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { Crown, Zap, Check, ArrowRight, ShoppingCart, Shield, Lock, Users, TrendingUp, Package, ChevronDown, MessageSquare, Bot, Settings } from "lucide-react";
 import drikaLogo from "@/assets/drika_logo_crown.png";
+import previewCheckout from "@/assets/preview_checkout.png";
+import previewTicket from "@/assets/preview_ticket.png";
+import previewDelivery from "@/assets/preview_delivery.png";
 
+/* ── Scroll reveal ── */
 function useScrollReveal<T extends HTMLElement>(): RefObject<T> {
   const ref = useRef<T>(null);
   useEffect(() => {
@@ -26,14 +30,62 @@ function useScrollReveal<T extends HTMLElement>(): RefObject<T> {
 const ScrollReveal = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => {
   const ref = useScrollReveal<HTMLDivElement>();
   return (
-    <div
-      ref={ref}
-      className={`scroll-hidden ${className}`}
-      style={{ transitionDelay: `${delay}s` }}
-    >
+    <div ref={ref} className={`scroll-hidden ${className}`} style={{ transitionDelay: `${delay}s` }}>
       {children}
     </div>
   );
+};
+
+/* ── FAQ Accordion ── */
+const FaqItem = ({ q, a }: { q: string; a: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-white/10 rounded-xl overflow-hidden bg-black/30 backdrop-blur-sm">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-4 text-left text-sm font-semibold text-white/90 bg-transparent border-none cursor-pointer hover:bg-white/5 transition-colors"
+      >
+        {q}
+        <ChevronDown className={`h-4 w-4 text-primary shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
+        <p className="px-4 pb-4 text-xs text-white/50 leading-relaxed">{a}</p>
+      </div>
+    </div>
+  );
+};
+
+/* ── Counter animation ── */
+const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const duration = 1500;
+        const step = target / (duration / 16);
+        let current = 0;
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= target) {
+            setCount(target);
+            clearInterval(timer);
+          } else {
+            setCount(Math.floor(current));
+          }
+        }, 16);
+      }
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
 };
 
 const LandingPage = () => {
@@ -41,23 +93,18 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen text-white overflow-x-hidden login-pattern-bg relative">
-      {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/40 z-0" />
 
-      {/* Floating glow effects */}
+      {/* Glow effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-[200px] opacity-30 gradient-pink animate-[pulse_4s_ease-in-out_infinite]" />
         <div className="absolute bottom-[10%] right-[10%] w-60 h-60 rounded-full blur-[120px] opacity-15 gradient-gold animate-[pulse_6s_ease-in-out_infinite]" />
       </div>
 
-      {/* ===== HERO ===== */}
-      <section className="relative z-10 min-h-[75vh] flex flex-col items-center justify-center px-4 py-12">
+      {/* ===== 1. HERO ===== */}
+      <section className="relative z-10 min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
         <div className="text-center max-w-2xl mx-auto">
-          <img
-            src={drikaLogo}
-            alt="Drika Solutions"
-            className="h-32 md:h-44 w-auto mx-auto mb-6 drop-shadow-[0_0_50px_hsl(330_100%_71%/0.5)] animate-fade-in"
-          />
+          <img src={drikaLogo} alt="Drika Solutions" className="h-28 md:h-40 w-auto mx-auto mb-5 drop-shadow-[0_0_50px_hsl(330_100%_71%/0.5)] animate-fade-in" />
 
           <h1 className="text-3xl md:text-5xl font-extrabold font-display mb-3 leading-tight animate-fade-in drop-shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
             Seu servidor Discord
@@ -65,143 +112,267 @@ const LandingPage = () => {
             <span className="text-gradient-pink drop-shadow-none">no próximo nível</span>
           </h1>
 
-          <p
-            className="text-sm md:text-base text-white/70 max-w-md mx-auto mb-8 animate-fade-in font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
-            style={{ animationDelay: "0.1s" }}
-          >
+          <p className="text-sm md:text-base text-white/70 max-w-md mx-auto mb-8 animate-fade-in font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]" style={{ animationDelay: "0.1s" }}>
             Vendas, moderação e segurança — tudo em um único bot.
           </p>
 
-          <div
-            className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in"
-            style={{ animationDelay: "0.2s" }}
-          >
-            <button
-              onClick={() => navigate("/signup")}
-              className="group px-6 py-3 rounded-full border-2 border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/50 text-white font-semibold transition-all cursor-pointer"
-            >
+          <div className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <button onClick={() => navigate("/signup")} className="group px-6 py-3 rounded-full border-2 border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/50 text-white font-semibold transition-all cursor-pointer">
               <span className="flex items-center justify-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
                 Testar Grátis — 4 dias
               </span>
             </button>
-            <button
-              onClick={() => navigate("/signup?plan=pro")}
-              className="group px-6 py-3 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_rgba(255,40,73,0.4)] animate-pulse-glow"
-            >
+            <button onClick={() => navigate("/signup?plan=pro")} className="group px-6 py-3 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_rgba(255,40,73,0.4)] animate-pulse-glow">
               <span className="flex items-center justify-center gap-2">
                 <Crown className="h-4 w-4" />
                 Assinar Pro — R$ 26,90/mês
               </span>
             </button>
           </div>
+
+          {/* Social proof */}
+          <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <p className="text-xs text-white/40 font-medium">
+              Usado por <span className="text-primary font-bold">+120 servidores</span> no Discord
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
-      <section className="relative z-10 py-6 px-4">
-        <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-4">
-          {[
-            {
-              icon: ShoppingCart,
-              title: "Vendas",
-              desc: "Checkout PIX automático com entrega instantânea.",
-            },
-            {
-              icon: Shield,
-              title: "Moderação",
-              desc: "Tickets, automações e controle de permissões.",
-            },
-            {
-              icon: Lock,
-              title: "Segurança",
-              desc: "Anti-raid, anti-spam e verificação 24/7.",
-            },
-          ].map((f, i) => (
-            <ScrollReveal key={f.title} delay={0.1 * i}>
-              <div className="group rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-5 hover:border-primary/40 hover:bg-black/50 transition-all duration-300">
-                <div className="h-10 w-10 rounded-xl bg-[#FF2849] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,40,73,0.3)]">
-                  <f.icon className="h-5 w-5 text-white" />
+      {/* ===== 2. SOCIAL PROOF STATS ===== */}
+      <section className="relative z-10 py-8 px-4">
+        <ScrollReveal>
+          <div className="max-w-2xl mx-auto grid grid-cols-3 gap-4">
+            {[
+              { icon: Users, value: 120, suffix: "+", label: "Servidores ativos" },
+              { icon: TrendingUp, value: 500, suffix: "+", label: "Vendas processadas" },
+              { icon: Package, value: 1200, suffix: "+", label: "Produtos entregues" },
+            ].map((s) => (
+              <div key={s.label} className="text-center p-4 rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm">
+                <s.icon className="h-5 w-5 text-primary mx-auto mb-2" />
+                <div className="text-xl md:text-2xl font-extrabold font-display text-white">
+                  <AnimatedCounter target={s.value} suffix={s.suffix} />
                 </div>
-                <h3 className="text-base font-bold font-display mb-1">{f.title}</h3>
-                <p className="text-xs text-white/50 leading-relaxed">{f.desc}</p>
+                <p className="text-[10px] text-white/40 mt-1">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
+      </section>
+
+      {/* ===== 3. FEATURES ===== */}
+      <section className="relative z-10 py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
+                Tudo que seu servidor <span className="text-gradient-pink">precisa</span>
+              </h2>
+              <p className="text-xs text-white/40">Três pilares em uma única solução</p>
+            </div>
+          </ScrollReveal>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: ShoppingCart,
+                title: "Vendas Automáticas",
+                desc: "Venda produtos digitais automaticamente. Pagamento via PIX e entrega instantânea no ticket.",
+              },
+              {
+                icon: Shield,
+                title: "Moderação Completa",
+                desc: "Sistema de tickets, automações inteligentes e controle total de cargos e permissões.",
+              },
+              {
+                icon: Lock,
+                title: "Segurança 24/7",
+                desc: "Anti-raid, anti-spam e verificação de membros. Seu servidor blindado contra ataques.",
+              },
+            ].map((f, i) => (
+              <ScrollReveal key={f.title} delay={0.1 * i}>
+                <div className="group rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-5 hover:border-primary/40 hover:bg-black/50 transition-all duration-300 h-full">
+                  <div className="h-10 w-10 rounded-xl bg-[#FF2849] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,40,73,0.3)]">
+                    <f.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-base font-bold font-display mb-2">{f.title}</h3>
+                  <p className="text-xs text-white/50 leading-relaxed">{f.desc}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 4. HOW IT WORKS ===== */}
+      <section className="relative z-10 py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
+                Como <span className="text-gradient-pink">funciona</span>
+              </h2>
+              <p className="text-xs text-white/40">3 passos para começar a vender</p>
+            </div>
+          </ScrollReveal>
+          <div className="space-y-4">
+            {[
+              { step: "1", icon: Bot, title: "Instale o bot", desc: "Adicione o bot Drika no seu servidor Discord com um clique." },
+              { step: "2", icon: Settings, title: "Configure sua loja", desc: "Use o painel para criar produtos, definir preços e configurar pagamento PIX." },
+              { step: "3", icon: ShoppingCart, title: "Comece a vender", desc: "Seus clientes compram direto no Discord. Pagamento e entrega automáticos." },
+            ].map((s, i) => (
+              <ScrollReveal key={s.step} delay={0.1 * i}>
+                <div className="flex items-start gap-4 p-4 rounded-2xl border border-white/10 bg-black/30 backdrop-blur-sm hover:border-primary/30 transition-all">
+                  <div className="h-10 w-10 rounded-full bg-[#FF2849] flex items-center justify-center shrink-0 font-extrabold font-display text-sm shadow-[0_0_20px_rgba(255,40,73,0.3)]">
+                    {s.step}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-display mb-1 flex items-center gap-2">
+                      <s.icon className="h-4 w-4 text-primary" />
+                      {s.title}
+                    </h3>
+                    <p className="text-xs text-white/50 leading-relaxed">{s.desc}</p>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 5. BOT PREVIEW ===== */}
+      <section className="relative z-10 py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
+                Veja o bot <span className="text-gradient-pink">funcionando</span>
+              </h2>
+              <p className="text-xs text-white/40">Checkout, tickets e entrega automática</p>
+            </div>
+          </ScrollReveal>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { img: previewCheckout, label: "Checkout PIX" },
+              { img: previewTicket, label: "Ticket de venda" },
+              { img: previewDelivery, label: "Entrega automática" },
+            ].map((p, i) => (
+              <ScrollReveal key={p.label} delay={0.1 * i}>
+                <div className="group rounded-2xl border border-white/10 bg-black/40 overflow-hidden hover:border-primary/30 transition-all duration-300">
+                  <div className="overflow-hidden">
+                    <img src={p.img} alt={p.label} className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+                  </div>
+                  <div className="p-3 text-center">
+                    <span className="text-xs font-semibold text-white/70">{p.label}</span>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 6. PRICING ===== */}
+      <section className="relative z-10 py-12 px-4">
+        <div className="max-w-xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
+                Escolha seu <span className="text-gradient-pink">plano</span>
+              </h2>
+              <p className="text-xs text-white/40">Comece grátis, evolua quando quiser</p>
+            </div>
+          </ScrollReveal>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Free */}
+            <ScrollReveal>
+              <div className="pricing-card group relative h-full transition-all duration-300 hover:scale-[1.03]">
+                <div className="pricing-card-img overflow-hidden rounded-[.5rem_2rem] absolute inset-0">
+                  <div className="w-full h-full bg-gradient-to-r from-[#33001b] to-[#ff0084] transition-transform duration-300 group-hover:scale-[1.15]" />
+                </div>
+                <div className="relative z-10 p-5 flex flex-col h-full">
+                  <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Teste Grátis</h3>
+                  <div className="text-2xl font-extrabold font-display mb-0.5">4 dias</div>
+                  <p className="text-xs text-white/40 mb-4">para experimentar tudo</p>
+                  <ul className="space-y-1.5 mb-5 flex-1">
+                    {["Painel completo", "Bot no seu servidor", "Vendas automáticas", "Sem cartão"].map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-xs text-white/60">
+                        <Check className="h-3 w-3 text-white/40 shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pricing-card-label backdrop-blur-sm bg-black/20 rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
+                    <button onClick={() => navigate("/signup")} className="w-full py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 text-sm">
+                      Começar <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </ScrollReveal>
-          ))}
+
+            {/* Pro */}
+            <ScrollReveal delay={0.15}>
+              <div className="pricing-card pricing-card--pro group relative h-full transition-all duration-300 hover:scale-[1.03]">
+                <div className="pricing-card-img overflow-hidden rounded-[.5rem_2rem] absolute inset-0">
+                  <div className="w-full h-full bg-gradient-to-r from-[#33001b] to-[#ff0084] transition-transform duration-300 group-hover:scale-[1.15]" />
+                </div>
+                <div className="relative z-10 p-5 flex flex-col h-full">
+                  <div className="absolute top-3 right-3 z-20">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/20 border border-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wider backdrop-blur-sm">
+                      <Crown className="h-2.5 w-2.5" /> Popular
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Pro</h3>
+                  <div className="text-2xl font-extrabold font-display mb-0.5">R$ 26,90</div>
+                  <p className="text-xs text-white/40 mb-4">por mês</p>
+                  <ul className="space-y-1.5 mb-5 flex-1">
+                    {["Tudo do Free", "Sem limite de tempo", "Segurança avançada", "Suporte prioritário"].map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-xs text-white/70">
+                        <Check className="h-3 w-3 text-primary shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pricing-card-label backdrop-blur-sm bg-black/20 rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
+                    <button onClick={() => navigate("/signup?plan=pro")} className="w-full py-2 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(255,40,73,0.3)]">
+                      Assinar Pro <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      {/* ===== PRICING ===== */}
-      <section className="relative z-10 py-16 px-4 pb-24">
-        <div className="max-w-xl mx-auto grid md:grid-cols-2 gap-6">
-          {/* Free */}
+      {/* ===== 7. FAQ ===== */}
+      <section className="relative z-10 py-12 px-4">
+        <div className="max-w-xl mx-auto">
           <ScrollReveal>
-            <div className="pricing-card group relative h-full transition-all duration-300 hover:scale-[1.03]">
-              <div className="pricing-card-img overflow-hidden rounded-[.5rem_2rem] absolute inset-0">
-                <div className="w-full h-full bg-gradient-to-r from-[#33001b] to-[#ff0084] transition-transform duration-300 group-hover:scale-[1.15]" />
-              </div>
-              <div className="relative z-10 p-5 flex flex-col h-full">
-                <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Teste Grátis</h3>
-                <div className="text-2xl font-extrabold font-display mb-0.5">4 dias</div>
-                <p className="text-xs text-white/40 mb-4">para experimentar tudo</p>
-                <ul className="space-y-1.5 mb-5 flex-1">
-                  {["Painel completo", "Bot no seu servidor", "Vendas automáticas", "Sem cartão"].map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-white/60">
-                      <Check className="h-3 w-3 text-white/40 shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <div className="pricing-card-label backdrop-blur-sm bg-black/20 rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[perspective:100px] hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
-                  <button
-                    onClick={() => navigate("/signup")}
-                    className="w-full py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 text-sm"
-                  >
-                    Começar <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
+                Perguntas <span className="text-gradient-pink">frequentes</span>
+              </h2>
             </div>
           </ScrollReveal>
-
-          {/* Pro */}
-          <ScrollReveal delay={0.15}>
-            <div className="pricing-card pricing-card--pro group relative h-full transition-all duration-300 hover:scale-[1.03]">
-              <div className="pricing-card-img overflow-hidden rounded-[.5rem_2rem] absolute inset-0">
-                <div className="w-full h-full bg-gradient-to-r from-[#33001b] to-[#ff0084] transition-transform duration-300 group-hover:scale-[1.15]" />
-              </div>
-              <div className="relative z-10 p-5 flex flex-col h-full">
-                <div className="absolute top-3 right-3 z-20">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/20 border border-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wider backdrop-blur-sm">
-                    <Crown className="h-2.5 w-2.5" /> Popular
-                  </span>
-                </div>
-                <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Pro</h3>
-                <div className="text-2xl font-extrabold font-display mb-0.5">R$ 26,90</div>
-                <p className="text-xs text-white/40 mb-4">por mês</p>
-                <ul className="space-y-1.5 mb-5 flex-1">
-                  {["Tudo do Free", "Sem limite de tempo", "Segurança avançada", "Suporte prioritário"].map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-white/70">
-                      <Check className="h-3 w-3 text-primary shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <div className="pricing-card-label backdrop-blur-sm bg-black/20 rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[perspective:100px] hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
-                  <button
-                    onClick={() => navigate("/signup?plan=pro")}
-                    className="w-full py-2 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(255,40,73,0.3)]"
-                  >
-                    Assinar Pro <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
+          <div className="space-y-3">
+            {[
+              { q: "Preciso de cartão de crédito para testar?", a: "Não! O plano Free é 100% gratuito por 4 dias. Sem cartão, sem compromisso." },
+              { q: "O bot funciona em qualquer servidor?", a: "Sim, funciona em qualquer servidor Discord. Basta adicionar o bot e configurar pelo painel." },
+              { q: "Como funciona o pagamento PIX?", a: "Quando um cliente compra no seu servidor, o bot gera automaticamente um QR Code PIX. Após o pagamento, a entrega é feita instantaneamente." },
+              { q: "Posso cancelar a qualquer momento?", a: "Sim, sem multa e sem burocracia. Você pode cancelar o plano Pro quando quiser." },
+              { q: "O que acontece quando o plano Free expira?", a: "Após os 4 dias, o bot para de funcionar. Você pode assinar o plano Pro para continuar usando sem limites." },
+            ].map((faq, i) => (
+              <ScrollReveal key={i} delay={0.05 * i}>
+                <FaqItem q={faq.q} a={faq.a} />
+              </ScrollReveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ===== 8. FOOTER ===== */}
       <ScrollReveal>
         <footer className="relative z-10 border-t border-white/15 py-5 px-4">
           <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
