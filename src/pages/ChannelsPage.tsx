@@ -4,6 +4,8 @@ import {
   MessageSquare, Save, Settings2, ShoppingBag, UserCheck, Gavel, Tag,
   Layers, Lock, LifeBuoy, ChevronDown, ChevronRight, X
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ChannelPermissionsTab from "@/components/channels/ChannelPermissionsTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -377,6 +379,8 @@ const ChannelsPage = () => {
     return groups;
   }, [discordChannels, discordCategories]);
 
+  const [activeTab, setActiveTab] = useState("mapping");
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -384,18 +388,10 @@ const ChannelsPage = () => {
         <div>
           <h1 className="font-display text-2xl font-bold">Canais</h1>
           <p className="text-muted-foreground text-sm">
-            Direcione logs e notificações para canais específicos do seu servidor
+            Direcione logs e configure permissões dos canais do seu servidor
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs gap-1.5 px-3 py-1.5">
-            <span className={cn(configuredCount > 0 ? "text-emerald-400" : "text-muted-foreground")}>
-              {configuredCount}
-            </span>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-muted-foreground">{totalCount}</span>
-            <span className="text-muted-foreground ml-0.5">configurados</span>
-          </Badge>
           <Button variant="outline" size="sm" className="gap-2" onClick={fetchDiscordChannels} disabled={loadingChannels}>
             {loadingChannels ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Sincronizar
@@ -406,128 +402,152 @@ const ChannelsPage = () => {
         </div>
       </div>
 
-      {/* Save bar */}
-      {hasChanges && (
-        <div className="sticky top-0 z-20 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-md px-5 py-3">
-          <p className="text-sm text-foreground font-medium">Você tem alterações não salvas</p>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => {
-              const initial: Record<string, string> = {};
-              configs.forEach(c => { if (c.discord_channel_id) initial[c.channel_key] = c.discord_channel_id; });
-              setDraft(initial);
-            }}>
-              <X className="h-4 w-4 mr-1.5" /> Descartar
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Salvar Tudo
-            </Button>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="mapping" className="gap-2">
+            <Hash className="h-3.5 w-3.5" /> Mapeamento
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="gap-2">
+            <Shield className="h-3.5 w-3.5" /> Permissões
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ========= TAB: Mapeamento ========= */}
+        <TabsContent value="mapping" className="mt-4 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="outline" className="font-mono text-xs gap-1.5 px-3 py-1.5">
+              <span className={cn(configuredCount > 0 ? "text-emerald-400" : "text-muted-foreground")}>
+                {configuredCount}
+              </span>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-muted-foreground">{totalCount}</span>
+              <span className="text-muted-foreground ml-0.5">configurados</span>
+            </Badge>
           </div>
-        </div>
-      )}
 
-      {/* Channel sections */}
-      {isLoading ? (
-        <div className="space-y-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}</div>
-      ) : (
-        <div className="space-y-4">
-          {channelSections.map((section) => {
-            const SectionIcon = section.icon;
-            const configuredInSection = section.channels.filter(ch => draft[ch.key]).length;
-            const isOpen = openSections[section.title] !== false;
+          {/* Save bar */}
+          {hasChanges && (
+            <div className="sticky top-0 z-20 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-md px-5 py-3">
+              <p className="text-sm text-foreground font-medium">Você tem alterações não salvas</p>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  const initial: Record<string, string> = {};
+                  configs.forEach(c => { if (c.discord_channel_id) initial[c.channel_key] = c.discord_channel_id; });
+                  setDraft(initial);
+                }}>
+                  <X className="h-4 w-4 mr-1.5" /> Descartar
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Tudo
+                </Button>
+              </div>
+            </div>
+          )}
 
-            return (
-              <Collapsible key={section.title} open={isOpen} onOpenChange={() => toggleSection(section.title)}>
-                <div className={cn(
-                  "rounded-xl border transition-colors",
-                  section.borderColor,
-                  "bg-card"
-                )}>
-                  {/* Section header */}
-                  <CollapsibleTrigger asChild>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors rounded-t-xl">
-                      <div className={cn("rounded-lg p-2.5 shrink-0", section.bgColor)}>
-                        <SectionIcon className={cn("h-4.5 w-4.5", section.color)} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display font-semibold text-foreground">{section.title}</h3>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
-                            {configuredInSection}/{section.channels.length}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
-                      </div>
-                      {isOpen ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                    </button>
-                  </CollapsibleTrigger>
+          {/* Channel sections */}
+          {isLoading ? (
+            <div className="space-y-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}</div>
+          ) : (
+            <div className="space-y-4">
+              {channelSections.map((section) => {
+                const SectionIcon = section.icon;
+                const configuredInSection = section.channels.filter(ch => draft[ch.key]).length;
+                const isOpen = openSections[section.title] !== false;
 
-                  {/* Section content */}
-                  <CollapsibleContent>
-                    <div className="px-5 pb-5 pt-1 space-y-3">
-                      {section.channels.map((ch) => {
-                        const currentValue = getChannelValue(ch.key);
-                        const channelName = currentValue ? getChannelName(currentValue) : null;
-
-                        return (
-                          <div key={ch.key} className="flex items-center gap-4 rounded-lg bg-muted/30 px-4 py-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground">{ch.label}</p>
-                              <p className="text-[11px] text-muted-foreground">{ch.description}</p>
-                            </div>
-                            <div className="w-56 shrink-0">
-                              <Select value={currentValue} onValueChange={(v) => handleLocalChange(ch.key, v)}>
-                                <SelectTrigger className={cn(
-                                  "h-9 text-sm",
-                                  currentValue ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
-                                )}>
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                    <SelectValue placeholder="Selecionar canal" />
-                                  </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {currentValue && (
-                                    <SelectItem value="__clear__" className="text-red-400">
-                                      ✕ Remover canal
-                                    </SelectItem>
-                                  )}
-                                  {channelsByCategory.length > 0 ? (
-                                    channelsByCategory.map(group => (
-                                      <SelectGroup key={group.label}>
-                                        <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                                          {group.label}
-                                        </SelectLabel>
-                                        {group.channels.map(dc => (
-                                          <SelectItem key={dc.id} value={dc.id}>
-                                            # {dc.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectGroup>
-                                    ))
-                                  ) : (
-                                    <div className="text-center text-sm text-muted-foreground py-3">
-                                      Sincronize os canais primeiro
-                                    </div>
-                                  )}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                return (
+                  <Collapsible key={section.title} open={isOpen} onOpenChange={() => toggleSection(section.title)}>
+                    <div className={cn("rounded-xl border transition-colors", section.borderColor, "bg-card")}>
+                      <CollapsibleTrigger asChild>
+                        <button className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors rounded-t-xl">
+                          <div className={cn("rounded-lg p-2.5 shrink-0", section.bgColor)}>
+                            <SectionIcon className={cn("h-4.5 w-4.5", section.color)} />
                           </div>
-                        );
-                      })}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-display font-semibold text-foreground">{section.title}</h3>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
+                                {configuredInSection}/{section.channels.length}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
+                          </div>
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="px-5 pb-5 pt-1 space-y-3">
+                          {section.channels.map((ch) => {
+                            const currentValue = getChannelValue(ch.key);
+                            return (
+                              <div key={ch.key} className="flex items-center gap-4 rounded-lg bg-muted/30 px-4 py-3">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground">{ch.label}</p>
+                                  <p className="text-[11px] text-muted-foreground">{ch.description}</p>
+                                </div>
+                                <div className="w-56 shrink-0">
+                                  <Select value={currentValue} onValueChange={(v) => handleLocalChange(ch.key, v)}>
+                                    <SelectTrigger className={cn(
+                                      "h-9 text-sm",
+                                      currentValue ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
+                                    )}>
+                                      <div className="flex items-center gap-1.5 truncate">
+                                        <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                        <SelectValue placeholder="Selecionar canal" />
+                                      </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {currentValue && (
+                                        <SelectItem value="__clear__" className="text-red-400">
+                                          ✕ Remover canal
+                                        </SelectItem>
+                                      )}
+                                      {channelsByCategory.length > 0 ? (
+                                        channelsByCategory.map(group => (
+                                          <SelectGroup key={group.label}>
+                                            <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+                                              {group.label}
+                                            </SelectLabel>
+                                            {group.channels.map(dc => (
+                                              <SelectItem key={dc.id} value={dc.id}>
+                                                # {dc.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        ))
+                                      ) : (
+                                        <div className="text-center text-sm text-muted-foreground py-3">
+                                          Sincronize os canais primeiro
+                                        </div>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            );
-          })}
-        </div>
-      )}
+                  </Collapsible>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ========= TAB: Permissões ========= */}
+        <TabsContent value="permissions" className="mt-4">
+          <ChannelPermissionsTab
+            discordChannels={discordChannels}
+            discordCategories={discordCategories}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Create channel dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -567,40 +587,21 @@ const ChannelsPage = () => {
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleCreateCategory();
-                        }
-                        if (e.key === "Escape") {
-                          setCreatingCategory(false);
-                          setNewCategoryName("");
-                        }
+                        if (e.key === "Enter") { e.preventDefault(); handleCreateCategory(); }
+                        if (e.key === "Escape") { setCreatingCategory(false); setNewCategoryName(""); }
                       }}
                       autoFocus
                     />
-                    <Button
-                      size="sm"
-                      onClick={handleCreateCategory}
-                      disabled={!newCategoryName.trim() || creating}
-                      className="shrink-0"
-                    >
+                    <Button size="sm" onClick={handleCreateCategory} disabled={!newCategoryName.trim() || creating} className="shrink-0">
                       {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => { setCreatingCategory(false); setNewCategoryName(""); }}
-                      className="shrink-0"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => { setCreatingCategory(false); setNewCategoryName(""); }} className="shrink-0">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ) : (
                   <Select value={newParent} onValueChange={(v) => {
-                    if (v === "__create_cat__") {
-                      setCreatingCategory(true);
-                      return;
-                    }
+                    if (v === "__create_cat__") { setCreatingCategory(true); return; }
                     setNewParent(v);
                   }}>
                     <SelectTrigger><SelectValue placeholder="Sem categoria" /></SelectTrigger>
@@ -608,8 +609,7 @@ const ChannelsPage = () => {
                       <SelectItem value="none">Sem categoria</SelectItem>
                       <SelectItem value="__create_cat__">
                         <div className="flex items-center gap-2 text-primary font-medium">
-                          <Plus className="h-3.5 w-3.5" />
-                          Criar nova categoria
+                          <Plus className="h-3.5 w-3.5" /> Criar nova categoria
                         </div>
                       </SelectItem>
                       {discordCategories.map(cat => (

@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.manage-channel-configs]
 verify_jwt = false
+
+[functions.manage-channel-permissions]
+verify_jwt = false
