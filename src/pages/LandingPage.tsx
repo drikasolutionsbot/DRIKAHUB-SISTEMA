@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Crown, Zap, Check, ArrowRight, ShoppingCart, Shield, Lock, Users, TrendingUp, Package, ChevronDown, MessageSquare, Bot, Settings } from "lucide-react";
+import { Crown, Zap, Check, ArrowRight, ShoppingCart, Shield, Lock, Users, TrendingUp, Package, ChevronDown, MessageSquare, Bot, Settings, Play, X } from "lucide-react";
 import drikaLogo from "@/assets/drika_logo_crown.png";
-import previewCheckout from "@/assets/preview_checkout.png";
-import previewTicket from "@/assets/preview_ticket.png";
-import previewDelivery from "@/assets/preview_delivery.png";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ── Scroll reveal ── */
 function useScrollReveal<T extends HTMLElement>(): RefObject<T> {
@@ -88,8 +86,51 @@ const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: str
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
+/* ── Video Modal ── */
+const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => {
+  const getEmbedUrl = (rawUrl: string) => {
+    // YouTube
+    const ytMatch = rawUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+    return rawUrl;
+  };
+
+  const isEmbed = url.includes("youtube.com") || url.includes("youtu.be");
+  const embedUrl = isEmbed ? getEmbedUrl(url) : null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="relative w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute -top-10 right-0 text-white/70 hover:text-white transition-colors bg-transparent border-none cursor-pointer">
+          <X className="h-6 w-6" />
+        </button>
+        <div className="rounded-2xl overflow-hidden border border-white/10 bg-black aspect-video">
+          {embedUrl ? (
+            <iframe src={embedUrl} className="w-full h-full" allow="autoplay; fullscreen" allowFullScreen frameBorder="0" />
+          ) : (
+            <video src={url} controls autoPlay className="w-full h-full object-contain" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [landingConfig, setLandingConfig] = useState<{
+    stat_servers: number; stat_servers_label: string;
+    stat_sales: number; stat_sales_label: string;
+    stat_products: number; stat_products_label: string;
+    video_url: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    supabase.from("landing_config").select("*").limit(1).single().then(({ data }) => {
+      if (data) setLandingConfig(data as any);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen text-white overflow-x-hidden login-pattern-bg relative">
@@ -145,9 +186,9 @@ const LandingPage = () => {
         <ScrollReveal>
           <div className="max-w-2xl mx-auto grid grid-cols-3 gap-4">
             {[
-              { icon: Users, value: 120, suffix: "+", label: "Servidores ativos" },
-              { icon: TrendingUp, value: 500, suffix: "+", label: "Vendas processadas" },
-              { icon: Package, value: 1200, suffix: "+", label: "Produtos entregues" },
+              { icon: Users, value: landingConfig?.stat_servers ?? 120, suffix: "+", label: landingConfig?.stat_servers_label ?? "Servidores ativos" },
+              { icon: TrendingUp, value: landingConfig?.stat_sales ?? 500, suffix: "+", label: landingConfig?.stat_sales_label ?? "Vendas processadas" },
+              { icon: Package, value: landingConfig?.stat_products ?? 1200, suffix: "+", label: landingConfig?.stat_products_label ?? "Produtos entregues" },
             ].map((s) => (
               <div key={s.label} className="text-center p-4 rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm">
                 <s.icon className="h-5 w-5 text-primary mx-auto mb-2" />
@@ -240,37 +281,45 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ===== 5. BOT PREVIEW ===== */}
+      {/* ===== 5. BOT PREVIEW — VIDEO ===== */}
       <section className="relative z-10 py-12 px-4">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <ScrollReveal>
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold font-display mb-2">
                 Veja o bot <span className="text-gradient-pink">funcionando</span>
               </h2>
-              <p className="text-xs text-white/40">Checkout, tickets e entrega automática</p>
+              <p className="text-xs text-white/40">Assista como é simples vender no Discord</p>
             </div>
           </ScrollReveal>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { img: previewCheckout, label: "Checkout PIX" },
-              { img: previewTicket, label: "Ticket de venda" },
-              { img: previewDelivery, label: "Entrega automática" },
-            ].map((p, i) => (
-              <ScrollReveal key={p.label} delay={0.1 * i}>
-                <div className="group rounded-2xl border border-white/10 bg-black/40 overflow-hidden hover:border-primary/30 transition-all duration-300">
-                  <div className="overflow-hidden">
-                    <img src={p.img} alt={p.label} className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-                  </div>
-                  <div className="p-3 text-center">
-                    <span className="text-xs font-semibold text-white/70">{p.label}</span>
+          <ScrollReveal delay={0.1}>
+            {landingConfig?.video_url ? (
+              <button
+                onClick={() => setVideoOpen(true)}
+                className="group w-full aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm overflow-hidden relative cursor-pointer hover:border-primary/40 transition-all duration-300 bg-transparent"
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-16 w-16 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_40px_rgba(255,40,73,0.5)] group-hover:scale-110 transition-transform">
+                    <Play className="h-7 w-7 text-white ml-1" />
                   </div>
                 </div>
-              </ScrollReveal>
-            ))}
-          </div>
+                <div className="absolute bottom-4 left-0 right-0 text-center">
+                  <span className="text-xs text-white/50 font-medium">Clique para assistir</span>
+                </div>
+              </button>
+            ) : (
+              <div className="w-full aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                <p className="text-sm text-white/30">Vídeo em breve</p>
+              </div>
+            )}
+          </ScrollReveal>
         </div>
       </section>
+
+      {/* Video Modal */}
+      {videoOpen && landingConfig?.video_url && (
+        <VideoModal url={landingConfig.video_url} onClose={() => setVideoOpen(false)} />
+      )}
 
       {/* ===== 6. PRICING ===== */}
       <section className="relative z-10 py-12 px-4">
