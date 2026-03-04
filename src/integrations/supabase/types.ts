@@ -434,6 +434,48 @@ export type Database = {
           },
         ]
       }
+      landing_config: {
+        Row: {
+          created_at: string
+          id: string
+          stat_products: number
+          stat_products_label: string
+          stat_sales: number
+          stat_sales_label: string
+          stat_servers: number
+          stat_servers_label: string
+          updated_at: string
+          video_type: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stat_products?: number
+          stat_products_label?: string
+          stat_sales?: number
+          stat_sales_label?: string
+          stat_servers?: number
+          stat_servers_label?: string
+          updated_at?: string
+          video_type?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stat_products?: number
+          stat_products_label?: string
+          stat_sales?: number
+          stat_sales_label?: string
+          stat_servers?: number
+          stat_servers_label?: string
+          updated_at?: string
+          video_type?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           affiliate_id: string | null

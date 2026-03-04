@@ -15,6 +15,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 import AdminClientsPage from "./pages/admin/AdminClientsPage";
 import AdminSupportPage from "./pages/admin/AdminSupportPage";
+import AdminLandingConfigPage from "./pages/admin/AdminLandingConfigPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardPage from "./pages/DashboardPage";
 import StorePage from "./pages/StorePage";
@@ -75,6 +76,7 @@ const AppRoutes = () => (
       <Route path="/admin/pagamentos" element={<AdminPaymentsPage />} />
       <Route path="/admin/clientes" element={<AdminClientsPage />} />
       <Route path="/admin/suporte" element={<AdminSupportPage />} />
+      <Route path="/admin/landing" element={<AdminLandingConfigPage />} />
     </Route>
 
     {/* Dashboard routes */}

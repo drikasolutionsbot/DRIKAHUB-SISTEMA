@@ -1,7 +1,7 @@
 import { Outlet, Navigate, Link, useLocation } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, CreditCard, Users, LogOut, Headphones } from "lucide-react";
+import { LayoutDashboard, CreditCard, Users, LogOut, Headphones, Globe } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const navItems = [
   { label: "Pagamentos", icon: CreditCard, path: "/admin/pagamentos" },
   { label: "Clientes", icon: Users, path: "/admin/clientes" },
   { label: "Suporte", icon: Headphones, path: "/admin/suporte" },
+  { label: "Landing Page", icon: Globe, path: "/admin/landing" },
 ];
 
 export const AdminLayout = () => {
