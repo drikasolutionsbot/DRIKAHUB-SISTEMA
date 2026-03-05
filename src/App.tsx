@@ -37,6 +37,7 @@ import ProtectionPage from "./pages/ProtectionPage";
 import ECloudPage from "./pages/ECloudPage";
 import SupportPage from "./pages/SupportPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
+import VerificationPage from "./pages/VerificationPage";
 import TermsPage from "./pages/TermsPage";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
@@ -98,6 +99,7 @@ const AppRoutes = () => (
       <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/automations" element={<AutomationsPage />} />
       <Route path="/protection" element={<ProtectionPage />} />
+      <Route path="/verification" element={<VerificationPage />} />
       <Route path="/ecloud" element={<ECloudPage />} />
       <Route path="/support" element={<SupportPage />} />
     </Route>

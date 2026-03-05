@@ -125,3 +125,6 @@ verify_jwt = false
 
 [functions.check-expired-plans]
 verify_jwt = false
+
+[functions.send-verification-embed]
+verify_jwt = false
