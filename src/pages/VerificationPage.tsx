@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { ShieldCheck, Save, Loader2, Send, Eye } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ShieldCheck, Save, Loader2, Send, Eye, Upload, X, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "@/hooks/use-toast";
@@ -39,9 +39,11 @@ const VerificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [channels, setChannels] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     if (!tenantId) return;
@@ -296,14 +298,70 @@ const VerificationPage = () => {
                 </div>
               </div>
               <div>
-                <Label>URL da Imagem (opcional)</Label>
-                <Input
-                  value={config.verify_image_url}
-                  onChange={(e) => update("verify_image_url", e.target.value)}
-                  placeholder="https://..."
-                  className="mt-1"
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">Imagem exibida no corpo do embed</p>
+                <Label>Imagem do Embed (opcional)</Label>
+                <div className="mt-2 space-y-3">
+                  {config.verify_image_url && (
+                    <div className="relative group rounded-lg overflow-hidden border border-border/50">
+                      <img src={config.verify_image_url} alt="Preview" className="w-full max-h-40 object-cover" />
+                      <button
+                        onClick={() => update("verify_image_url", "")}
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !tenantId) return;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({ title: "Arquivo muito grande", description: "Máximo 5MB", variant: "destructive" });
+                          return;
+                        }
+                        setUploading(true);
+                        try {
+                          const ext = file.name.split(".").pop() || "png";
+                          const path = `${tenantId}/verify-embed-${Date.now()}.${ext}`;
+                          const { error: upErr } = await supabase.storage.from("tenant-assets").upload(path, file, { upsert: true });
+                          if (upErr) throw upErr;
+                          const { data: urlData } = supabase.storage.from("tenant-assets").getPublicUrl(path);
+                          update("verify_image_url", urlData.publicUrl);
+                          toast({ title: "Imagem enviada! ✅" });
+                        } catch (err: any) {
+                          toast({ title: "Erro no upload", description: err.message, variant: "destructive" });
+                        } finally {
+                          setUploading(false);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {uploading ? "Enviando..." : "Enviar Imagem"}
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground self-center">ou</span>
+                    <Input
+                      value={config.verify_image_url}
+                      onChange={(e) => update("verify_image_url", e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 text-xs"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Envie uma imagem ou cole uma URL. Máx 5MB.</p>
+                </div>
               </div>
             </CardContent>
           </Card>
