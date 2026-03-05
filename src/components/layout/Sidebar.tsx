@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, DollarSign, Palette, Box, Hash, ShieldCheck, Shield,
   Store, Ticket, Cloud, Headset, Settings,
-  ChevronLeft, ChevronRight, ClipboardCheck,
+  ChevronLeft, ChevronRight, ClipboardCheck, UserCheck,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ const navGroups = [
       { label: "Cargos", icon: ShieldCheck, path: "/roles" },
       { label: "Loja", icon: Store, path: "/store" },
       { label: "Proteção", icon: Shield, path: "/protection" },
+      { label: "Verificação", icon: UserCheck, path: "/verification" },
       { label: "Tickets", icon: Ticket, path: "/tickets" },
       { label: "eCloud", icon: Cloud, path: "/ecloud" },
     ],

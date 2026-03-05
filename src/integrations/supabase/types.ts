@@ -1501,9 +1501,15 @@ export type Database = {
           primary_color: string | null
           secondary_color: string | null
           updated_at: string
+          verify_button_label: string | null
+          verify_channel_id: string | null
+          verify_description: string | null
+          verify_embed_color: string | null
           verify_enabled: boolean | null
+          verify_image_url: string | null
           verify_redirect_url: string | null
           verify_role_id: string | null
+          verify_title: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -1528,9 +1534,15 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           updated_at?: string
+          verify_button_label?: string | null
+          verify_channel_id?: string | null
+          verify_description?: string | null
+          verify_embed_color?: string | null
           verify_enabled?: boolean | null
+          verify_image_url?: string | null
           verify_redirect_url?: string | null
           verify_role_id?: string | null
+          verify_title?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -1555,9 +1567,15 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           updated_at?: string
+          verify_button_label?: string | null
+          verify_channel_id?: string | null
+          verify_description?: string | null
+          verify_embed_color?: string | null
           verify_enabled?: boolean | null
+          verify_image_url?: string | null
           verify_redirect_url?: string | null
           verify_role_id?: string | null
+          verify_title?: string | null
           whatsapp?: string | null
         }
         Relationships: []
