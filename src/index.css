@@ -24,28 +24,28 @@ div[style*="Edit with Lovable"],
     --card-foreground: 220 20% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
-    --primary: 330 100% 71%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 45 100% 50%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 199 89% 48%;
+    --secondary-foreground: 0 0% 100%;
     --muted: 220 14% 90%;
     --muted-foreground: 220 10% 45%;
-    --accent: 330 80% 60%;
+    --accent: 217 80% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 87%;
     --input: 220 13% 87%;
-    --ring: 330 100% 71%;
+    --ring: 217 91% 60%;
     --radius: 0.75rem;
     --sidebar-background: 220 20% 97%;
     --sidebar-foreground: 220 10% 30%;
-    --sidebar-primary: 330 100% 71%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 330 60% 95%;
-    --sidebar-accent-foreground: 330 80% 40%;
+    --sidebar-accent: 217 60% 95%;
+    --sidebar-accent-foreground: 217 80% 40%;
     --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 330 100% 71%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
@@ -55,36 +55,36 @@ div[style*="Edit with Lovable"],
     --card-foreground: 220 15% 93%;
     --popover: 225 22% 10%;
     --popover-foreground: 220 15% 93%;
-    --primary: 330 100% 71%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 45 100% 50%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 199 89% 48%;
+    --secondary-foreground: 0 0% 100%;
     --muted: 225 18% 15%;
     --muted-foreground: 220 12% 65%;
-    --accent: 330 80% 60%;
+    --accent: 217 80% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 14% 20%;
     --input: 225 16% 16%;
-    --ring: 330 100% 71%;
+    --ring: 217 91% 60%;
     --sidebar-background: 225 30% 6%;
     --sidebar-foreground: 220 12% 75%;
-    --sidebar-primary: 330 100% 71%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 225 22% 14%;
-    --sidebar-accent-foreground: 330 100% 71%;
+    --sidebar-accent-foreground: 217 91% 60%;
     --sidebar-border: 225 14% 16%;
-    --sidebar-ring: 330 100% 71%;
+    --sidebar-ring: 217 91% 60%;
 
-    --gold: 45 100% 50%;
-    --gold-foreground: 220 20% 10%;
+    --gold: 199 89% 48%;
+    --gold-foreground: 0 0% 100%;
     --surface: 225 22% 12%;
     --surface-hover: 225 22% 16%;
-    --gradient-pink: linear-gradient(135deg, hsl(330 100% 71%), hsl(340 90% 55%));
-    --gradient-gold: linear-gradient(135deg, hsl(45 100% 50%), hsl(35 100% 45%));
+    --gradient-pink: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
+    --gradient-gold: linear-gradient(135deg, hsl(199 89% 48%), hsl(210 80% 45%));
     --gradient-dark: linear-gradient(180deg, hsl(225 30% 6%), hsl(225 25% 10%));
-    --shadow-glow: 0 0 30px hsl(330 100% 71% / 0.15);
+    --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.15);
   }
 }
 
@@ -102,31 +102,31 @@ div[style*="Edit with Lovable"],
 
 @layer utilities {
   .gradient-pink {
-    background: linear-gradient(135deg, hsl(330 100% 71%), hsl(340 90% 55%));
+    background: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
   }
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(45 100% 50%), hsl(35 100% 45%));
+    background: linear-gradient(135deg, hsl(199 89% 48%), hsl(210 80% 45%));
   }
   .gradient-dark-card {
     background: linear-gradient(145deg, hsl(225 25% 13%), hsl(225 30% 10%));
   }
   .text-gradient-pink {
-    background: linear-gradient(135deg, hsl(330 100% 71%), hsl(340 90% 55%));
+    background: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(45 100% 50%), hsl(35 100% 45%));
+    background: linear-gradient(135deg, hsl(199 89% 48%), hsl(210 80% 45%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .glow-pink {
-    box-shadow: 0 0 20px hsl(330 100% 71% / 0.2), 0 0 60px hsl(330 100% 71% / 0.1);
+    box-shadow: 0 0 20px hsl(217 91% 60% / 0.2), 0 0 60px hsl(217 91% 60% / 0.1);
   }
   .glow-gold {
-    box-shadow: 0 0 20px hsl(45 100% 50% / 0.2), 0 0 60px hsl(45 100% 50% / 0.1);
+    box-shadow: 0 0 20px hsl(199 89% 48% / 0.2), 0 0 60px hsl(199 89% 48% / 0.1);
   }
 }
 
@@ -150,7 +150,7 @@ div[style*="Edit with Lovable"],
 }
 
 .pricing-card--pro {
-  box-shadow: 0px 15px 30px -5px rgba(255, 0, 132, 0.3);
+  box-shadow: 0px 15px 30px -5px hsl(217 91% 60% / 0.3);
   overflow: visible;
 }
 
@@ -162,7 +162,7 @@ div[style*="Edit with Lovable"],
 .login-pattern-bg {
   --sz: 15px;
   --c0: #000;
-  --c1: #c71175;
+  --c1: #1d4ed8;
   --ts: 50% / calc(var(--sz) * 8) calc(var(--sz) * 16);
   --dot: var(--c1) 0 calc(var(--sz) * 0.78), #fff0 calc(calc(var(--sz) * 0.78) + 1px) 100%;
   --dot2: radial-gradient(circle at 90% 0%, var(--dot)) var(--ts),
@@ -216,7 +216,7 @@ div[style*="Edit with Lovable"],
       transparent 0,
       hsl(225 25% 8%) 30px
     ),
-    repeating-linear-gradient(hsl(330 100% 71% / 0.15), hsl(330 80% 60% / 0.1));
+    repeating-linear-gradient(hsl(217 91% 60% / 0.15), hsl(217 80% 55% / 0.1));
 }
 
 /* Hide scrollbar */

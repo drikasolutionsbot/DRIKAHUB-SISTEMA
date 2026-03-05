@@ -249,14 +249,14 @@ const LandingPage = () => {
 
       {/* Glow effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-[200px] opacity-30 gradient-pink animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-[200px] opacity-25 gradient-pink animate-[pulse_4s_ease-in-out_infinite]" />
         <div className="absolute bottom-[10%] right-[10%] w-60 h-60 rounded-full blur-[120px] opacity-15 gradient-gold animate-[pulse_6s_ease-in-out_infinite]" />
       </div>
 
       {/* ===== 1. HERO ===== */}
       <section className="relative z-10 min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
         <div className="text-center max-w-2xl mx-auto">
-          <img src={drikaLogo} alt="Drika Solutions" className="h-28 md:h-40 w-auto mx-auto mb-5 drop-shadow-[0_0_50px_hsl(330_100%_71%/0.5)] animate-fade-in" />
+          <img src={drikaLogo} alt="Drika Solutions" className="h-28 md:h-40 w-auto mx-auto mb-5 drop-shadow-[0_0_50px_hsl(217_91%_60%/0.4)] animate-fade-in" />
 
           <h1 className="text-3xl md:text-5xl font-extrabold font-display mb-3 leading-tight animate-fade-in drop-shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
             Seu servidor Discord
@@ -269,13 +269,13 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <button onClick={() => navigate("/signup")} className="group px-6 py-3 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_rgba(255,40,73,0.4)]">
+            <button onClick={() => navigate("/signup")} className="group px-6 py-3 rounded-full bg-primary hover:bg-primary/90 text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_hsl(217_91%_60%/0.4)]">
               <span className="flex items-center justify-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
+                <Zap className="h-4 w-4" />
                 Testar Grátis — 4 dias
               </span>
             </button>
-            <button onClick={handleProClick} className="group px-6 py-3 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_rgba(255,40,73,0.4)] animate-pulse-glow">
+            <button onClick={handleProClick} className="group px-6 py-3 rounded-full bg-primary hover:bg-primary/90 text-white font-semibold transition-all cursor-pointer border-none shadow-[0_0_30px_hsl(217_91%_60%/0.4)] animate-pulse-glow">
               <span className="flex items-center justify-center gap-2">
                 <Crown className="h-4 w-4" />
                 Assinar Pro — R$ 26,90/mês
@@ -351,7 +351,7 @@ const LandingPage = () => {
             ].map((f, i) => (
               <ScrollReveal key={f.title} delay={0.1 * i}>
                 <div className="group rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-5 hover:border-primary/40 hover:bg-black/50 transition-all duration-300 h-full">
-                  <div className="h-10 w-10 rounded-xl bg-[#FF2849] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,40,73,0.3)]">
+                  <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_20px_hsl(217_91%_60%/0.3)]">
                     <f.icon className="h-5 w-5 text-white" />
                   </div>
                   <h3 className="text-base font-bold font-display mb-2">{f.title}</h3>
@@ -382,7 +382,7 @@ const LandingPage = () => {
             ].map((s, i) => (
               <ScrollReveal key={s.step} delay={0.1 * i}>
                 <div className="flex items-start gap-4 p-4 rounded-2xl border border-white/10 bg-black/30 backdrop-blur-sm hover:border-primary/30 transition-all">
-                  <div className="h-10 w-10 rounded-full bg-[#FF2849] flex items-center justify-center shrink-0 font-extrabold font-display text-sm shadow-[0_0_20px_rgba(255,40,73,0.3)]">
+                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0 font-extrabold font-display text-sm shadow-[0_0_20px_hsl(217_91%_60%/0.3)]">
                     {s.step}
                   </div>
                   <div>
@@ -417,7 +417,7 @@ const LandingPage = () => {
                 className="group w-full aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm overflow-hidden relative cursor-pointer hover:border-primary/40 transition-all duration-300 bg-transparent"
               >
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_40px_rgba(255,40,73,0.5)] group-hover:scale-110 transition-transform">
+                  <div className="h-16 w-16 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_40px_hsl(217_91%_60%/0.5)] group-hover:scale-110 transition-transform">
                     <Play className="h-7 w-7 text-white ml-1" />
                   </div>
                 </div>
@@ -472,7 +472,7 @@ const LandingPage = () => {
                     ))}
                   </ul>
                   <div className="pricing-card-label rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
-                    <button onClick={() => navigate("/signup")} className="w-full py-2 rounded-full bg-gradient-to-r from-[#33001b] to-[#ff0084] hover:opacity-90 text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(255,0,132,0.3)]">
+                    <button onClick={() => navigate("/signup")} className="w-full py-2 rounded-full bg-gradient-to-r from-[#1e3a5f] to-[#3b82f6] hover:opacity-90 text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_hsl(217_91%_60%/0.3)]">
                       Começar <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -485,7 +485,7 @@ const LandingPage = () => {
               <div className="pricing-card pricing-card--pro group relative h-full transition-all duration-300 hover:scale-[1.03] scale-[1.02] pt-4 bg-white">
                 {/* Popular badge */}
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF2849] px-5 py-1.5 text-[11px] font-bold text-white uppercase tracking-wider shadow-[0_0_25px_rgba(255,40,73,0.5)] animate-pulse-glow whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-1.5 text-[11px] font-bold text-white uppercase tracking-wider shadow-[0_0_25px_hsl(217_91%_60%/0.5)] animate-pulse-glow whitespace-nowrap">
                     <Crown className="h-3 w-3" /> Popular
                   </span>
                 </div>
@@ -502,7 +502,7 @@ const LandingPage = () => {
                     ))}
                   </ul>
                   <div className="pricing-card-label rounded-[.5rem_2rem] p-3 transition-all duration-500 hover:translate-x-1 hover:[transform:perspective(100px)_translateX(7px)_rotateX(3deg)_rotateY(3deg)]">
-                    <button onClick={handleProClick} className="w-full py-2 rounded-full bg-gradient-to-r from-[#33001b] to-[#ff0084] hover:opacity-90 text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(255,0,132,0.3)]">
+                    <button onClick={handleProClick} className="w-full py-2 rounded-full bg-gradient-to-r from-[#1e3a5f] to-[#3b82f6] hover:opacity-90 text-white font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_hsl(217_91%_60%/0.3)]">
                       Assinar Pro <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
