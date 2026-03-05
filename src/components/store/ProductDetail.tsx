@@ -164,8 +164,26 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               <div className={showPreview ? "grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6" : ""}>
                 <ProductDetailGeneral product={edited} onChange={handleChange} categories={categories} />
                 {showPreview && (
-                  <div className="sticky top-4">
+                  <div className="sticky top-4 space-y-3">
                     <ProductDiscordPreview product={edited} embedColor={embedColor} />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Cor lateral do embed</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={embedColor}
+                          onChange={(e) => setEmbedColor(e.target.value)}
+                          className="h-9 w-12 rounded border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={embedColor}
+                          onChange={(e) => setEmbedColor(e.target.value)}
+                          className="flex-1 h-9 px-3 rounded-md border border-border bg-muted text-sm font-mono text-foreground"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Salve em Loja &gt; Geral &gt; Aparência para aplicar globalmente</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -175,8 +193,25 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               <div className={showPreview ? "grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6" : ""}>
                 <ProductDetailFields productId={product.id} onFieldsChange={setPreviewFields} />
                 {showPreview && (
-                  <div className="sticky top-4">
+                  <div className="sticky top-4 space-y-3">
                     <ProductDiscordPreview product={edited} fields={previewFields} embedColor={embedColor} />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Cor lateral do embed</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={embedColor}
+                          onChange={(e) => setEmbedColor(e.target.value)}
+                          className="h-9 w-12 rounded border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={embedColor}
+                          onChange={(e) => setEmbedColor(e.target.value)}
+                          className="flex-1 h-9 px-3 rounded-md border border-border bg-muted text-sm font-mono text-foreground"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
