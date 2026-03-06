@@ -116,7 +116,7 @@ const EfiIntegrationTab = () => {
           efi_client_id: clientId.trim(),
           efi_client_secret: clientSecret.trim(),
           efi_pix_key: pixKey.trim() || null,
-          efi_active: isConnected,
+          efi_active: true,
           pro_price_cents: proPriceCents,
           auto_activate_plan: autoActivate,
           suspend_on_expire: suspendOnExpire,
@@ -125,12 +125,13 @@ const EfiIntegrationTab = () => {
         .eq("id", configId);
 
       if (error) throw error;
+      setIsConnected(true);
       await logAudit("config_updated", "config", configId, "Efí Integration", {
         pro_price: `R$ ${(proPriceCents / 100).toFixed(2)}`,
         auto_activate: autoActivate,
         suspend_on_expire: suspendOnExpire,
       });
-      toast.success("Configurações salvas com sucesso!");
+      toast.success("Configurações da Efí salvas e ativadas com sucesso!");
     } catch (err: any) {
       console.error("Save error:", err);
       toast.error("Erro ao salvar: " + (err.message || "Verifique as permissões"));
