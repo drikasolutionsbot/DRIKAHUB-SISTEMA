@@ -223,13 +223,20 @@ const TicketEmbedConfig = () => {
               folder="ticket-embeds"
             />
             <div className="space-y-2">
-              <Label>ID do Canal de Tickets</Label>
-              <Input
+              <Label>Categoria/Canal de Tickets</Label>
+              <ChannelSelectWithCreate
                 value={data.ticket_channel_id}
-                onChange={(e) => update("ticket_channel_id", e.target.value)}
-                placeholder="ID do canal do Discord"
-                className="font-mono"
+                onChange={(val) => update("ticket_channel_id", val)}
+                channels={channels}
+                categories={categories}
+                onChannelCreated={fetchChannels}
+                tenantId={tenantId}
+                guildId={guildId}
+                placeholder="Selecione a categoria de tickets"
               />
+              <p className="text-xs text-muted-foreground">
+                Os tickets criados serão organizados dentro desta categoria/canal
+              </p>
             </div>
           </CardContent>
         </Card>
