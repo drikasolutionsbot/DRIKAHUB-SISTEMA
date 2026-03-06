@@ -554,7 +554,7 @@ const AdminClientsPage = () => {
                               {deletingTenant === tenant.id ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
-                                <TrashIcon className="h-3.5 w-3.5" />
+                                <TrashIcon size={14} />
                               )}
                             </Button>
                           </AlertDialogTrigger>
