@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,14 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Provider test functions ───────────────────────────────────────
-
 async function testMercadoPago(apiKey: string): Promise<{ success: boolean; message: string }> {
   const res = await fetch("https://api.mercadopago.com/v1/payment_methods", {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
   if (res.ok) return { success: true, message: "Conexão com Mercado Pago validada!" };
-  const body = await res.text();
   return { success: false, message: `Erro ${res.status}: Token inválido ou sem permissão` };
 }
 
@@ -27,7 +23,6 @@ async function testPushinPay(apiKey: string): Promise<{ success: boolean; messag
     },
     body: JSON.stringify({ value: 100, webhook_url: "https://test.com" }),
   });
-  // 400 with valid auth means token works but params may differ
   if (res.ok || res.status === 400 || res.status === 422) {
     return { success: true, message: "Token PushinPay validado!" };
   }
@@ -37,25 +32,52 @@ async function testPushinPay(apiKey: string): Promise<{ success: boolean; messag
   return { success: false, message: `Erro ${res.status}: Verifique o token` };
 }
 
-async function testEfi(apiKey: string, secretKey: string): Promise<{ success: boolean; message: string }> {
-  // Efí uses client_credentials OAuth2
-  const credentials = btoa(`${apiKey}:${secretKey}`);
-  const res = await fetch("https://pix.api.efipay.com.br/oauth/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ grant_type: "client_credentials" }),
-  });
-  if (res.ok) {
-    return { success: true, message: "Credenciais Efí validadas!" };
+async function testEfi(
+  clientId: string,
+  clientSecret: string,
+  certPem?: string,
+  keyPem?: string
+): Promise<{ success: boolean; message: string }> {
+  if (!certPem || !keyPem) {
+    return { success: false, message: "Certificado e chave privada PEM são obrigatórios para a API PIX da Efí" };
   }
-  return { success: false, message: `Erro ${res.status}: Client ID ou Client Secret inválidos` };
+
+  try {
+    const credentials = btoa(`${clientId}:${clientSecret}`);
+
+    // Create HTTP client with mTLS certificate
+    const httpClient = Deno.createHttpClient({
+      certChain: certPem,
+      privateKey: keyPem,
+    });
+
+    const res = await fetch("https://pix.api.efipay.com.br/oauth/token", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ grant_type: "client_credentials" }),
+      client: httpClient,
+    } as any);
+
+    if (res.ok) {
+      return { success: true, message: "Credenciais Efí validadas com mTLS!" };
+    }
+    const body = await res.text();
+    console.error("Efí test error:", res.status, body);
+    return { success: false, message: `Erro ${res.status}: Client ID, Client Secret ou certificado inválido` };
+  } catch (err) {
+    console.error("Efí mTLS error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("certificate") || msg.includes("ssl") || msg.includes("tls")) {
+      return { success: false, message: "Certificado PEM inválido. Verifique se converteu o .p12 corretamente." };
+    }
+    return { success: false, message: `Erro de conexão: ${msg}` };
+  }
 }
 
 async function testMisticPay(apiKey: string): Promise<{ success: boolean; message: string }> {
-  // Mistic Pay - test auth endpoint
   const res = await fetch("https://api.misticpay.com/v1/account", {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
@@ -63,7 +85,6 @@ async function testMisticPay(apiKey: string): Promise<{ success: boolean; messag
   if (res.status === 401 || res.status === 403) {
     return { success: false, message: "Token Mistic Pay inválido" };
   }
-  // If we can't reach API, assume format is ok
   return { success: true, message: "Token registrado (API indisponível para validação)" };
 }
 
@@ -73,7 +94,7 @@ serve(async (req) => {
   }
 
   try {
-    const { provider_key, api_key, secret_key } = await req.json();
+    const { provider_key, api_key, secret_key, cert_pem, key_pem } = await req.json();
 
     if (!provider_key) throw new Error("Missing provider_key");
     if (!api_key) throw new Error("Missing api_key");
@@ -88,7 +109,7 @@ serve(async (req) => {
         result = await testPushinPay(api_key);
         break;
       case "efi":
-        result = await testEfi(api_key, secret_key || "");
+        result = await testEfi(api_key, secret_key || "", cert_pem, key_pem);
         break;
       case "misticpay":
         result = await testMisticPay(api_key);

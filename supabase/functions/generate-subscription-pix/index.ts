@@ -24,7 +24,7 @@ serve(async (req) => {
     // Get admin Efí config from landing_config
     const { data: config, error: configErr } = await supabase
       .from("landing_config")
-      .select("efi_client_id, efi_client_secret, efi_active, efi_pix_key, pro_price_cents")
+      .select("efi_client_id, efi_client_secret, efi_active, efi_pix_key, efi_cert_pem, efi_key_pem, pro_price_cents")
       .limit(1)
       .single();
 
@@ -36,10 +36,20 @@ serve(async (req) => {
       throw new Error("Efí não configurado. Configure no painel admin.");
     }
 
+    if (!config.efi_cert_pem || !config.efi_key_pem) {
+      throw new Error("Certificado mTLS não configurado. Configure no painel admin.");
+    }
+
     const amountCents = config.pro_price_cents || 2690;
     const amountBRL = amountCents / 100;
     const webhookUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
     const txId = `SUB${Date.now()}`;
+
+    // Create HTTP client with mTLS
+    const httpClient = Deno.createHttpClient({
+      certChain: config.efi_cert_pem,
+      privateKey: config.efi_key_pem,
+    });
 
     // Step 1: Get OAuth token
     const credentials = btoa(`${config.efi_client_id}:${config.efi_client_secret}`);
@@ -50,7 +60,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ grant_type: "client_credentials" }),
-    });
+      client: httpClient,
+    } as any);
 
     if (!tokenRes.ok) {
       const tokenErr = await tokenRes.text();
@@ -74,7 +85,8 @@ serve(async (req) => {
         chave: config.efi_pix_key || "",
         infoAdicionais: [{ nome: "Plano", valor: "Pro - Drika Hub" }],
       }),
-    });
+      client: httpClient,
+    } as any);
 
     if (!cobRes.ok) {
       const cobErr = await cobRes.json().catch(() => ({}));
@@ -91,7 +103,8 @@ serve(async (req) => {
     if (locId) {
       const qrRes = await fetch(`https://pix.api.efipay.com.br/v2/loc/${locId}/qrcode`, {
         headers: { Authorization: `Bearer ${accessToken}` },
-      });
+        client: httpClient,
+      } as any);
       if (qrRes.ok) {
         const qrData = await qrRes.json();
         brcode = qrData.qrcode || brcode;

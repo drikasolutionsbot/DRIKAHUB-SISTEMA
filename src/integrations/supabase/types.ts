@@ -475,8 +475,10 @@ export type Database = {
           auto_activate_plan: boolean
           created_at: string
           efi_active: boolean
+          efi_cert_pem: string | null
           efi_client_id: string | null
           efi_client_secret: string | null
+          efi_key_pem: string | null
           efi_pix_key: string | null
           id: string
           pro_price_cents: number
@@ -497,8 +499,10 @@ export type Database = {
           auto_activate_plan?: boolean
           created_at?: string
           efi_active?: boolean
+          efi_cert_pem?: string | null
           efi_client_id?: string | null
           efi_client_secret?: string | null
+          efi_key_pem?: string | null
           efi_pix_key?: string | null
           id?: string
           pro_price_cents?: number
@@ -519,8 +523,10 @@ export type Database = {
           auto_activate_plan?: boolean
           created_at?: string
           efi_active?: boolean
+          efi_cert_pem?: string | null
           efi_client_id?: string | null
           efi_client_secret?: string | null
+          efi_key_pem?: string | null
           efi_pix_key?: string | null
           id?: string
           pro_price_cents?: number

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Key, Webhook, CheckCircle2, AlertCircle, ExternalLink, Copy, Shield, Zap, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Key, Webhook, CheckCircle2, AlertCircle, ExternalLink, Copy, Shield, Zap, Loader2, Upload, FileCheck, Info } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/auditLog";
@@ -15,6 +16,8 @@ const EfiIntegrationTab = () => {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [pixKey, setPixKey] = useState("");
+  const [certPem, setCertPem] = useState("");
+  const [keyPem, setKeyPem] = useState("");
   const [proPriceCents, setProPriceCents] = useState(2690);
   const [priceDisplay, setPriceDisplay] = useState("26.90");
   const [autoActivate, setAutoActivate] = useState(true);
@@ -24,6 +27,8 @@ const EfiIntegrationTab = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [configId, setConfigId] = useState<string | null>(null);
+  const certFileRef = useRef<HTMLInputElement>(null);
+  const keyFileRef = useRef<HTMLInputElement>(null);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscription-webhook`;
 
@@ -40,6 +45,8 @@ const EfiIntegrationTab = () => {
         if (d.efi_client_id) setClientId(d.efi_client_id);
         if (d.efi_client_secret) setClientSecret(d.efi_client_secret);
         if (d.efi_pix_key) setPixKey(d.efi_pix_key);
+        if (d.efi_cert_pem) setCertPem(d.efi_cert_pem);
+        if (d.efi_key_pem) setKeyPem(d.efi_key_pem);
         setIsConnected(d.efi_active || false);
         if (data.pro_price_cents) {
           setProPriceCents(data.pro_price_cents);
@@ -73,15 +80,38 @@ const EfiIntegrationTab = () => {
     toast.success("URL do webhook copiada!");
   };
 
+  const handleFileUpload = (type: "cert" | "key") => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    if (type === "cert") {
+      setCertPem(text);
+      toast.success("Certificado PEM carregado!");
+    } else {
+      setKeyPem(text);
+      toast.success("Chave privada PEM carregada!");
+    }
+  };
+
   const handleTestConnection = async () => {
     if (!clientId.trim() || !clientSecret.trim()) {
       toast.error("Insira o Client ID e Client Secret");
       return;
     }
+    if (!certPem.trim() || !keyPem.trim()) {
+      toast.error("Insira o certificado e a chave privada PEM");
+      return;
+    }
     setTesting(true);
     try {
       const { data, error } = await supabase.functions.invoke("test-payment", {
-        body: { provider_key: "efi", api_key: clientId.trim(), secret_key: clientSecret.trim() },
+        body: {
+          provider_key: "efi",
+          api_key: clientId.trim(),
+          secret_key: clientSecret.trim(),
+          cert_pem: certPem.trim(),
+          key_pem: keyPem.trim(),
+        },
       });
       if (error) throw error;
       if (data?.success) {
@@ -104,6 +134,10 @@ const EfiIntegrationTab = () => {
       toast.error("Insira o Client ID e Client Secret");
       return;
     }
+    if (!certPem.trim() || !keyPem.trim()) {
+      toast.error("Insira o certificado e a chave privada PEM para mTLS");
+      return;
+    }
     if (!configId) {
       toast.error("Configuração não encontrada");
       return;
@@ -116,6 +150,8 @@ const EfiIntegrationTab = () => {
           efi_client_id: clientId.trim(),
           efi_client_secret: clientSecret.trim(),
           efi_pix_key: pixKey.trim() || null,
+          efi_cert_pem: certPem.trim(),
+          efi_key_pem: keyPem.trim(),
           efi_active: true,
           pro_price_cents: proPriceCents,
           auto_activate_plan: autoActivate,
@@ -158,7 +194,7 @@ const EfiIntegrationTab = () => {
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
               <div>
                 <p className="font-medium text-emerald-500">Efí conectado</p>
-                <p className="text-xs text-muted-foreground">Cobranças de assinatura ativas via PIX Efí</p>
+                <p className="text-xs text-muted-foreground">Cobranças de assinatura ativas via PIX Efí com mTLS</p>
               </div>
             </>
           ) : (
@@ -166,7 +202,7 @@ const EfiIntegrationTab = () => {
               <AlertCircle className="h-5 w-5 text-amber-500" />
               <div>
                 <p className="font-medium text-amber-500">Efí não configurado</p>
-                <p className="text-xs text-muted-foreground">Configure as credenciais para ativar cobranças do plano Pro</p>
+                <p className="text-xs text-muted-foreground">Configure as credenciais e certificado para ativar cobranças do plano Pro</p>
               </div>
             </>
           )}
@@ -245,63 +281,152 @@ const EfiIntegrationTab = () => {
                 painel da Efí <ExternalLink className="h-3 w-3" />
               </a>
             </p>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleTestConnection} disabled={testing || !clientId.trim() || !clientSecret.trim()} className="flex-1">
-                {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                Testar Conexão
-              </Button>
-              <Button onClick={handleSave} disabled={saving || !clientId.trim() || !clientSecret.trim()} className="flex-1">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
-                Salvar
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Webhook Config */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Webhook className="h-5 w-5 text-primary" />
-              Webhook
-            </CardTitle>
-            <CardDescription>Configure este URL no painel da Efí para receber confirmações PIX</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>URL do Webhook</Label>
-              <div className="flex gap-2">
-                <Input value={webhookUrl} readOnly className="bg-background border-border font-mono text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopyWebhook}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Cole esta URL nas configurações de webhook PIX da Efí
-              </p>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Ativar plano automaticamente</p>
-                  <p className="text-xs text-muted-foreground">Ativa o plano do cliente assim que o pagamento for confirmado</p>
+        {/* Certificate + Webhook */}
+        <div className="space-y-6">
+          {/* Certificate mTLS */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Certificado mTLS
+              </CardTitle>
+              <CardDescription>
+                A API PIX da Efí exige certificado mTLS. Converta seu .p12 para PEM e faça o upload.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium">Como converter .p12 para PEM:</p>
+                    <code className="block bg-background rounded px-2 py-1 text-[10px]">
+                      openssl pkcs12 -in certificado.p12 -out cert.pem -clcerts -nokeys
+                    </code>
+                    <code className="block bg-background rounded px-2 py-1 text-[10px]">
+                      openssl pkcs12 -in certificado.p12 -out key.pem -nocerts -nodes
+                    </code>
+                  </div>
                 </div>
-                <Switch checked={autoActivate} onCheckedChange={setAutoActivate} />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Suspender ao expirar</p>
-                  <p className="text-xs text-muted-foreground">Suspende acesso quando o pagamento não é renovado</p>
+
+              <div className="space-y-2">
+                <Label>Certificado (.pem)</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => certFileRef.current?.click()}
+                    className="gap-2"
+                  >
+                    {certPem ? <FileCheck className="h-4 w-4 text-emerald-500" /> : <Upload className="h-4 w-4" />}
+                    {certPem ? "Certificado carregado" : "Upload cert.pem"}
+                  </Button>
+                  <input
+                    ref={certFileRef}
+                    type="file"
+                    accept=".pem,.crt,.cer"
+                    className="hidden"
+                    onChange={handleFileUpload("cert")}
+                  />
                 </div>
-                <Switch checked={suspendOnExpire} onCheckedChange={setSuspendOnExpire} />
+                <Textarea
+                  value={certPem}
+                  onChange={(e) => setCertPem(e.target.value)}
+                  placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                  className="bg-background border-border font-mono text-[10px] h-20 resize-none"
+                />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="space-y-2">
+                <Label>Chave Privada (.pem)</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => keyFileRef.current?.click()}
+                    className="gap-2"
+                  >
+                    {keyPem ? <FileCheck className="h-4 w-4 text-emerald-500" /> : <Upload className="h-4 w-4" />}
+                    {keyPem ? "Chave carregada" : "Upload key.pem"}
+                  </Button>
+                  <input
+                    ref={keyFileRef}
+                    type="file"
+                    accept=".pem,.key"
+                    className="hidden"
+                    onChange={handleFileUpload("key")}
+                  />
+                </div>
+                <Textarea
+                  value={keyPem}
+                  onChange={(e) => setKeyPem(e.target.value)}
+                  placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                  className="bg-background border-border font-mono text-[10px] h-20 resize-none"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Webhook Config */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Webhook className="h-5 w-5 text-primary" />
+                Webhook
+              </CardTitle>
+              <CardDescription>Configure este URL no painel da Efí para receber confirmações PIX</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>URL do Webhook</Label>
+                <div className="flex gap-2">
+                  <Input value={webhookUrl} readOnly className="bg-background border-border font-mono text-xs" />
+                  <Button variant="outline" size="icon" onClick={handleCopyWebhook}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cole esta URL nas configurações de webhook PIX da Efí
+                </p>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Ativar plano automaticamente</p>
+                    <p className="text-xs text-muted-foreground">Ativa o plano do cliente assim que o pagamento for confirmado</p>
+                  </div>
+                  <Switch checked={autoActivate} onCheckedChange={setAutoActivate} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Suspender ao expirar</p>
+                    <p className="text-xs text-muted-foreground">Suspende acesso quando o pagamento não é renovado</p>
+                  </div>
+                  <Switch checked={suspendOnExpire} onCheckedChange={setSuspendOnExpire} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={handleTestConnection} disabled={testing || !clientId.trim() || !clientSecret.trim() || !certPem.trim() || !keyPem.trim()} className="flex-1">
+          {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+          Testar Conexão
+        </Button>
+        <Button onClick={handleSave} disabled={saving || !clientId.trim() || !clientSecret.trim() || !certPem.trim() || !keyPem.trim()} className="flex-1">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
+          Salvar
+        </Button>
       </div>
 
       {/* Plans Preview */}
