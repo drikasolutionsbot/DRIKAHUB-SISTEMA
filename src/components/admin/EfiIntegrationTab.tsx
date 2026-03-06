@@ -209,24 +209,30 @@ const EfiIntegrationTab = () => {
     <div className="space-y-6">
       {/* Status Banner */}
       <Card className={`border ${isConnected ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
-        <CardContent className="flex items-center gap-3 py-4">
-          {isConnected ? (
-            <>
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <div>
-                <p className="font-medium text-emerald-500">Efí conectado</p>
-                <p className="text-xs text-muted-foreground">Cobranças de assinatura ativas via PIX Efí com mTLS</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              <div>
-                <p className="font-medium text-amber-500">Efí não configurado</p>
-                <p className="text-xs text-muted-foreground">Configure as credenciais e certificado para ativar cobranças do plano Pro</p>
-              </div>
-            </>
-          )}
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            {isConnected ? (
+              <>
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <p className="font-medium text-emerald-500">Efí ativo</p>
+                  <p className="text-xs text-muted-foreground">Cobranças de assinatura ativas via PIX Efí com mTLS</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="font-medium text-amber-500">Efí inativo</p>
+                  <p className="text-xs text-muted-foreground">Configure as credenciais e certificado para ativar cobranças do plano Pro</p>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{isConnected ? "Ativo" : "Inativo"}</span>
+            <Switch checked={isConnected} onCheckedChange={handleToggleActive} disabled={togglingActive} />
+          </div>
         </CardContent>
       </Card>
 
