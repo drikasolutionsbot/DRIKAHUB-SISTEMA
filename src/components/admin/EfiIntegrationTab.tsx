@@ -80,16 +80,37 @@ const EfiIntegrationTab = () => {
     toast.success("URL do webhook copiada!");
   };
 
-  const handleFileUpload = (type: "cert" | "key") => async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleP12Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    if (type === "cert") {
-      setCertPem(text);
-      toast.success("Certificado PEM carregado!");
-    } else {
-      setKeyPem(text);
-      toast.success("Chave privada PEM carregada!");
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const binary = String.fromCharCode(...new Uint8Array(arrayBuffer));
+      const p12Der = forge.util.decode64(btoa(binary));
+      const p12Asn1 = forge.asn1.fromDer(p12Der);
+      const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, "");
+
+      const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+      const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+
+      const certBag = (certBags[forge.pki.oids.certBag] || [])[0];
+      const keyBag = (keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || [])[0];
+
+      if (!certBag?.cert || !keyBag?.key) {
+        toast.error("Não foi possível extrair certificado/chave do .p12");
+        return;
+      }
+
+      const certPemStr = forge.pki.certificateToPem(certBag.cert);
+      const keyPemStr = forge.pki.privateKeyToPem(keyBag.key);
+
+      setCertPem(certPemStr);
+      setKeyPem(keyPemStr);
+      setP12FileName(file.name);
+      toast.success(`Certificado ${file.name} importado com sucesso!`);
+    } catch (err) {
+      console.error("P12 parse error:", err);
+      toast.error("Erro ao ler o arquivo .p12. Verifique se o arquivo está correto.");
     }
   };
 
