@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, DollarSign, Palette, Box, Hash, ShieldCheck, Shield,
   Store, Ticket, Cloud, Headset, Settings,
-  ChevronLeft, ChevronRight, ClipboardCheck, UserCheck, Sparkles,
+  ChevronLeft, ChevronRight, ClipboardCheck, UserCheck, Sparkles, BookOpen,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
