@@ -146,8 +146,17 @@ const SettingsPlanTab = ({ tenant, tenantId, refetchTenant }: Props) => {
             <p className="text-3xl font-extrabold text-foreground">R$ 26,90<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
           </div>
 
-          {pixCode ? (
+          {pixCode && !pixExpired ? (
             <div className="space-y-3">
+              {/* Timer */}
+              <div className={`flex items-center justify-center gap-2 rounded-lg py-2 px-3 ${
+                secondsLeft <= 120 ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-400"
+              }`}>
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-mono font-semibold">{formatTime(secondsLeft)}</span>
+                <span className="text-xs">para pagar</span>
+              </div>
+
               {qrCodeBase64 && (
                 <div className="flex justify-center">
                   <img
@@ -180,6 +189,22 @@ const SettingsPlanTab = ({ tenant, tenantId, refetchTenant }: Props) => {
                   Já paguei — verificar status
                 </Button>
               </div>
+            </div>
+          ) : pixExpired ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2 rounded-lg py-3 px-3 bg-destructive/10 text-destructive">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-semibold">PIX expirado</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">O tempo para pagamento acabou. Gere um novo código.</p>
+              <Button
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="w-full h-11 rounded-full gradient-pink text-primary-foreground border-none hover:opacity-90"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
+                Gerar novo PIX
+              </Button>
             </div>
           ) : (
             <Button
