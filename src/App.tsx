@@ -19,6 +19,7 @@ import AdminLandingConfigPage from "./pages/admin/AdminLandingConfigPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage";
 import AdminPermissionsPage from "./pages/admin/AdminPermissionsPage";
+import AdminTutorialsPage from "./pages/admin/AdminTutorialsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardPage from "./pages/DashboardPage";
 import StorePage from "./pages/StorePage";
