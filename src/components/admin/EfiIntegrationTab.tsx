@@ -116,7 +116,7 @@ const EfiIntegrationTab = () => {
           efi_client_id: clientId.trim(),
           efi_client_secret: clientSecret.trim(),
           efi_pix_key: pixKey.trim() || null,
-          efi_active: isConnected,
+          efi_active: true,
           pro_price_cents: proPriceCents,
           auto_activate_plan: autoActivate,
           suspend_on_expire: suspendOnExpire,
