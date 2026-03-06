@@ -49,11 +49,13 @@ async function testEfi(
     const normalizedCert = certPem.replace(/\r\n/g, '\n').trim();
     const normalizedKey = keyPem.replace(/\r\n/g, '\n').trim();
 
-    // Create HTTP client with mTLS certificate
+    // Create HTTP client with mTLS certificate (try both old and new Deno API property names)
     const httpClient = Deno.createHttpClient({
       certChain: normalizedCert,
       privateKey: normalizedKey,
-    });
+      cert: normalizedCert,
+      key: normalizedKey,
+    } as any);
 
     const res = await fetch("https://pix.api.efipay.com.br/oauth/token", {
       method: "POST",
@@ -74,10 +76,7 @@ async function testEfi(
   } catch (err) {
     console.error("Efí mTLS error:", err);
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("certificate") || msg.includes("ssl") || msg.includes("tls")) {
-      return { success: false, message: "Certificado PEM inválido. Verifique se converteu o .p12 corretamente." };
-    }
-    return { success: false, message: `Erro de conexão: ${msg}` };
+    return { success: false, message: `Erro mTLS Efí: ${msg.substring(0, 200)}` };
   }
 }
 
