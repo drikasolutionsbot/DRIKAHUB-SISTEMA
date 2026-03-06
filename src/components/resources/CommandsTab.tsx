@@ -273,45 +273,7 @@ export const CommandsTab = () => {
     syncToDiscord(updated, true);
   };
 
-  const handleSync = async () => {
-    const enabledCommands = commands.filter((c) => c.enabled);
-    if (enabledCommands.length === 0) {
-      toast({ title: "Nenhum comando ativo para sincronizar", variant: "destructive" });
-      return;
-    }
-
-    setSyncing(true);
-    try {
-      const guildId = tenant?.discord_guild_id || null;
-
-      const { data, error } = await supabase.functions.invoke("register-commands", {
-        body: {
-          guild_id: guildId,
-          commands: enabledCommands.map((c) => ({
-            name: c.name,
-            description: c.description,
-            options: c.options,
-          })),
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast({
-        title: "Comandos sincronizados! ✅",
-        description: `${data?.registered ?? enabledCommands.length} comandos registrados no Discord.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: "Erro ao sincronizar",
-        description: err.message || "Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const handleSync = () => syncToDiscord(commands);
 
   const optionTypeSupportsChoices = (type: number) => type === 3 || type === 4 || type === 10;
 
