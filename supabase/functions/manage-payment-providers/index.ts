@@ -45,14 +45,20 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
-          .from("payment_providers")
-          .update({
+        const updateData: any = {
             api_key_encrypted: api_key,
             secret_key_encrypted: secret_key || null,
             active: true,
             updated_at: new Date().toISOString(),
-          })
+          };
+          if (provider_key === "efi") {
+            updateData.efi_cert_pem = efi_cert_pem || null;
+            updateData.efi_key_pem = efi_key_pem || null;
+            updateData.efi_pix_key = efi_pix_key || null;
+          }
+          const { error } = await supabase
+          .from("payment_providers")
+          .update(updateData)
           .eq("id", existing.id);
         if (error) throw error;
       } else {
