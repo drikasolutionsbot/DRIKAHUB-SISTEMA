@@ -393,6 +393,64 @@ const ProviderForm = ({ provider, config, tenantId, onSave, onToggle }: Provider
         )}
       </div>
 
+      {/* Efí-specific: PIX Key + Certificate Upload */}
+      {isEfi && (
+        <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-semibold text-foreground">Configuração PIX (Efí)</span>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Key className="h-3.5 w-3.5 text-muted-foreground" />
+              Chave PIX (cadastrada na Efí)
+            </Label>
+            <Input
+              placeholder="email@exemplo.com, CPF, CNPJ ou chave aleatória"
+              value={efiPixKey}
+              onChange={e => setEfiPixKey(e.target.value)}
+              className="bg-muted border-none font-mono text-sm"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+              Certificado mTLS (.p12)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Faça o download do certificado de produção no painel Efí (API &gt; Meus Certificados) e envie aqui. O arquivo <code className="text-primary">.p12</code> será convertido automaticamente.
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer">
+                <div className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed p-3 transition-colors ${
+                  certFileName ? "border-emerald-500/30 bg-emerald-500/5" : "border-border hover:border-primary/40"
+                }`}>
+                  {certFileName ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm text-emerald-400">{certFileName}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Clique para enviar o certificado .p12</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept=".p12,.pfx,.pem"
+                  onChange={handleP12Upload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Test Result */}
       {testResult && (
         <div className={`flex items-center gap-2 rounded-lg px-4 py-3 ${testResult.success ? "bg-emerald-500/10" : "bg-destructive/10"}`}>
