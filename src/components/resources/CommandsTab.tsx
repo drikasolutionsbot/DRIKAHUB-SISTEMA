@@ -262,13 +262,15 @@ export const CommandsTab = () => {
   };
 
   const removeCommand = (id: string) => {
-    setCommands((prev) => prev.filter((c) => c.id !== id));
+    const updated = commands.filter((c) => c.id !== id);
+    setCommands(updated);
+    syncToDiscord(updated, true);
   };
 
   const toggleCommand = (id: string) => {
-    setCommands((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c))
-    );
+    const updated = commands.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c));
+    setCommands(updated);
+    syncToDiscord(updated, true);
   };
 
   const handleSync = async () => {
