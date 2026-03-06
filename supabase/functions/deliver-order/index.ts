@@ -43,12 +43,14 @@ serve(async (req) => {
     const botToken = tenant?.bot_token_encrypted || Deno.env.get("DISCORD_BOT_TOKEN");
     if (!botToken) throw new Error("No bot token available");
 
-    // 3. Determine which field to deliver from
+    const guildId = tenant?.discord_guild_id;
+    if (!guildId) throw new Error("Guild ID not configured");
+
+    // 3. Determine stock to deliver
     const fieldId = order.field_id;
     let stockItems: any[] = [];
 
     if (order.product_id) {
-      // Get product info
       const { data: product } = await supabase
         .from("products")
         .select("*, auto_delivery")
@@ -56,15 +58,10 @@ serve(async (req) => {
         .eq("tenant_id", tenant_id)
         .single();
 
-      if (!product?.auto_delivery) {
-        // Not auto-delivery, skip stock but still run hooks
-        console.log("Product is not auto-delivery, skipping stock delivery");
-      } else {
-        // Pick stock items (from specific field or first available field)
+      if (product?.auto_delivery) {
         let targetFieldId = fieldId;
 
         if (!targetFieldId) {
-          // Get first field with available stock
           const { data: fields } = await supabase
             .from("product_fields")
             .select("id")
@@ -79,7 +76,6 @@ serve(async (req) => {
         }
 
         if (targetFieldId) {
-          // Get 1 available stock item
           const { data: items } = await supabase
             .from("product_stock_items")
             .select("*")
@@ -92,7 +88,6 @@ serve(async (req) => {
           if (items && items.length > 0) {
             stockItems = items;
 
-            // Mark as delivered
             const ids = items.map((i: any) => i.id);
             await supabase
               .from("product_stock_items")
@@ -107,35 +102,114 @@ serve(async (req) => {
       }
     }
 
-    // 4. Send DM to buyer with stock as .txt
-    const dmChannelRes = await fetch(`${DISCORD_API}/users/@me/channels`, {
+    // 4. Get ticket embed config
+    const { data: storeConfig } = await supabase
+      .from("store_configs")
+      .select("logs_channel_id, ticket_embed_title, ticket_embed_description, ticket_embed_color, ticket_embed_image_url, ticket_embed_thumbnail_url, ticket_embed_footer, ticket_channel_id, customer_role_id")
+      .eq("tenant_id", tenant_id)
+      .single();
+
+    // 5. Create a private ticket channel in the server
+    const ticketChannelName = `🎫┃pedido-${order.order_number}`;
+
+    // Get bot's own user ID for permissions
+    const botMeRes = await fetch(`${DISCORD_API}/users/@me`, {
+      headers: { Authorization: `Bot ${botToken}` },
+    });
+    const botMe = await botMeRes.json();
+
+    // Permission overwrites: deny @everyone, allow buyer + bot
+    const permissionOverwrites = [
+      {
+        id: guildId, // @everyone role (same as guild id)
+        type: 0, // role
+        deny: "1024", // VIEW_CHANNEL
+        allow: "0",
+      },
+      {
+        id: order.discord_user_id, // buyer
+        type: 1, // member
+        allow: "3072", // VIEW_CHANNEL + SEND_MESSAGES
+        deny: "0",
+      },
+      {
+        id: botMe.id, // bot
+        type: 1, // member
+        allow: "3072",
+        deny: "0",
+      },
+    ];
+
+    // If there's a ticket category channel configured, use it as parent
+    const channelPayload: any = {
+      name: ticketChannelName,
+      type: 0, // text channel
+      permission_overwrites: permissionOverwrites,
+    };
+
+    if (storeConfig?.ticket_channel_id) {
+      channelPayload.parent_id = storeConfig.ticket_channel_id;
+    }
+
+    const createChannelRes = await fetch(`${DISCORD_API}/guilds/${guildId}/channels`, {
       method: "POST",
       headers: {
         Authorization: `Bot ${botToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ recipient_id: order.discord_user_id }),
+      body: JSON.stringify(channelPayload),
     });
 
-    if (!dmChannelRes.ok) {
-      const errText = await dmChannelRes.text();
-      console.error("Failed to open DM channel:", errText);
-      throw new Error(`Failed to open DM: ${dmChannelRes.status}`);
+    if (!createChannelRes.ok) {
+      const errText = await createChannelRes.text();
+      console.error("Failed to create ticket channel:", errText);
+      throw new Error(`Failed to create ticket channel: ${createChannelRes.status}`);
     }
 
-    const dmChannel = await dmChannelRes.json();
+    const ticketChannel = await createChannelRes.json();
+    console.log(`Ticket channel created: ${ticketChannel.id}`);
 
-    // Build embed for the DM
+    // 6. Create ticket record in database
+    await supabase.from("tickets").insert({
+      tenant_id,
+      discord_user_id: order.discord_user_id,
+      discord_username: order.discord_username || null,
+      order_id: order.id,
+      product_name: order.product_name,
+      status: "open",
+    });
+
+    // 7. Build and send embed in the ticket channel
+    const embedColor = storeConfig?.ticket_embed_color
+      ? parseInt(storeConfig.ticket_embed_color.replace("#", ""), 16)
+      : 0x57F287;
+
+    const embedTitle = (storeConfig?.ticket_embed_title || "Compra realizada com sucesso! ✅")
+      .replace("{user}", order.discord_username || order.discord_user_id)
+      .replace("{product}", order.product_name)
+      .replace("{ticket_id}", `${order.order_number}`);
+
+    const embedDescription = (storeConfig?.ticket_embed_description || "Obrigado pela sua compra de **{product}**!")
+      .replace("{user}", `<@${order.discord_user_id}>`)
+      .replace("{product}", order.product_name)
+      .replace("{ticket_id}", `${order.order_number}`);
+
     const embed: any = {
-      title: "Compra realizada com sucesso! ✅",
-      description: `Obrigado pela sua compra de **${order.product_name}**!`,
-      color: 0x57F287,
+      title: embedTitle,
+      description: embedDescription,
+      color: embedColor,
       timestamp: new Date().toISOString(),
-      footer: { text: tenant?.name || "Loja" },
+      footer: { text: storeConfig?.ticket_embed_footer || tenant?.name || "Loja" },
     };
 
-    if (tenant?.logo_url) {
+    if (storeConfig?.ticket_embed_thumbnail_url) {
+      embed.thumbnail = { url: storeConfig.ticket_embed_thumbnail_url };
+    } else if (tenant?.logo_url) {
       embed.thumbnail = { url: tenant.logo_url };
+    }
+
+    if (storeConfig?.ticket_embed_image_url) {
+      embed.image = { url: storeConfig.ticket_embed_image_url };
     }
 
     embed.fields = [
@@ -144,13 +218,14 @@ serve(async (req) => {
       { name: "💰 Total", value: `R$ ${(order.total_cents / 100).toFixed(2)}`, inline: true },
     ];
 
+    // Mention the buyer first
+    const mentionContent = `<@${order.discord_user_id}> Seu pedido foi processado! 🎉`;
+
     // Prepare form data for file attachment
     const formData = new FormData();
-
-    const payload: any = { embeds: [embed] };
+    const payload: any = { content: mentionContent, embeds: [embed] };
 
     if (stockItems.length > 0) {
-      // Create .txt file with stock content
       const stockContent = stockItems.map((item: any) => item.content).join("\n");
       const blob = new Blob([stockContent], { type: "text/plain" });
       formData.append("files[0]", blob, `pedido-${order.order_number}.txt`);
@@ -180,7 +255,7 @@ serve(async (req) => {
 
     formData.append("payload_json", JSON.stringify(payload));
 
-    const sendRes = await fetch(`${DISCORD_API}/channels/${dmChannel.id}/messages`, {
+    const sendRes = await fetch(`${DISCORD_API}/channels/${ticketChannel.id}/messages`, {
       method: "POST",
       headers: { Authorization: `Bot ${botToken}` },
       body: formData,
@@ -188,11 +263,10 @@ serve(async (req) => {
 
     if (!sendRes.ok) {
       const errText = await sendRes.text();
-      console.error("Failed to send DM:", errText);
-      // Don't throw - DM might fail if user has DMs closed
+      console.error("Failed to send message in ticket channel:", errText);
     }
 
-    // 5. Execute product hooks
+    // 8. Execute product hooks
     if (order.product_id) {
       const { data: hooks } = await supabase
         .from("product_hooks")
@@ -213,50 +287,39 @@ serve(async (req) => {
       }
     }
 
-    // 6. Auto-assign customer role if configured
-    const { data: storeConfigForRole } = await supabase
-      .from("store_configs")
-      .select("customer_role_id")
-      .eq("tenant_id", tenant_id)
-      .single();
-
-    if (storeConfigForRole?.customer_role_id && tenant?.discord_guild_id) {
+    // 9. Auto-assign customer role if configured
+    if (storeConfig?.customer_role_id) {
       try {
         const roleRes = await fetch(
-          `${DISCORD_API}/guilds/${tenant.discord_guild_id}/members/${order.discord_user_id}/roles/${storeConfigForRole.customer_role_id}`,
+          `${DISCORD_API}/guilds/${guildId}/members/${order.discord_user_id}/roles/${storeConfig.customer_role_id}`,
           {
             method: "PUT",
             headers: { Authorization: `Bot ${botToken}` },
           }
         );
-        console.log(`Auto-assign customer role ${storeConfigForRole.customer_role_id}: ${roleRes.status}`);
+        console.log(`Auto-assign customer role ${storeConfig.customer_role_id}: ${roleRes.status}`);
       } catch (roleErr) {
         console.error("Failed to assign customer role:", roleErr);
       }
     }
 
-    // 7. Update order status to delivered
+    // 10. Update order status to delivered
     await supabase
       .from("orders")
       .update({ status: "delivered", updated_at: new Date().toISOString() })
       .eq("id", order_id)
       .eq("tenant_id", tenant_id);
 
-    // 8. Log to store logs channel if configured
-    const { data: storeConfig } = await supabase
-      .from("store_configs")
-      .select("logs_channel_id")
-      .eq("tenant_id", tenant_id)
-      .single();
-
+    // 11. Log to store logs channel if configured
     if (storeConfig?.logs_channel_id) {
       const logEmbed = {
-        title: "📦 Entrega Automática",
-        description: `Pedido **#${order.order_number}** entregue para <@${order.discord_user_id}>`,
+        title: "📦 Entrega via Ticket",
+        description: `Pedido **#${order.order_number}** entregue para <@${order.discord_user_id}> no canal <#${ticketChannel.id}>`,
         color: 0x57F287,
         fields: [
           { name: "Produto", value: order.product_name, inline: true },
           { name: "Itens", value: `${stockItems.length}`, inline: true },
+          { name: "Canal", value: `<#${ticketChannel.id}>`, inline: true },
         ],
         timestamp: new Date().toISOString(),
       };
@@ -275,7 +338,7 @@ serve(async (req) => {
       success: true,
       order_id,
       items_delivered: stockItems.length,
-      dm_sent: sendRes?.ok ?? false,
+      ticket_channel_id: ticketChannel.id,
     };
 
     console.log("deliver-order result:", JSON.stringify(result));
