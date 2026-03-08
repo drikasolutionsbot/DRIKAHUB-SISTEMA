@@ -513,7 +513,14 @@ const ChannelsPage = () => {
                                   <p className="text-[11px] text-muted-foreground">{ch.description}</p>
                                 </div>
                                 <div className="w-56 shrink-0">
-                                  <Select value={currentValue} onValueChange={(v) => handleLocalChange(ch.key, v)}>
+                                  <Select value={currentValue} onValueChange={(v) => {
+                                    if (v === "__create__") {
+                                      setCreateForKey(ch.key);
+                                      setCreateOpen(true);
+                                      return;
+                                    }
+                                    handleLocalChange(ch.key, v);
+                                  }}>
                                     <SelectTrigger className={cn(
                                       "h-9 text-sm",
                                       currentValue ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
@@ -524,6 +531,12 @@ const ChannelsPage = () => {
                                       </div>
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="__create__">
+                                        <div className="flex items-center gap-2 text-primary font-medium">
+                                          <Plus className="h-3.5 w-3.5" />
+                                          Criar novo canal
+                                        </div>
+                                      </SelectItem>
                                       {currentValue && (
                                         <SelectItem value="__clear__" className="text-red-400">
                                           ✕ Remover canal
