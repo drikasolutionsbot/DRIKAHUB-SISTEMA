@@ -319,6 +319,34 @@ const VerificationPage = () => {
                 />
               </div>
               <div>
+                <Label>Estilo do Botão</Label>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => update("verify_button_style", "default")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
+                      config.verify_button_style === "default"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    <span className="inline-block h-5 w-14 rounded bg-[#5865F2] text-[9px] text-white flex items-center justify-center">Padrão</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update("verify_button_style", "glass")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
+                      config.verify_button_style === "glass"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    <span className="inline-block h-5 w-14 rounded text-[9px] text-white flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(88,101,242,0.4), rgba(88,101,242,0.15))", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.1)" }}>Glass</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Escolha a aparência do botão de verificação no Discord</p>
+              </div>
+              <div>
                 <Label>Cor do Embed</Label>
                 <div className="flex gap-2 mt-1">
                   <input
