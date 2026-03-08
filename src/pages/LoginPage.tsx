@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import WifiLoader from "@/components/ui/wifi-loader";
 import drikaLogo from "@/assets/DRIKA_HUB_SEM_FUNDO.png";
 import TermsModal from "@/components/TermsModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
