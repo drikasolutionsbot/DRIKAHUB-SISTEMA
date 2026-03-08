@@ -21,6 +21,7 @@ interface VerifyConfig {
   verify_button_label: string;
   verify_embed_color: string;
   verify_image_url: string;
+  verify_button_style: "default" | "glass";
 }
 
 const defaultConfig: VerifyConfig = {
@@ -32,6 +33,7 @@ const defaultConfig: VerifyConfig = {
   verify_button_label: "Verificar",
   verify_embed_color: "#5865F2",
   verify_image_url: "",
+  verify_button_style: "default",
 };
 
 const VerificationPage = () => {
