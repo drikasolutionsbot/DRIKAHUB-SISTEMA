@@ -465,9 +465,22 @@ const VerificationPage = () => {
 
             {/* Button */}
             <div className="mt-2">
-              <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
-                🔗 {config.verify_button_label || "Verificar"}
-              </button>
+              {config.verify_button_style === "glass" ? (
+                <button
+                  className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10"
+                  style={{
+                    background: `linear-gradient(135deg, ${config.verify_embed_color}66, ${config.verify_embed_color}26)`,
+                    backdropFilter: "blur(8px)",
+                    boxShadow: `0 0 12px ${config.verify_embed_color}20`,
+                  }}
+                >
+                  🔗 {config.verify_button_label || "Verificar"}
+                </button>
+              ) : (
+                <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
+                  🔗 {config.verify_button_label || "Verificar"}
+                </button>
+              )}
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground">
