@@ -6,9 +6,11 @@ import { toast } from "@/hooks/use-toast";
 import WifiLoader from "@/components/ui/wifi-loader";
 import drikaLogo from "@/assets/DRIKA_HUB_SEM_FUNDO.png";
 import TermsModal from "@/components/TermsModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [token, setToken] = useState("");
   const [validating, setValidating] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -17,6 +19,13 @@ const LoginPage = () => {
     if (!token.trim()) return;
     setValidating(true);
     try {
+      // Sign out any existing Supabase Auth session (e.g., admin session)
+      if (user) {
+        await signOut();
+      }
+      // Also clear any previous token session
+      sessionStorage.removeItem("token_session");
+
       const { data, error } = await supabase.functions.invoke("validate-token", {
         body: { token: token.trim() },
       });
