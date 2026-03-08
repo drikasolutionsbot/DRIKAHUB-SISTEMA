@@ -102,6 +102,7 @@ const VerificationPage = () => {
           verify_button_label: tenantData.verify_button_label ?? defaultConfig.verify_button_label,
           verify_embed_color: tenantData.verify_embed_color ?? defaultConfig.verify_embed_color,
           verify_image_url: tenantData.verify_image_url ?? "",
+          verify_button_style: tenantData.verify_button_style ?? "default",
         };
         setServerConfig(loaded);
       }
