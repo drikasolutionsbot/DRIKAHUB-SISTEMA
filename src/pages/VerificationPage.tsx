@@ -390,7 +390,7 @@ const VerificationPage = () => {
                       className="flex-1 text-xs"
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Envie uma imagem ou cole uma URL. Máx 5MB.</p>
+                  <p className="text-[11px] text-muted-foreground">Envie uma imagem ou cole uma URL.</p>
                 </div>
               </div>
             </CardContent>
