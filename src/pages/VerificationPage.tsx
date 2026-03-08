@@ -133,6 +133,7 @@ const VerificationPage = () => {
             verify_button_label: config.verify_button_label,
             verify_embed_color: config.verify_embed_color,
             verify_image_url: config.verify_image_url || null,
+            verify_button_style: config.verify_button_style,
           },
         },
       });
