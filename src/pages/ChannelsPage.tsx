@@ -586,7 +586,7 @@ const ChannelsPage = () => {
       </Tabs>
 
       {/* Create channel dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) setCreateForKey(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Canal no Discord</DialogTitle>
