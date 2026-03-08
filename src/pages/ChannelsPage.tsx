@@ -175,6 +175,7 @@ const ChannelsPage = () => {
   const [newTopic, setNewTopic] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [createForKey, setCreateForKey] = useState<string | null>(null);
 
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -322,8 +323,15 @@ const ChannelsPage = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({ title: "Canal criado no Discord! ✅", description: `#${data.channel?.name}` });
+
+      // Auto-assign to the mapping key that triggered the dialog
+      if (createForKey && data.channel?.id) {
+        handleLocalChange(createForKey, data.channel.id);
+      }
+
       setNewName(""); setNewType("text"); setNewParent(""); setNewTopic("");
       setCreateOpen(false);
+      setCreateForKey(null);
       await fetchDiscordChannels();
     } catch (err: any) {
       toast({ title: "Erro ao criar canal", description: err.message, variant: "destructive" });
@@ -397,7 +405,7 @@ const ChannelsPage = () => {
             {loadingChannels ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Sincronizar
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setCreateOpen(true)} disabled={!guildId}>
+          <Button size="sm" className="gap-2" onClick={() => { setCreateForKey(null); setCreateOpen(true); }} disabled={!guildId}>
             <Plus className="h-4 w-4" /> Criar Canal
           </Button>
         </div>
@@ -505,7 +513,14 @@ const ChannelsPage = () => {
                                   <p className="text-[11px] text-muted-foreground">{ch.description}</p>
                                 </div>
                                 <div className="w-56 shrink-0">
-                                  <Select value={currentValue} onValueChange={(v) => handleLocalChange(ch.key, v)}>
+                                  <Select value={currentValue} onValueChange={(v) => {
+                                    if (v === "__create__") {
+                                      setCreateForKey(ch.key);
+                                      setCreateOpen(true);
+                                      return;
+                                    }
+                                    handleLocalChange(ch.key, v);
+                                  }}>
                                     <SelectTrigger className={cn(
                                       "h-9 text-sm",
                                       currentValue ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
@@ -516,6 +531,12 @@ const ChannelsPage = () => {
                                       </div>
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="__create__">
+                                        <div className="flex items-center gap-2 text-primary font-medium">
+                                          <Plus className="h-3.5 w-3.5" />
+                                          Criar novo canal
+                                        </div>
+                                      </SelectItem>
                                       {currentValue && (
                                         <SelectItem value="__clear__" className="text-red-400">
                                           ✕ Remover canal
@@ -565,7 +586,7 @@ const ChannelsPage = () => {
       </Tabs>
 
       {/* Create channel dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) setCreateForKey(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Canal no Discord</DialogTitle>
