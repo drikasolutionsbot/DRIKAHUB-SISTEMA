@@ -161,7 +161,18 @@ const CHANNEL_TYPE_OPTIONS = [
 
 const ChannelsPage = () => {
   const { tenant, tenantId } = useTenant();
-  const { data: configs = [], isLoading, refetch } = useTenantQuery<ChannelConfig>("channel-configs", "channel_configs");
+  const { data: configs = [], isLoading, refetch } = useQuery<ChannelConfig[]>({
+    queryKey: ["channel-configs", tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
+      const { data, error } = await supabase.functions.invoke("manage-channel-configs", {
+        body: { tenant_id: tenantId, action: "list" },
+      });
+      if (error) throw error;
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!tenantId,
+  });
 
   const [discordChannels, setDiscordChannels] = useState<DiscordChannel[]>([]);
   const [discordCategories, setDiscordCategories] = useState<DiscordCategory[]>([]);
