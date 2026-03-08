@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.check-subscription-status]
 verify_jwt = false
+
+[functions.discord-guild-invites]
+verify_jwt = false
