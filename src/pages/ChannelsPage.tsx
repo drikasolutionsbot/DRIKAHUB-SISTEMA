@@ -323,8 +323,15 @@ const ChannelsPage = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({ title: "Canal criado no Discord! ✅", description: `#${data.channel?.name}` });
+
+      // Auto-assign to the mapping key that triggered the dialog
+      if (createForKey && data.channel?.id) {
+        handleLocalChange(createForKey, data.channel.id);
+      }
+
       setNewName(""); setNewType("text"); setNewParent(""); setNewTopic("");
       setCreateOpen(false);
+      setCreateForKey(null);
       await fetchDiscordChannels();
     } catch (err: any) {
       toast({ title: "Erro ao criar canal", description: err.message, variant: "destructive" });
