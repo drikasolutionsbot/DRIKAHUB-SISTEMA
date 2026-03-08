@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [token, setToken] = useState("");
   const [validating, setValidating] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
