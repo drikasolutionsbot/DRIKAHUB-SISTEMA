@@ -21,6 +21,7 @@ interface VerifyConfig {
   verify_button_label: string;
   verify_embed_color: string;
   verify_image_url: string;
+  verify_button_style: "default" | "glass";
 }
 
 const defaultConfig: VerifyConfig = {
@@ -32,6 +33,7 @@ const defaultConfig: VerifyConfig = {
   verify_button_label: "Verificar",
   verify_embed_color: "#5865F2",
   verify_image_url: "",
+  verify_button_style: "default",
 };
 
 const VerificationPage = () => {
@@ -100,6 +102,7 @@ const VerificationPage = () => {
           verify_button_label: tenantData.verify_button_label ?? defaultConfig.verify_button_label,
           verify_embed_color: tenantData.verify_embed_color ?? defaultConfig.verify_embed_color,
           verify_image_url: tenantData.verify_image_url ?? "",
+          verify_button_style: tenantData.verify_button_style ?? "default",
         };
         setServerConfig(loaded);
       }
@@ -130,6 +133,7 @@ const VerificationPage = () => {
             verify_button_label: config.verify_button_label,
             verify_embed_color: config.verify_embed_color,
             verify_image_url: config.verify_image_url || null,
+            verify_button_style: config.verify_button_style,
           },
         },
       });
@@ -316,6 +320,34 @@ const VerificationPage = () => {
                 />
               </div>
               <div>
+                <Label>Estilo do Botão</Label>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => update("verify_button_style", "default")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
+                      config.verify_button_style === "default"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    <span className="inline-block h-5 w-14 rounded bg-[#5865F2] text-[9px] text-white flex items-center justify-center">Padrão</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update("verify_button_style", "glass")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
+                      config.verify_button_style === "glass"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    <span className="inline-block h-5 w-14 rounded text-[9px] text-white flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(88,101,242,0.4), rgba(88,101,242,0.15))", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.1)" }}>Glass</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Escolha a aparência do botão de verificação no Discord</p>
+              </div>
+              <div>
                 <Label>Cor do Embed</Label>
                 <div className="flex gap-2 mt-1">
                   <input
@@ -434,9 +466,22 @@ const VerificationPage = () => {
 
             {/* Button */}
             <div className="mt-2">
-              <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
-                🔗 {config.verify_button_label || "Verificar"}
-              </button>
+              {config.verify_button_style === "glass" ? (
+                <button
+                  className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10"
+                  style={{
+                    background: `linear-gradient(135deg, ${config.verify_embed_color}66, ${config.verify_embed_color}26)`,
+                    backdropFilter: "blur(8px)",
+                    boxShadow: `0 0 12px ${config.verify_embed_color}20`,
+                  }}
+                >
+                  🔗 {config.verify_button_label || "Verificar"}
+                </button>
+              ) : (
+                <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
+                  🔗 {config.verify_button_label || "Verificar"}
+                </button>
+              )}
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground">
