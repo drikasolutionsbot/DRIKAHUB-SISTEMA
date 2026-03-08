@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state"); // state = tenant_id (passed through OAuth)
 
-  const clientId = "1477858771052003389";
+  const clientId = "1477916070508757092";
   const clientSecret = Deno.env.get("DISCORD_CLIENT_SECRET")!;
   const redirectUri = `${supabaseUrl}/functions/v1/verify-member`;
 
