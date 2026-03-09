@@ -118,7 +118,7 @@ const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => {
 };
 
 /* ── Subscription Payment Modal (Pro) ── */
-const SubscriptionPaymentModal = ({ onClose }: { onClose: () => void }) => {
+const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void; priceCents: number }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "pix" | "success">("form");
   const [loading, setLoading] = useState(false);
