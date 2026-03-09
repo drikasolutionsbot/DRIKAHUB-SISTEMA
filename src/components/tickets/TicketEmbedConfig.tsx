@@ -22,6 +22,7 @@ interface TicketEmbedData {
   ticket_embed_button_label: string;
   ticket_embed_button_style: DiscordButtonStyle;
   ticket_channel_id: string;
+  ticket_logs_channel_id: string;
 }
 
 const defaults: TicketEmbedData = {
@@ -34,6 +35,7 @@ const defaults: TicketEmbedData = {
   ticket_embed_button_label: "📩 Abrir Ticket",
   ticket_embed_button_style: "glass",
   ticket_channel_id: "",
+  ticket_logs_channel_id: "",
 };
 
 const TicketEmbedConfig = () => {
