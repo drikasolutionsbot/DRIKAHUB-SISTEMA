@@ -100,6 +100,7 @@ const VerificationPage = () => {
           verify_enabled: tenantData.verify_enabled ?? false,
           verify_role_id: tenantData.verify_role_id ?? "",
           verify_channel_id: tenantData.verify_channel_id ?? "",
+          verify_logs_channel_id: tenantData.verify_logs_channel_id ?? "",
           verify_title: tenantData.verify_title ?? defaultConfig.verify_title,
           verify_description: tenantData.verify_description ?? defaultConfig.verify_description,
           verify_button_label: tenantData.verify_button_label ?? defaultConfig.verify_button_label,
