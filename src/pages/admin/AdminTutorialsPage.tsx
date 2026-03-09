@@ -351,7 +351,12 @@ const AdminTutorialsPage = () => {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleUploadFile(file, "videos", setVideoUrl, setUploadingVideo);
+                      if (file) {
+                        handleUploadFile(file, "videos", (url) => {
+                          setVideoUrl(url);
+                          setVideoType("upload");
+                        }, setUploadingVideo);
+                      }
                     }}
                   />
                 </div>
