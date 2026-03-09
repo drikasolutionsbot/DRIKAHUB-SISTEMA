@@ -150,6 +150,7 @@ const AdminMarketplacePage = () => {
             category: lztCategory || null,
             cost_cents: Math.round((importItem.item.price || 0) * 100),
             resale_price_cents: priceCents,
+            image_url: importItem.item.extracted_image_url || null,
             lzt_data: importItem.item,
           },
         },
