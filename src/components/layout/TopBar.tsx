@@ -289,8 +289,8 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
         {tenant && <PlanBadge tenant={tenant} />}
         {/* Wallet */}
         <WalletBadge />
-        {/* Theme Toggle - BB8 */}
-        <BB8Toggle
+        {/* Theme Toggle */}
+        <ThemeToggle
           checked={theme === "dark"}
           onChange={(checked) => setTheme(checked ? "dark" : "light")}
         />
