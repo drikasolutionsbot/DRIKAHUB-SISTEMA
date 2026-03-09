@@ -128,7 +128,12 @@ const MarketplacePage = () => {
                           className="rounded-xl border border-border bg-card hover:border-primary/40 transition-colors flex flex-col overflow-hidden"
                         >
                           {item.image_url && (
-                            <img src={item.image_url} alt={item.title} className="w-full h-32 object-cover border-b border-border" />
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="w-full h-32 object-cover border-b border-border"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
                           )}
                           <div className="p-4 flex flex-col flex-1">
                             <h3 className="text-sm font-semibold line-clamp-2 mb-1">{item.title}</h3>
