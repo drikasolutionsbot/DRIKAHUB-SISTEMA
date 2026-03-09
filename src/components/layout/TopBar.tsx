@@ -84,7 +84,7 @@ const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className={`hidden sm:flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer outline-none ${
+        <button className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium border transition-colors cursor-pointer outline-none ${
           isExpired
             ? "bg-destructive/15 border-destructive/30 text-destructive animate-pulse"
             : isPro
