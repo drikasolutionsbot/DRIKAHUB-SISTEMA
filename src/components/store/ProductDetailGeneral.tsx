@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductImageUpload } from "./ProductImageUpload";
 import { useTenant } from "@/contexts/TenantContext";
+import { DiscordButtonStylePicker, type DiscordButtonStyle } from "@/components/discord/DiscordButtonStylePicker";
 
 interface Category {
   id: string;
@@ -29,6 +30,7 @@ interface Product {
   show_stock?: boolean;
   show_sold?: boolean;
   enable_instructions?: boolean;
+  button_style?: DiscordButtonStyle;
 }
 
 interface ProductDetailGeneralProps {
