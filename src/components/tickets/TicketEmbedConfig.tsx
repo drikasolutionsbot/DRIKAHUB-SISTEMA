@@ -125,6 +125,37 @@ const TicketEmbedConfig = () => {
     }
   };
 
+  const handleSend = async () => {
+    if (!tenantId || !data.ticket_channel_id) {
+      toast.error("Selecione um canal antes de enviar.");
+      return;
+    }
+    setSending(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("send-ticket-embed", {
+        body: {
+          tenant_id: tenantId,
+          channel_id: data.ticket_channel_id,
+          title: data.ticket_embed_title,
+          description: data.ticket_embed_description,
+          button_label: data.ticket_embed_button_label,
+          button_style: data.ticket_embed_button_style,
+          embed_color: data.ticket_embed_color,
+          image_url: data.ticket_embed_image_url || undefined,
+          thumbnail_url: data.ticket_embed_thumbnail_url || undefined,
+          footer: data.ticket_embed_footer || undefined,
+        },
+      });
+      if (error) throw error;
+      if (res?.error) throw new Error(res.error);
+      toast.success("Embed de ticket enviado ao canal!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   const update = (key: keyof TicketEmbedData, value: string) => {
     setData((prev) => ({ ...prev, [key]: value as any }));
   };
