@@ -189,7 +189,7 @@ const AdminMarketplacePage = () => {
   };
 
   const formatBRL = (cents: number) => `R$ ${(cents / 100).toFixed(2)}`;
-  const formatUSD = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatReais = (cents: number) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 
   const available = items.filter((i) => i.status === "available");
   const sold = items.filter((i) => i.status === "sold");
@@ -256,7 +256,7 @@ const AdminMarketplacePage = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>Custo: {formatUSD(item.cost_cents)}</span>
+                          <span>Custo: {formatReais(item.cost_cents)}</span>
                           <span className="font-semibold text-foreground">Revenda: {formatBRL(item.resale_price_cents)}</span>
                           <span>LZT #{item.lzt_item_id}</span>
                         </div>
@@ -355,7 +355,7 @@ const AdminMarketplacePage = () => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{getItemDisplayTitle(item)}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>${(item.price || 0).toFixed(2)}</span>
+                          <span>R$ {(item.price || 0).toFixed(2).replace('.', ',')}</span>
                           {item.title && item.title !== item.title_translated && (
                             <span className="truncate opacity-50" title={item.title}>({item.title})</span>
                           )}
@@ -408,7 +408,7 @@ const AdminMarketplacePage = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>Preço: ${(urlItem.price || 0).toFixed(2)}</span>
+                    <span>Preço: R$ {(urlItem.price || 0).toFixed(2).replace('.', ',')}</span>
                     <span>ID: #{urlItem.item_id}</span>
                   </div>
                   <Button
@@ -436,7 +436,7 @@ const AdminMarketplacePage = () => {
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Custo (LZT)</span>
-              <span className="font-semibold">${(importItem?.item.price || 0).toFixed(2)}</span>
+              <span className="font-semibold">R$ {(importItem?.item.price || 0).toFixed(2).replace('.', ',')}</span>
             </div>
             <div className="space-y-2">
               <Label>Preço de revenda (R$)</Label>
