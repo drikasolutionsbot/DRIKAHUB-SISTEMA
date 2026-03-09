@@ -193,7 +193,7 @@ const CustomizationPage = () => {
               backgroundSize: "24px 24px",
             }}
           />
-          <div className="absolute top-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4 hidden sm:flex gap-2">
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border text-[11px] font-medium text-muted-foreground">
               <Zap className="h-3 w-3 text-primary" /> Automações
             </span>
