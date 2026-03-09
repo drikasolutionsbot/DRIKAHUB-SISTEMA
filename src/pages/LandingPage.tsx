@@ -694,6 +694,7 @@ const LandingPage = () => {
                     "Proteção anti-fraude avançada",
                     "Personalização completa",
                     "Verificação OAuth2",
+                    "Marketplace Atacadão",
                     "Suporte prioritário",
                   ].map((f) => (
                     <li key={f} className="flex items-start gap-2 text-xs text-white/60">
