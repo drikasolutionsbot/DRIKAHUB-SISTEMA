@@ -109,13 +109,15 @@ serve(async (req) => {
 
         const discordRole = await discordRes.json();
 
+        const colorHex = typeof color === "string" ? color : `#${colorDecimal.toString(16).padStart(6, "0")}`;
+
         const { data, error } = await supabase
           .from("tenant_roles")
           .insert({
             tenant_id,
             discord_role_id: discordRole.id,
             name: discordRole.name,
-            color,
+            color: colorHex,
             synced: true,
           })
           .select()
