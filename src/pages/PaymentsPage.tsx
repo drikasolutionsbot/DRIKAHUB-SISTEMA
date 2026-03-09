@@ -165,17 +165,20 @@ const PaymentsPage = () => {
         <Skeleton className="h-64" />
       ) : (
         <Tabs defaultValue="mercadopago">
-          <TabsList className="bg-muted">
-            {providers.map(p => {
-              const cfg = getConfig(p.key);
-              return (
-                <TabsTrigger key={p.key} value={p.key} className="gap-2">
-                  {p.name}
-                  {cfg?.active && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="bg-muted w-max min-w-full sm:w-auto">
+              {providers.map(p => {
+                const cfg = getConfig(p.key);
+                return (
+                  <TabsTrigger key={p.key} value={p.key} className="gap-2 text-xs sm:text-sm">
+                    <span className="hidden sm:inline">{p.name}</span>
+                    <span className="sm:hidden">{p.key === "mercadopago" ? "MP" : p.key === "pushinpay" ? "Pushin" : "Efí"}</span>
+                    {cfg?.active && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
 
           {providers.map(p => (
             <TabsContent key={p.key} value={p.key}>
