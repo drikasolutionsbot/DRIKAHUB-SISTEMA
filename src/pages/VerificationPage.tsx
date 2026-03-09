@@ -444,22 +444,42 @@ const VerificationPage = () => {
 
             {/* Button */}
             <div className="mt-2">
-              {config.verify_button_style === "glass" ? (
-                <button
-                  className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10"
-                  style={{
-                    background: `linear-gradient(135deg, ${config.verify_embed_color}66, ${config.verify_embed_color}26)`,
-                    backdropFilter: "blur(8px)",
-                    boxShadow: `0 0 12px ${config.verify_embed_color}20`,
-                  }}
-                >
-                  🔗 {config.verify_button_label || "Verificar"}
-                </button>
-              ) : (
-                <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
-                  🔗 {config.verify_button_label || "Verificar"}
-                </button>
-              )}
+              {(() => {
+                const style = config.verify_button_style || "primary";
+                const isGlass = style === "glass";
+                const isLink = style === "link";
+                const styleConfig = getDiscordButtonStyles(style);
+                
+                if (isGlass) {
+                  return (
+                    <button
+                      className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10 bg-white/10 backdrop-blur-sm"
+                    >
+                      🔗 {config.verify_button_label || "Verificar"}
+                    </button>
+                  );
+                }
+                
+                if (isLink) {
+                  return (
+                    <button className="text-[#00AFF4] text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default underline bg-transparent">
+                      🔗 {config.verify_button_label || "Verificar"}
+                    </button>
+                  );
+                }
+                
+                return (
+                  <button
+                    className="text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default"
+                    style={{
+                      backgroundColor: styleConfig.bgColor,
+                      color: styleConfig.textColor,
+                    }}
+                  >
+                    🔗 {config.verify_button_label || "Verificar"}
+                  </button>
+                );
+              })()}
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground">
