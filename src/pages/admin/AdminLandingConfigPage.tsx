@@ -160,11 +160,19 @@ const AdminLandingConfigPage = () => {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Valor em R$</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={(form.pro_price_cents / 100).toFixed(2)}
-                onChange={(e) => setForm((p) => ({ ...p, pro_price_cents: Math.round(parseFloat(e.target.value || "0") * 100) }))}
+                type="text"
+                inputMode="decimal"
+                value={priceInput}
+                onChange={(e) => {
+                  const val = e.target.value.replace(",", ".");
+                  if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+                    setPriceInput(val);
+                    const num = parseFloat(val || "0");
+                    if (!isNaN(num)) {
+                      setForm((p) => ({ ...p, pro_price_cents: Math.round(num * 100) }));
+                    }
+                  }
+                }}
                 placeholder="26.90"
               />
             </div>
