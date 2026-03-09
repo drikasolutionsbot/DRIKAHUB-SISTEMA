@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import "@/components/wallet/wallet-card.css";
 import SettingsPlanTab from "@/components/settings/SettingsPlanTab";
+import SettingsProfileTab from "@/components/settings/SettingsProfileTab";
 
 interface UserRole {
   id: string;
