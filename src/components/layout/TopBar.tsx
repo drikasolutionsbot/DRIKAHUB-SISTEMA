@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Menu, Search, LogOut, User, Settings, ChevronDown, QrCode, Zap, CheckCircle, AlertCircle, Inbox, Wallet, Crown, Clock, Sun, Moon } from "lucide-react";
+import { Bell, Menu, Search, LogOut, User, Settings, ChevronDown, QrCode, Zap, CheckCircle, AlertCircle, Inbox, Wallet, Crown, Clock } from "lucide-react";
 import { useTheme } from "next-themes";
 import { differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { WalletBadge } from "@/components/wallet/WalletBadge";
+import BB8Toggle from "@/components/ui/bb8-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -288,16 +289,11 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
         {tenant && <PlanBadge tenant={tenant} />}
         {/* Wallet */}
         <WalletBadge />
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="text-muted-foreground hover:text-foreground"
-          title={theme === "dark" ? "Tema claro" : "Tema escuro"}
-        >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
+        {/* Theme Toggle - BB8 */}
+        <BB8Toggle
+          checked={theme === "dark"}
+          onChange={(checked) => setTheme(checked ? "dark" : "light")}
+        />
         {/* Notifications */}
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>
           <PopoverTrigger asChild>
