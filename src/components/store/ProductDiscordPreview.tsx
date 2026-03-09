@@ -1,5 +1,6 @@
 import { Eye } from "lucide-react";
 import { useTenant } from "@/contexts/TenantContext";
+import { type DiscordButtonStyle, getDiscordButtonStyles } from "@/components/discord/DiscordButtonStylePicker";
 
 interface Product {
   id: string;
@@ -14,6 +15,7 @@ interface Product {
   banner_url?: string | null;
   auto_delivery?: boolean;
   category_id?: string | null;
+  button_style?: DiscordButtonStyle;
 }
 
 interface PreviewField {
