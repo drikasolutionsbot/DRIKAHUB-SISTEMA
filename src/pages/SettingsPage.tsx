@@ -144,6 +144,9 @@ const SettingsPage = () => {
         <Tabs defaultValue={defaultTab} className="relative mt-5">
           <div className="overflow-x-auto -mx-6 px-6 scrollbar-none">
             <TabsList className="bg-muted/60 backdrop-blur-sm border border-border/50 p-1 h-auto gap-1 w-max min-w-full sm:w-auto">
+              <TabsTrigger value="profile" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
+                <User className="h-4 w-4" /> Perfil
+              </TabsTrigger>
               <TabsTrigger value="pix" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
                 <QrCode className="h-4 w-4" /> PIX
               </TabsTrigger>
