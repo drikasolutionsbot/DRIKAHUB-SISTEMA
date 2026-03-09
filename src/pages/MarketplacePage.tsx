@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { ShoppingBag, Search, Filter, Star, Download, Eye, Tag, TrendingUp, Package, Sparkles } from "lucide-react";
+import { ShoppingBag, Search, Filter, Star, Download, Eye, Tag, TrendingUp, Package, Sparkles, Lock, Crown } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTenant } from "@/contexts/TenantContext";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
