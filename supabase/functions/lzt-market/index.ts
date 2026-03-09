@@ -65,6 +65,25 @@ const RU_PT_MAP: Record<string, string> = {
   "не": "não", "нет": "não", "да": "sim",
 };
 
+// Extract best available image URL from LZT item data
+function extractImageUrl(item: Record<string, unknown>): string | null {
+  // Try common image fields from LZT API
+  if (item.primary_img && typeof item.primary_img === "string") return item.primary_img;
+  if (item.ss && typeof item.ss === "object" && item.ss !== null) {
+    const screenshots = Object.values(item.ss as Record<string, unknown>);
+    if (screenshots.length > 0) {
+      const first = screenshots[0];
+      if (typeof first === "string") return first;
+      if (typeof first === "object" && first !== null && "normal_size" in (first as Record<string, unknown>)) {
+        return (first as Record<string, string>).normal_size;
+      }
+    }
+  }
+  if (item.image_url && typeof item.image_url === "string") return item.image_url;
+  if (item.thumbnail_url && typeof item.thumbnail_url === "string") return item.thumbnail_url;
+  return null;
+}
+
 function translateRuToPt(text: string): string {
   if (!text) return text;
   let result = text;
