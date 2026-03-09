@@ -217,6 +217,9 @@ async function generateViaPushinPay(config: any, tenant_id: string, email: strin
       payment_id: paymentId,
       subscription_id: inserted?.id,
       amount_cents: amountCents,
+      amount: (amountCents / 100).toFixed(2),
+      method: "dynamic",
+      provider: "pushinpay",
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
