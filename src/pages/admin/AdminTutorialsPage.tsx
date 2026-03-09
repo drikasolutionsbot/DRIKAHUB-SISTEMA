@@ -95,7 +95,10 @@ const AdminTutorialsPage = () => {
 
   const handleSave = async () => {
     if (!title.trim()) { toast.error("Título obrigatório"); return; }
-    if (!videoUrl.trim()) { toast.error("URL do vídeo obrigatória"); return; }
+    if (!videoUrl.trim()) { 
+      toast.error(videoType === "upload" ? "Envie um arquivo de vídeo" : "URL do vídeo obrigatória"); 
+      return; 
+    }
     setSaving(true);
     try {
       const payload = {
