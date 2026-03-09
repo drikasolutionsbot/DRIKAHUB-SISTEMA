@@ -38,6 +38,7 @@ interface PostMessageModalProps {
     compare_price_cents?: number | null;
     icon_url?: string | null;
     banner_url?: string | null;
+    auto_delivery?: boolean;
   };
 }
 
