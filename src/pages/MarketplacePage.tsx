@@ -148,11 +148,8 @@ const MarketplacePage = () => {
                               Comprar
                             </Button>
                           </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                );
               })}
             </div>
           )}
