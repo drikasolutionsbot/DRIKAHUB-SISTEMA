@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingBag, Search, Filter, Star, Download, Eye, Tag, TrendingUp, Package, Sparkles, Lock, Crown } from "lucide-react";
+import { ShoppingBag, Search, Filter, Star, Download, Eye, Tag, TrendingUp, Package, Sparkles, Lock, Crown, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTenant } from "@/contexts/TenantContext";
