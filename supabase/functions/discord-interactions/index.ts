@@ -847,6 +847,58 @@ serve(async (req) => {
     }
   }
 
+  // Type 5: MODAL_SUBMIT
+  if (interaction.type === 5) {
+    const customId = interaction.data?.custom_id || "";
+    const userId = interaction.member?.user?.id || interaction.user?.id;
+
+    try {
+      // ─── TICKET RENAME MODAL SUBMIT ──────────────────────
+      if (customId.startsWith("ticket_rename_modal_")) {
+        const ticketId = customId.replace("ticket_rename_modal_", "");
+        await respondDeferred(interaction, botToken);
+
+        const newName = interaction.data?.components?.[0]?.components?.[0]?.value || "";
+        if (!newName) {
+          await editFollowup(interaction, botToken, "❌ Nome inválido.");
+          return ok();
+        }
+
+        const { data: ticket } = await supabase
+          .from("tickets")
+          .select("discord_channel_id")
+          .eq("id", ticketId)
+          .single();
+
+        if (!ticket?.discord_channel_id) {
+          await editFollowup(interaction, botToken, "❌ Ticket não encontrado.");
+          return ok();
+        }
+
+        // Rename the thread
+        const renameRes = await fetch(`${DISCORD_API}/channels/${ticket.discord_channel_id}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName.substring(0, 100) }),
+        });
+
+        if (!renameRes.ok) {
+          await editFollowup(interaction, botToken, "❌ Não foi possível renomear o ticket.");
+          return ok();
+        }
+
+        await editFollowup(interaction, botToken, `✅ Ticket renomeado para: **${newName.substring(0, 100)}**`);
+        return ok();
+      }
+    } catch (err) {
+      console.error("Modal interaction error:", err);
+      try {
+        await editFollowup(interaction, botToken, `❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
+      } catch {}
+      return ok();
+    }
+  }
+
   return new Response(JSON.stringify({ type: 1 }), {
     headers: { "Content-Type": "application/json" },
   });
