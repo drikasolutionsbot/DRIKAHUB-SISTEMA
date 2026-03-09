@@ -478,6 +478,33 @@ serve(async (req) => {
         return ok();
       }
 
+      // ─── CANCEL ORDER (buyer button in DM) ────────────────
+      if (customId.startsWith("cancel_order:")) {
+        const orderId = customId.replace("cancel_order:", "");
+        await respondDeferredUpdate(interaction, botToken);
+
+        const { data: order } = await supabase.from("orders").select("*").eq("id", orderId).single();
+        if (!order) { await editFollowup(interaction, botToken, "❌ Pedido não encontrado."); return ok(); }
+
+        if (order.status !== "pending_payment") {
+          await editFollowup(interaction, botToken, `ℹ️ Pedido #${order.order_number} não pode ser cancelado (status: **${order.status}**).`);
+          return ok();
+        }
+
+        await supabase.from("orders").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("id", orderId);
+
+        await editFollowup(interaction, botToken, {
+          embeds: [{
+            title: "❌ Compra Cancelada",
+            description: `Pedido **#${order.order_number}** (${order.product_name}) foi cancelado.`,
+            color: 0xED4245,
+            timestamp: new Date().toISOString(),
+          }],
+          components: [],
+        });
+        return ok();
+      }
+
       // ─── TICKET OPEN (from ticket embed button) ───────────
       if (customId.startsWith("ticket_open_")) {
         const ticketTenantId = customId.replace("ticket_open_", "");
