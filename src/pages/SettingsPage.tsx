@@ -80,18 +80,8 @@ const SettingsPage = () => {
     enabled: !!tenantId,
   });
 
-  const handleSaveBranding = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!tenantId) return;
-    const form = new FormData(e.currentTarget);
-    await (supabase as any).from("tenants").update({
-      name: form.get("name"),
-      primary_color: form.get("primary_color"),
-      secondary_color: form.get("secondary_color"),
-    }).eq("id", tenantId);
-    refetchTenant();
-    toast({ title: "Configurações salvas" });
-  };
+
+
 
   const handleSavePix = async () => {
     if (!tenantId) return;
