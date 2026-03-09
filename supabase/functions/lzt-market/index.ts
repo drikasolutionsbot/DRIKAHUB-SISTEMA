@@ -67,7 +67,7 @@ const RU_PT_MAP: Record<string, string> = {
 
 // Extract best available image URL from LZT item data
 function extractImageUrl(item: Record<string, unknown>): string | null {
-  // 1. Try imagePreviewLinks array (some categories have preview images)
+  // 1. Try imagePreviewLinks array
   if (Array.isArray(item.imagePreviewLinks) && item.imagePreviewLinks.length > 0) {
     const first = item.imagePreviewLinks[0];
     if (typeof first === "string") return first;
@@ -77,28 +77,35 @@ function extractImageUrl(item: Record<string, unknown>): string | null {
       if (obj.url) return obj.url;
     }
   }
-  // 2. For Minecraft accounts, generate skin render from minecraft_id
-  if (item.minecraft_id && typeof item.minecraft_id === "string") {
-    return `https://crafatar.com/renders/body/${item.minecraft_id}?overlay&scale=4`;
-  }
-  // 3. Try common image fields
-  if (item.primary_img && typeof item.primary_img === "string") return item.primary_img;
+  // 2. Screenshots object (ss)
   if (item.ss && typeof item.ss === "object" && item.ss !== null) {
     const screenshots = Object.values(item.ss as Record<string, unknown>);
     if (screenshots.length > 0) {
       const first = screenshots[0];
       if (typeof first === "string") return first;
-      if (typeof first === "object" && first !== null && "normal_size" in (first as Record<string, unknown>)) {
-        return (first as Record<string, string>).normal_size;
+      if (typeof first === "object" && first !== null) {
+        const obj = first as Record<string, string>;
+        if (obj.normal_size) return obj.normal_size;
+        if (obj.small_size) return obj.small_size;
       }
     }
   }
+  // 3. Common image fields
+  if (item.primary_img && typeof item.primary_img === "string") return item.primary_img;
   if (item.image_url && typeof item.image_url === "string") return item.image_url;
   if (item.thumbnail_url && typeof item.thumbnail_url === "string") return item.thumbnail_url;
   // 4. Extract first image from descriptionHtml
   if (item.descriptionHtml && typeof item.descriptionHtml === "string") {
     const imgMatch = (item.descriptionHtml as string).match(/<img[^>]+src=["']([^"']+)["']/i);
     if (imgMatch && imgMatch[1]) return imgMatch[1];
+  }
+  // 5. For Minecraft accounts, use mc-heads.net (reliable alternative to crafatar)
+  if (item.minecraft_id && typeof item.minecraft_id === "string") {
+    return `https://mc-heads.net/body/${item.minecraft_id}/right`;
+  }
+  // 6. Try login/username for Minecraft skin via mc-heads
+  if (item.login && typeof item.login === "string") {
+    return `https://mc-heads.net/body/${item.login}/right`;
   }
   return null;
 }
