@@ -175,9 +175,14 @@ const MarketplaceCard = ({ item }: { item: MarketplaceItem }) => (
 );
 
 const MarketplacePage = () => {
+  const { tenant } = useTenant();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
+
+  const isPro = tenant?.plan === "pro";
+  const isLocked = !isPro;
 
   const filtered = mockItems
     .filter((item) => {
