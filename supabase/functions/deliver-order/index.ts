@@ -310,28 +310,66 @@ serve(async (req) => {
       .eq("id", order_id)
       .eq("tenant_id", tenant_id);
 
-    // 11. Log to store logs channel if configured
+    // 11. Log to store logs channel if configured — detailed embed like reference
     if (storeConfig?.logs_channel_id) {
-      const logEmbed = {
-        title: "📦 Entrega via Ticket",
-        description: `Pedido **#${order.order_number}** entregue para <@${order.discord_user_id}> no canal <#${ticketChannel.id}>`,
-        color: 0x57F287,
-        fields: [
-          { name: "Produto", value: order.product_name, inline: true },
-          { name: "Itens", value: `${stockItems.length}`, inline: true },
-          { name: "Canal", value: `<#${ticketChannel.id}>`, inline: true },
-        ],
-        timestamp: new Date().toISOString(),
-      };
+      try {
+        // Build detailed delivery log embed
+        const deliveryLogEmbed: any = {
+          title: "🚀 Entrega realizada!",
+          description: `Usuário <@${order.discord_user_id}> teve seu pedido entregue.`,
+          color: 0x57F287,
+          fields: [
+            { name: "**Detalhes**", value: `${stockItems.length}x ${order.product_name} | ${formatBRL(order.total_cents)}`, inline: false },
+            { name: "**ID do Pedido**", value: order.id, inline: false },
+          ],
+          footer: { text: `${tenant?.name || "Loja"} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` },
+          timestamp: new Date().toISOString(),
+        };
 
-      await fetch(`${DISCORD_API}/channels/${storeConfig.logs_channel_id}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ embeds: [logEmbed] }),
-      });
+        if (order.payment_provider) {
+          deliveryLogEmbed.fields.push({
+            name: "**Forma de Pagamento**",
+            value: `💎 ${order.payment_provider === "pushinpay" ? "Pix - PushinPay" : order.payment_provider === "efi" ? "Pix - Efi Bank" : order.payment_provider === "mercadopago" ? "Pix - Mercado Pago" : order.payment_provider}`,
+            inline: false,
+          });
+        }
+
+        if (tenant?.logo_url) {
+          deliveryLogEmbed.thumbnail = { url: tenant.logo_url };
+        }
+
+        // Send with stock file attached if there are items
+        if (stockItems.length > 0) {
+          const stockContent = stockItems.map((item: any) => item.content).join("\n");
+          const blob = new Blob([stockContent], { type: "text/plain" });
+          const logFormData = new FormData();
+          logFormData.append("files[0]", blob, `pedido-${order.order_number}.txt`);
+
+          const logPayload: any = {
+            embeds: [deliveryLogEmbed],
+            attachments: [{ id: 0, filename: `pedido-${order.order_number}.txt`, description: "Conteúdo entregue" }],
+          };
+
+          logFormData.append("payload_json", JSON.stringify(logPayload));
+
+          await fetch(`${DISCORD_API}/channels/${storeConfig.logs_channel_id}/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bot ${botToken}` },
+            body: logFormData,
+          });
+        } else {
+          await fetch(`${DISCORD_API}/channels/${storeConfig.logs_channel_id}/messages`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${botToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ embeds: [deliveryLogEmbed] }),
+          });
+        }
+      } catch (logErr) {
+        console.error("Failed to send delivery log:", logErr);
+      }
     }
 
     const result = {
