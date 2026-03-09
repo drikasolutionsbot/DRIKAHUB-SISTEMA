@@ -557,7 +557,10 @@ serve(async (req) => {
         }
 
         // Determine which channel to create the thread in
-        const parentChannelId = targetChannelId || storeConfig?.ticket_channel_id || interaction.channel_id;
+        // Use the channel where the button was clicked (interaction.channel_id) as the primary source
+        const parentChannelId = targetChannelId || interaction.channel_id || storeConfig?.ticket_channel_id;
+
+        console.log("Ticket open: parentChannelId =", parentChannelId, "targetChannelId =", targetChannelId, "interaction.channel_id =", interaction.channel_id);
 
         // Create a thread (topic) in the selected channel
         const threadName = `Abrir ticket · ${username || "user"} · ${userId}`.substring(0, 100);
@@ -572,6 +575,8 @@ serve(async (req) => {
             auto_archive_duration: 10080, // 7 days
           }),
         });
+
+        console.log("Thread creation status:", threadRes.status);
 
         if (!threadRes.ok) {
           const errText = await threadRes.text();
