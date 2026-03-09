@@ -361,6 +361,7 @@ const AdminMarketplacePage = () => {
                       {item.extracted_image_url && (
                         <img src={item.extracted_image_url} alt="" className="h-10 w-10 rounded-md object-cover shrink-0 border border-border" />
                       )}
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{getItemDisplayTitle(item)}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>R$ {(item.price || 0).toFixed(2).replace('.', ',')}</span>
