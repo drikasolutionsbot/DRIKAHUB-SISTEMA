@@ -116,6 +116,7 @@ const TicketEmbedConfig = () => {
           ticket_embed_button_label: data.ticket_embed_button_label || null,
           ticket_embed_button_style: data.ticket_embed_button_style || "glass",
           ticket_channel_id: data.ticket_channel_id || null,
+          ticket_logs_channel_id: data.ticket_logs_channel_id || null,
           updated_at: new Date().toISOString(),
         } as any)
         .eq("tenant_id", tenantId);
