@@ -597,7 +597,7 @@ const LandingPage = () => {
 
       {/* Subscription Payment Modal */}
       {paymentOpen && (
-        <SubscriptionPaymentModal onClose={() => setPaymentOpen(false)} />
+        <SubscriptionPaymentModal onClose={() => setPaymentOpen(false)} priceCents={landingConfig?.pro_price_cents || 2690} />
       )}
 
       {/* ===== 6. PRICING ===== */}
