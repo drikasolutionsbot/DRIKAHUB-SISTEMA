@@ -436,7 +436,7 @@ const AdminMarketplacePage = () => {
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Custo (LZT)</span>
-              <span className="font-semibold">${(importItem?.item.price || 0).toFixed(2)}</span>
+              <span className="font-semibold">R$ {(importItem?.item.price || 0).toFixed(2).replace('.', ',')}</span>
             </div>
             <div className="space-y-2">
               <Label>Preço de revenda (R$)</Label>
