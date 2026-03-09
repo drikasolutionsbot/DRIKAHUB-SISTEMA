@@ -108,7 +108,7 @@ serve(async (req) => {
     // 4. Get ticket embed config
     const { data: storeConfig } = await supabase
       .from("store_configs")
-      .select("logs_channel_id, ticket_embed_title, ticket_embed_description, ticket_embed_color, ticket_embed_image_url, ticket_embed_thumbnail_url, ticket_embed_footer, ticket_channel_id, customer_role_id")
+      .select("logs_channel_id, sales_channel_id, ticket_embed_title, ticket_embed_description, ticket_embed_color, ticket_embed_image_url, ticket_embed_thumbnail_url, ticket_embed_footer, ticket_channel_id, customer_role_id, purchase_embed_color, purchase_embed_title, purchase_embed_description, purchase_embed_footer, purchase_embed_image_url, purchase_embed_thumbnail_url")
       .eq("tenant_id", tenant_id)
       .single();
 
