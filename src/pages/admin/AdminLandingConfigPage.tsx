@@ -142,6 +142,39 @@ const AdminLandingConfigPage = () => {
         <p className="text-muted-foreground">Configure os dados exibidos na página inicial</p>
       </div>
 
+      {/* Pro Plan Price */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" />
+            Preço do Plano Pro
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Defina o valor mensal do plano Pro. Este valor será exibido na landing page e cobrado no checkout.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg border border-border bg-muted/30">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Valor em R$</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={(form.pro_price_cents / 100).toFixed(2)}
+                onChange={(e) => setForm((p) => ({ ...p, pro_price_cents: Math.round(parseFloat(e.target.value || "0") * 100) }))}
+                placeholder="26.90"
+              />
+            </div>
+            <div className="flex items-end">
+              <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-semibold text-primary">
+                R$ {(form.pro_price_cents / 100).toFixed(2).replace(".", ",")}/mês
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Social Proof Stats */}
       <Card className="bg-card border-border">
         <CardHeader>
