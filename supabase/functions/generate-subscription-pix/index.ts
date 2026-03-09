@@ -162,6 +162,9 @@ async function generateViaEfi(config: any, tenant_id: string, email: string | un
       payment_id: paymentId,
       subscription_id: inserted?.id,
       amount_cents: amountCents,
+      amount: amountBRL.toFixed(2),
+      method: "dynamic",
+      provider: "efi",
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
