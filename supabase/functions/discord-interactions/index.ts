@@ -1005,7 +1005,7 @@ serve(async (req) => {
           });
         }
 
-        // Send closing message then delete channel after 10 seconds
+        // Archive: send closing message and lock channel (don't delete)
         const channelId = interaction.channel_id || ticket.discord_channel_id;
         if (channelId) {
           await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
@@ -1013,24 +1013,30 @@ serve(async (req) => {
             headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
             body: JSON.stringify({
               embeds: [{
-                title: "🔒 Ticket Fechado",
-                description: `Este ticket foi fechado por <@${userId}>.\nO canal será excluído em 10 segundos.`,
-                color: 0xED4245,
+                title: "📁 Ticket Arquivado",
+                description: `Este ticket foi arquivado por <@${userId}>.\nO canal está agora somente leitura.`,
+                color: 0xFEE75C,
               }],
             }),
           });
 
-          // Delete channel after 10 seconds
-          setTimeout(async () => {
-            try {
-              await fetch(`${DISCORD_API}/channels/${channelId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bot ${botToken}` },
-              });
-            } catch (e) {
-              console.error("Failed to delete ticket channel:", e);
-            }
-          }, 10000);
+          // Lock the channel by denying SEND_MESSAGES for @everyone
+          const { data: tenantGuild } = await supabase
+            .from("tenants")
+            .select("discord_guild_id")
+            .eq("id", ticket.tenant_id)
+            .single();
+
+          if (tenantGuild?.discord_guild_id) {
+            await fetch(`${DISCORD_API}/channels/${channelId}/permissions/${tenantGuild.discord_guild_id}`, {
+              method: "PUT",
+              headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                deny: "3072", // VIEW_CHANNEL (1024) + SEND_MESSAGES (2048)
+                type: 0, // role
+              }),
+            });
+          }
         }
 
         return ok();
