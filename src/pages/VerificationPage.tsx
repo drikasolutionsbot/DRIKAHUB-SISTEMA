@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import ChannelSelectWithCreate from "@/components/channels/ChannelSelectWithCreate";
+import { DiscordButtonStylePicker, type DiscordButtonStyle, getDiscordButtonStyles } from "@/components/discord/DiscordButtonStylePicker";
 
 interface VerifyConfig {
   verify_enabled: boolean;
@@ -21,7 +22,7 @@ interface VerifyConfig {
   verify_button_label: string;
   verify_embed_color: string;
   verify_image_url: string;
-  verify_button_style: "default" | "glass";
+  verify_button_style: DiscordButtonStyle;
 }
 
 const defaultConfig: VerifyConfig = {
@@ -33,7 +34,7 @@ const defaultConfig: VerifyConfig = {
   verify_button_label: "Verificar",
   verify_embed_color: "#5865F2",
   verify_image_url: "",
-  verify_button_style: "default",
+  verify_button_style: "primary",
 };
 
 const VerificationPage = () => {
@@ -319,34 +320,11 @@ const VerificationPage = () => {
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label>Estilo do Botão</Label>
-                <div className="flex gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => update("verify_button_style", "default")}
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
-                      config.verify_button_style === "default"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
-                    }`}
-                  >
-                    <span className="inline-block h-5 w-14 rounded bg-[#5865F2] text-[9px] text-white flex items-center justify-center">Padrão</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update("verify_button_style", "glass")}
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-3 text-xs font-medium transition-all ${
-                      config.verify_button_style === "glass"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
-                    }`}
-                  >
-                    <span className="inline-block h-5 w-14 rounded text-[9px] text-white flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(88,101,242,0.4), rgba(88,101,242,0.15))", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.1)" }}>Glass</span>
-                  </button>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Escolha a aparência do botão de verificação no Discord</p>
-              </div>
+              <DiscordButtonStylePicker
+                value={config.verify_button_style}
+                onChange={(style) => update("verify_button_style", style)}
+                label="Estilo do Botão"
+              />
               <div>
                 <Label>Cor do Embed</Label>
                 <div className="flex gap-2 mt-1">
@@ -466,22 +444,42 @@ const VerificationPage = () => {
 
             {/* Button */}
             <div className="mt-2">
-              {config.verify_button_style === "glass" ? (
-                <button
-                  className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10"
-                  style={{
-                    background: `linear-gradient(135deg, ${config.verify_embed_color}66, ${config.verify_embed_color}26)`,
-                    backdropFilter: "blur(8px)",
-                    boxShadow: `0 0 12px ${config.verify_embed_color}20`,
-                  }}
-                >
-                  🔗 {config.verify_button_label || "Verificar"}
-                </button>
-              ) : (
-                <button className="bg-[#5865F2] text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default">
-                  🔗 {config.verify_button_label || "Verificar"}
-                </button>
-              )}
+              {(() => {
+                const style = config.verify_button_style || "primary";
+                const isGlass = style === "glass";
+                const isLink = style === "link";
+                const styleConfig = getDiscordButtonStyles(style);
+                
+                if (isGlass) {
+                  return (
+                    <button
+                      className="text-white text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default border border-white/10 bg-white/10 backdrop-blur-sm"
+                    >
+                      🔗 {config.verify_button_label || "Verificar"}
+                    </button>
+                  );
+                }
+                
+                if (isLink) {
+                  return (
+                    <button className="text-[#00AFF4] text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default underline bg-transparent">
+                      🔗 {config.verify_button_label || "Verificar"}
+                    </button>
+                  );
+                }
+                
+                return (
+                  <button
+                    className="text-xs font-medium px-4 py-1.5 rounded flex items-center gap-1.5 cursor-default"
+                    style={{
+                      backgroundColor: styleConfig.bgColor,
+                      color: styleConfig.textColor,
+                    }}
+                  >
+                    🔗 {config.verify_button_label || "Verificar"}
+                  </button>
+                );
+              })()}
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground">
