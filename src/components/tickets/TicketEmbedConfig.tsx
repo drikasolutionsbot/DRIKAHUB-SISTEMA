@@ -243,6 +243,11 @@ const TicketEmbedConfig = () => {
                 Os tickets criados serão organizados dentro desta categoria/canal
               </p>
             </div>
+            <DiscordButtonStylePicker
+              value={data.ticket_embed_button_style}
+              onChange={(style) => update("ticket_embed_button_style", style)}
+              label="Estilo do Botão"
+            />
           </CardContent>
         </Card>
 
