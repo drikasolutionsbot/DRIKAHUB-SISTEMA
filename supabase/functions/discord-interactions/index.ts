@@ -805,7 +805,7 @@ serve(async (req) => {
           });
         }
 
-        // Send closing message in the ticket channel then delete after 5 seconds
+        // Send closing message in the ticket thread and archive it
         const channelId = interaction.channel_id || ticket.discord_channel_id;
         if (channelId) {
           await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
@@ -814,23 +814,18 @@ serve(async (req) => {
             body: JSON.stringify({
               embeds: [{
                 title: "🔒 Ticket Fechado",
-                description: `Este ticket foi fechado por <@${userId}>.\nO canal será excluído em 10 segundos.`,
+                description: `Este ticket foi fechado por <@${userId}>.\nO tópico será arquivado.`,
                 color: 0xED4245,
               }],
             }),
           });
 
-          // Delete channel after 10 seconds
-          setTimeout(async () => {
-            try {
-              await fetch(`${DISCORD_API}/channels/${channelId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bot ${botToken}` },
-              });
-            } catch (e) {
-              console.error("Failed to delete ticket channel:", e);
-            }
-          }, 10000);
+          // Archive and lock the thread instead of deleting
+          await fetch(`${DISCORD_API}/channels/${channelId}`, {
+            method: "PATCH",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ archived: true, locked: true }),
+          });
         }
 
         return ok();
