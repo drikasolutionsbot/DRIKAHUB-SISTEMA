@@ -160,14 +160,14 @@ export const MarketplaceItemDetail = ({ title, description, imageUrl, lztData, p
             {hypixelBan !== undefined && (
               <TextField
                 label="Banido no Hypixel"
-                value={hypixelBan === "none" || hypixelBan === null || hypixelBan === false ? "Nenhum" : String(hypixelBan)}
+                value={!hypixelBan || hypixelBan === "none" ? "Nenhum" : String(hypixelBan)}
                 icon={<Shield className="h-3.5 w-3.5 text-muted-foreground" />}
               />
             )}
-            {hypixelRank !== undefined && hypixelRank !== false && (
+            {hypixelRank !== undefined && hypixelRank && (
               <TextField
                 label="Classificação (Hypixel)"
-                value={hypixelRank === true ? "Sim" : hypixelRank === false ? "Não" : String(hypixelRank)}
+                value={hypixelRank === true ? "Sim" : String(hypixelRank)}
                 icon={<Crown className="h-3.5 w-3.5 text-muted-foreground" />}
               />
             )}
