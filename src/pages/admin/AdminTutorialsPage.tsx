@@ -95,7 +95,10 @@ const AdminTutorialsPage = () => {
 
   const handleSave = async () => {
     if (!title.trim()) { toast.error("Título obrigatório"); return; }
-    if (!videoUrl.trim()) { toast.error("URL do vídeo obrigatória"); return; }
+    if (!videoUrl.trim()) { 
+      toast.error(videoType === "upload" ? "Envie um arquivo de vídeo" : "URL do vídeo obrigatória"); 
+      return; 
+    }
     setSaving(true);
     try {
       const payload = {
@@ -348,7 +351,12 @@ const AdminTutorialsPage = () => {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleUploadFile(file, "videos", setVideoUrl, setUploadingVideo);
+                      if (file) {
+                        handleUploadFile(file, "videos", (url) => {
+                          setVideoUrl(url);
+                          setVideoType("upload");
+                        }, setUploadingVideo);
+                      }
                     }}
                   />
                 </div>
