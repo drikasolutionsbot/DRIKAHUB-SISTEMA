@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, Palette, Type, Image, MessageSquare } from "lucide-react";
+import { Loader2, Save, Palette, Type, Image, MessageSquare, Send } from "lucide-react";
 import ImageUploadField from "@/components/customization/ImageUploadField";
 import ChannelSelectWithCreate from "@/components/channels/ChannelSelectWithCreate";
 import { DiscordButtonStylePicker, getDiscordButtonStyles, type DiscordButtonStyle } from "@/components/discord/DiscordButtonStylePicker";
@@ -41,6 +41,7 @@ const TicketEmbedConfig = () => {
   const [data, setData] = useState<TicketEmbedData>(defaults);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [channels, setChannels] = useState<{ id: string; name: string; parent_id?: string | null }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; position: number }[]>([]);
 
@@ -121,6 +122,37 @@ const TicketEmbedConfig = () => {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!tenantId || !data.ticket_channel_id) {
+      toast.error("Selecione um canal antes de enviar.");
+      return;
+    }
+    setSending(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("send-ticket-embed", {
+        body: {
+          tenant_id: tenantId,
+          channel_id: data.ticket_channel_id,
+          title: data.ticket_embed_title,
+          description: data.ticket_embed_description,
+          button_label: data.ticket_embed_button_label,
+          button_style: data.ticket_embed_button_style,
+          embed_color: data.ticket_embed_color,
+          image_url: data.ticket_embed_image_url || undefined,
+          thumbnail_url: data.ticket_embed_thumbnail_url || undefined,
+          footer: data.ticket_embed_footer || undefined,
+        },
+      });
+      if (error) throw error;
+      if (res?.error) throw new Error(res.error);
+      toast.success("Embed de ticket enviado ao canal!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -251,10 +283,21 @@ const TicketEmbedConfig = () => {
           </CardContent>
         </Card>
 
-        <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar Configuração
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSave} disabled={saving || sending} className="flex-1 gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar
+          </Button>
+          <Button
+            onClick={handleSend}
+            disabled={sending || saving || !data.ticket_channel_id}
+            variant="secondary"
+            className="flex-1 gap-2"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Enviar ao Canal
+          </Button>
+        </div>
       </div>
 
       {/* Discord Preview */}
