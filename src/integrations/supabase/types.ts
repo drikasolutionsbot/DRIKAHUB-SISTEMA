@@ -1645,7 +1645,10 @@ export type Database = {
       }
       tickets: {
         Row: {
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
+          discord_channel_id: string | null
           discord_user_id: string
           discord_username: string | null
           id: string
@@ -1656,7 +1659,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
+          discord_channel_id?: string | null
           discord_user_id: string
           discord_username?: string | null
           id?: string
@@ -1667,7 +1673,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
+          discord_channel_id?: string | null
           discord_user_id?: string
           discord_username?: string | null
           id?: string

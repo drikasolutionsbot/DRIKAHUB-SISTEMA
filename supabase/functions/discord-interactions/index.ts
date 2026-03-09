@@ -452,6 +452,236 @@ serve(async (req) => {
         return ok();
       }
 
+      // ─── TICKET OPEN (from ticket embed button) ───────────
+      if (customId.startsWith("ticket_open_")) {
+        const ticketTenantId = customId.replace("ticket_open_", "");
+        await respondDeferred(interaction, botToken);
+
+        // Get tenant guild + ticket config
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("discord_guild_id, name, logo_url")
+          .eq("id", ticketTenantId)
+          .single();
+
+        if (!tenant?.discord_guild_id) {
+          await editFollowup(interaction, botToken, "❌ Servidor não configurado.");
+          return ok();
+        }
+
+        const { data: storeConfig } = await supabase
+          .from("store_configs")
+          .select("ticket_channel_id, ticket_embed_title, ticket_embed_description, ticket_embed_color, ticket_embed_footer, ticket_logs_channel_id")
+          .eq("tenant_id", ticketTenantId)
+          .single();
+
+        const parentId = storeConfig?.ticket_channel_id || null;
+        const guildId = tenant.discord_guild_id;
+
+        // Check if user already has an open ticket
+        const { data: existingTickets } = await supabase
+          .from("tickets")
+          .select("id")
+          .eq("tenant_id", ticketTenantId)
+          .eq("discord_user_id", userId)
+          .in("status", ["open", "in_progress"]);
+
+        if (existingTickets && existingTickets.length > 0) {
+          await editFollowup(interaction, botToken, "⚠️ Você já possui um ticket aberto. Feche o ticket atual antes de abrir outro.");
+          return ok();
+        }
+
+        // Create private channel for the ticket
+        const channelName = `ticket-${username || userId}`.toLowerCase().replace(/[^a-z0-9-_]/g, "").substring(0, 100);
+
+        const channelBody: any = {
+          name: channelName,
+          type: 0, // text channel
+          permission_overwrites: [
+            // Deny @everyone view
+            {
+              id: guildId, // @everyone role ID = guild ID
+              type: 0, // role
+              deny: "1024", // VIEW_CHANNEL
+            },
+            // Allow the ticket creator
+            {
+              id: userId,
+              type: 1, // member
+              allow: "1024", // VIEW_CHANNEL
+            },
+          ],
+        };
+
+        if (parentId) channelBody.parent_id = parentId;
+
+        const createChRes = await fetch(`${DISCORD_API}/guilds/${guildId}/channels`, {
+          method: "POST",
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(channelBody),
+        });
+
+        if (!createChRes.ok) {
+          const errText = await createChRes.text();
+          console.error("Failed to create ticket channel:", errText);
+          await editFollowup(interaction, botToken, "❌ Não foi possível criar o canal do ticket. Verifique as permissões do bot.");
+          return ok();
+        }
+
+        const ticketChannel = await createChRes.json();
+
+        // Insert ticket in DB
+        const { data: ticket, error: ticketErr } = await supabase
+          .from("tickets")
+          .insert({
+            tenant_id: ticketTenantId,
+            discord_user_id: userId,
+            discord_username: username,
+            discord_channel_id: ticketChannel.id,
+            status: "open",
+          })
+          .select()
+          .single();
+
+        if (ticketErr) {
+          console.error("Ticket insert error:", ticketErr);
+          await editFollowup(interaction, botToken, "❌ Erro ao criar ticket no banco de dados.");
+          return ok();
+        }
+
+        // Send welcome embed in the new channel
+        const embedColor = parseInt((storeConfig?.ticket_embed_color || "#5865F2").replace("#", ""), 16);
+        const welcomeEmbed: any = {
+          title: storeConfig?.ticket_embed_title || "🎫 Ticket de Suporte",
+          description: (storeConfig?.ticket_embed_description || "Seu ticket foi criado com sucesso! Aguarde atendimento.")
+            .replace("{user}", `<@${userId}>`)
+            .replace("{ticket_id}", ticket.id.slice(0, 8)),
+          color: embedColor,
+          timestamp: new Date().toISOString(),
+        };
+
+        if (storeConfig?.ticket_embed_footer) {
+          welcomeEmbed.footer = { text: storeConfig.ticket_embed_footer };
+        }
+
+        await fetch(`${DISCORD_API}/channels/${ticketChannel.id}/messages`, {
+          method: "POST",
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `<@${userId}>`,
+            embeds: [welcomeEmbed],
+            components: [{
+              type: 1,
+              components: [
+                {
+                  type: 2,
+                  style: 4, // Danger (red)
+                  label: "🔒 Fechar Ticket",
+                  custom_id: `ticket_close_${ticket.id}`,
+                },
+              ],
+            }],
+          }),
+        });
+
+        await editFollowup(interaction, botToken, `✅ Ticket criado! Acesse <#${ticketChannel.id}>`);
+        return ok();
+      }
+
+      // ─── TICKET CLOSE (button inside ticket channel) ──────
+      if (customId.startsWith("ticket_close_")) {
+        const ticketId = customId.replace("ticket_close_", "");
+        await respondDeferredUpdate(interaction, botToken);
+
+        const { data: ticket } = await supabase
+          .from("tickets")
+          .select("*, tenant_id")
+          .eq("id", ticketId)
+          .single();
+
+        if (!ticket) {
+          await editFollowup(interaction, botToken, "❌ Ticket não encontrado.");
+          return ok();
+        }
+
+        if (ticket.status === "closed") {
+          await editFollowup(interaction, botToken, "ℹ️ Este ticket já está fechado.");
+          return ok();
+        }
+
+        // Update ticket status
+        await supabase
+          .from("tickets")
+          .update({
+            status: "closed",
+            closed_by: username || userId,
+            closed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", ticketId);
+
+        // Send log to ticket_logs_channel_id
+        const { data: sc } = await supabase
+          .from("store_configs")
+          .select("ticket_logs_channel_id")
+          .eq("tenant_id", ticket.tenant_id)
+          .single();
+
+        if (sc?.ticket_logs_channel_id) {
+          const logEmbed = {
+            title: "🔒 Ticket Fechado",
+            color: 0xED4245,
+            fields: [
+              { name: "👤 Usuário", value: `<@${ticket.discord_user_id}> (${ticket.discord_username || "N/A"})`, inline: true },
+              { name: "🔐 Fechado por", value: `<@${userId}>`, inline: true },
+              { name: "📅 Criado em", value: `<t:${Math.floor(new Date(ticket.created_at).getTime() / 1000)}:f>`, inline: true },
+              { name: "📅 Fechado em", value: `<t:${Math.floor(Date.now() / 1000)}:f>`, inline: true },
+            ],
+            timestamp: new Date().toISOString(),
+          };
+
+          if (ticket.product_name) {
+            logEmbed.fields.push({ name: "📦 Produto", value: ticket.product_name, inline: true });
+          }
+
+          await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ embeds: [logEmbed] }),
+          });
+        }
+
+        // Send closing message in the ticket channel then delete after 5 seconds
+        const channelId = interaction.channel_id || ticket.discord_channel_id;
+        if (channelId) {
+          await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              embeds: [{
+                title: "🔒 Ticket Fechado",
+                description: `Este ticket foi fechado por <@${userId}>.\nO canal será excluído em 10 segundos.`,
+                color: 0xED4245,
+              }],
+            }),
+          });
+
+          // Delete channel after 10 seconds
+          setTimeout(async () => {
+            try {
+              await fetch(`${DISCORD_API}/channels/${channelId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bot ${botToken}` },
+              });
+            } catch (e) {
+              console.error("Failed to delete ticket channel:", e);
+            }
+          }, 10000);
+        }
+
+        return ok();
+      }
+
     } catch (err) {
       console.error("Interaction error:", err);
       try {
