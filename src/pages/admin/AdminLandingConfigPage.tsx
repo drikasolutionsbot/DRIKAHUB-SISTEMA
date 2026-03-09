@@ -46,6 +46,7 @@ const AdminLandingConfigPage = () => {
           video_type: (data.video_type as "url" | "file") || "url",
           pro_price_cents: data.pro_price_cents || 2690,
         });
+        setPriceInput(((data.pro_price_cents || 2690) / 100).toFixed(2));
       }
       setLoading(false);
     };
