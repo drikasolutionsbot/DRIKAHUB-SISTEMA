@@ -12,6 +12,14 @@ const ProUpgradeModal = () => {
   const [loading, setLoading] = useState(false);
   const [pixCode, setPixCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [proPriceCents, setProPriceCents] = useState(2690);
+
+  // Fetch pro price from landing_config
+  useEffect(() => {
+    supabase.from("landing_config").select("pro_price_cents").limit(1).single().then(({ data }) => {
+      if (data?.pro_price_cents) setProPriceCents(data.pro_price_cents);
+    });
+  }, []);
 
   useEffect(() => {
     const pending = sessionStorage.getItem("pending_pro_upgrade");
@@ -68,7 +76,7 @@ const ProUpgradeModal = () => {
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-sm font-medium text-primary mb-3">
               <Crown className="h-4 w-4" /> Plano Mensal
             </div>
-            <p className="text-3xl font-extrabold text-foreground">R$ 26,90<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+            <p className="text-3xl font-extrabold text-foreground">R$ {(proPriceCents / 100).toFixed(2).replace(".", ",")}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
           </div>
 
           {loading ? (

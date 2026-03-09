@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, TrendingUp, Package, Video, Save, Upload, Link, Loader2 } from "lucide-react";
+import { Users, TrendingUp, Package, Video, Save, Upload, Link, Loader2, Crown } from "lucide-react";
 import { logAudit } from "@/lib/auditLog";
 
 const AdminLandingConfigPage = () => {
@@ -22,6 +22,7 @@ const AdminLandingConfigPage = () => {
     stat_products_label: "Produtos entregues",
     video_url: "",
     video_type: "url" as "url" | "file",
+    pro_price_cents: 2690,
   });
 
   useEffect(() => {
@@ -42,6 +43,7 @@ const AdminLandingConfigPage = () => {
           stat_products_label: data.stat_products_label,
           video_url: data.video_url || "",
           video_type: (data.video_type as "url" | "file") || "url",
+          pro_price_cents: data.pro_price_cents || 2690,
         });
       }
       setLoading(false);
@@ -63,6 +65,7 @@ const AdminLandingConfigPage = () => {
         stat_products_label: form.stat_products_label,
         video_url: form.video_url || null,
         video_type: form.video_type,
+        pro_price_cents: form.pro_price_cents,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", configId);
@@ -138,6 +141,39 @@ const AdminLandingConfigPage = () => {
         <h1 className="text-2xl font-bold text-foreground">Landing Page</h1>
         <p className="text-muted-foreground">Configure os dados exibidos na página inicial</p>
       </div>
+
+      {/* Pro Plan Price */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" />
+            Preço do Plano Pro
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Defina o valor mensal do plano Pro. Este valor será exibido na landing page e cobrado no checkout.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg border border-border bg-muted/30">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Valor em R$</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={(form.pro_price_cents / 100).toFixed(2)}
+                onChange={(e) => setForm((p) => ({ ...p, pro_price_cents: Math.round(parseFloat(e.target.value || "0") * 100) }))}
+                placeholder="26.90"
+              />
+            </div>
+            <div className="flex items-end">
+              <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-semibold text-primary">
+                R$ {(form.pro_price_cents / 100).toFixed(2).replace(".", ",")}/mês
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Social Proof Stats */}
       <Card className="bg-card border-border">

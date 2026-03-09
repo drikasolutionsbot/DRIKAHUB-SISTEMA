@@ -20,10 +20,18 @@ const SettingsPlanTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const [copied, setCopied] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [pixExpired, setPixExpired] = useState(false);
+  const [proPriceCents, setProPriceCents] = useState(2690);
 
   const isExpired = tenant.plan === "expired" || (tenant.plan_expires_at && new Date(tenant.plan_expires_at) < new Date());
   const isFree = tenant.plan === "free" || !tenant.plan;
   const canUpgrade = isFree || isExpired;
+
+  // Fetch pro price from landing_config
+  useEffect(() => {
+    supabase.from("landing_config").select("pro_price_cents").limit(1).single().then(({ data }) => {
+      if (data?.pro_price_cents) setProPriceCents(data.pro_price_cents);
+    });
+  }, []);
 
   const handleUpgrade = async () => {
     if (!tenantId) return;
@@ -143,7 +151,7 @@ const SettingsPlanTab = ({ tenant, tenantId, refetchTenant }: Props) => {
           </div>
 
           <div className="text-center">
-            <p className="text-3xl font-extrabold text-foreground">R$ 26,90<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+            <p className="text-3xl font-extrabold text-foreground">R$ {(proPriceCents / 100).toFixed(2).replace(".", ",")}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
           </div>
 
           {pixCode && !pixExpired ? (

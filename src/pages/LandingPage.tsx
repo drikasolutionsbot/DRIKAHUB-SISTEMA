@@ -118,7 +118,7 @@ const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => {
 };
 
 /* ── Subscription Payment Modal (Pro) ── */
-const SubscriptionPaymentModal = ({ onClose }: { onClose: () => void }) => {
+const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void; priceCents: number }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "pix" | "success">("form");
   const [loading, setLoading] = useState(false);
@@ -226,7 +226,7 @@ const SubscriptionPaymentModal = ({ onClose }: { onClose: () => void }) => {
             </h3>
             {step !== "success" && (
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-sm font-medium text-primary mt-2">
-                <Crown className="h-4 w-4" /> R$ 26,90/mês
+                <Crown className="h-4 w-4" /> R$ {(priceCents / 100).toFixed(2).replace(".", ",")}/mês
               </div>
             )}
           </div>
@@ -597,7 +597,7 @@ const LandingPage = () => {
 
       {/* Subscription Payment Modal */}
       {paymentOpen && (
-        <SubscriptionPaymentModal onClose={() => setPaymentOpen(false)} />
+        <SubscriptionPaymentModal onClose={() => setPaymentOpen(false)} priceCents={landingConfig?.pro_price_cents || 2690} />
       )}
 
       {/* ===== 6. PRICING ===== */}
@@ -647,7 +647,7 @@ const LandingPage = () => {
                 </div>
                 <div className="relative z-10 p-5 pt-3 flex flex-col h-full">
                   <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-1">Pro</h3>
-                  <div className="text-2xl font-extrabold font-display mb-0.5 text-white">R$ 26,90</div>
+                  <div className="text-2xl font-extrabold font-display mb-0.5 text-white">R$ {((landingConfig?.pro_price_cents || 2690) / 100).toFixed(2).replace(".", ",")}</div>
                   <p className="text-xs text-white/40 mb-4">por mês</p>
                   <ul className="space-y-1.5 mb-5 flex-1">
                     {["Tudo do Free", "Sem limite de tempo", "Segurança avançada", "Suporte prioritário"].map((f) => (
