@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Users, Search, Settings, TrendingUp, DollarSign, Calendar, Gift, Copy, Check, Link2, Power,
 } from "lucide-react";
@@ -8,16 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import AffiliateOverview from "@/components/affiliates/AffiliateOverview";
-import AffiliateList from "@/components/affiliates/AffiliateList";
-import AffiliatePayouts from "@/components/affiliates/AffiliatePayouts";
-import type { Affiliate, AffiliateOrder, AffiliatePayout } from "@/components/affiliates/types";
 
 const formatBRL = (cents: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
@@ -34,16 +29,9 @@ interface TenantAffiliate {
 }
 
 const AdminAffiliatesPage = () => {
-  // Tenant-affiliate data
   const [tenantAffiliates, setTenantAffiliates] = useState<TenantAffiliate[]>([]);
   const [referralCounts, setReferralCounts] = useState<Record<string, { total: number; paid: number }>>({});
   const [tenantSearch, setTenantSearch] = useState("");
-
-  // Store affiliates data (manual)
-  const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
-  const [orders, setOrders] = useState<AffiliateOrder[]>([]);
-  const [payouts, setPayouts] = useState<AffiliatePayout[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [configOpen, setConfigOpen] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -53,12 +41,9 @@ const AdminAffiliatesPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [tenantAffRes, globalRes, configRes] = await Promise.all([
+      const [tenantAffRes, configRes] = await Promise.all([
         supabase.functions.invoke("manage-affiliates", {
           body: { action: "admin_tenant_affiliates", tenant_id: "_admin" },
-        }),
-        supabase.functions.invoke("manage-affiliates", {
-          body: { action: "admin_global", tenant_id: "_admin" },
         }),
         supabase
           .from("landing_config")
@@ -71,12 +56,6 @@ const AdminAffiliatesPage = () => {
         setTenantAffiliates(tenantAffRes.data.tenants ?? []);
         setReferralCounts(tenantAffRes.data.referral_counts ?? {});
         if (tenantAffRes.data.config) setConfig(tenantAffRes.data.config);
-      }
-
-      if (!globalRes.error && globalRes.data) {
-        setAffiliates(globalRes.data.affiliates ?? []);
-        setOrders(globalRes.data.orders ?? []);
-        setPayouts(globalRes.data.payouts ?? []);
       }
 
       if (configRes.data) setConfig(configRes.data as any);
@@ -115,7 +94,6 @@ const AdminAffiliatesPage = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Stats
   const totalTenantAffiliates = tenantAffiliates.length;
   const totalReferrals = Object.values(referralCounts).reduce((s, c) => s + c.total, 0);
   const totalPaidReferrals = Object.values(referralCounts).reduce((s, c) => s + c.paid, 0);
@@ -133,174 +111,130 @@ const AdminAffiliatesPage = () => {
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" /> Programa de Afiliados
           </h1>
-          <p className="text-muted-foreground text-sm">Gerencie afiliados do SaaS e afiliados das lojas</p>
+          <p className="text-muted-foreground text-sm">Gerencie o programa de indicação global</p>
         </div>
         <Button variant="outline" onClick={() => setConfigOpen(true)} className="gap-2">
           <Settings className="h-4 w-4" /> Configurar Premiação
         </Button>
       </div>
 
-      <Tabs defaultValue="tenant_affiliates" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="tenant_affiliates">Afiliados SaaS ({totalTenantAffiliates})</TabsTrigger>
-          <TabsTrigger value="overview">Visão Geral Lojas</TabsTrigger>
-          <TabsTrigger value="store_affiliates">Afiliados Lojas ({affiliates.length})</TabsTrigger>
-          <TabsTrigger value="payouts">Pagamentos ({payouts.length})</TabsTrigger>
-        </TabsList>
-
-        {/* TAB: Tenant Affiliates (SaaS-level) */}
-        <TabsContent value="tenant_affiliates" className="space-y-4">
-          {/* Stats */}
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <Card className="p-4 space-y-1 border-border/50 bg-card/60">
-              <div className="flex items-center gap-2">
-                <Power className="h-4 w-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Afiliados Ativos</span>
-              </div>
-              <p className="text-2xl font-bold">{totalTenantAffiliates}</p>
-            </Card>
-            <Card className="p-4 space-y-1 border-border/50 bg-card/60">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
-                <span className="text-xs text-muted-foreground">Total Indicações</span>
-              </div>
-              <p className="text-2xl font-bold">{totalReferrals}</p>
-            </Card>
-            <Card className="p-4 space-y-1 border-border/50 bg-card/60">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-amber-400" />
-                <span className="text-xs text-muted-foreground">Convertidas (Pro)</span>
-              </div>
-              <p className="text-2xl font-bold">{totalPaidReferrals}</p>
-            </Card>
-            <Card className="p-4 space-y-1 border-border/50 bg-card/60">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Créditos Distribuídos</span>
-              </div>
-              <p className="text-2xl font-bold text-primary">{formatBRL(totalCreditsDistributed)}</p>
-            </Card>
+      {/* Stats */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4 space-y-1 border-border/50 bg-card/60">
+          <div className="flex items-center gap-2">
+            <Power className="h-4 w-4 text-primary" />
+            <span className="text-xs text-muted-foreground">Afiliados Ativos</span>
           </div>
-
-          {/* Search */}
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou código..."
-              value={tenantSearch}
-              onChange={(e) => setTenantSearch(e.target.value)}
-              className="pl-9"
-            />
+          <p className="text-2xl font-bold">{totalTenantAffiliates}</p>
+        </Card>
+        <Card className="p-4 space-y-1 border-border/50 bg-card/60">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground">Total Indicações</span>
           </div>
+          <p className="text-2xl font-bold">{totalReferrals}</p>
+        </Card>
+        <Card className="p-4 space-y-1 border-border/50 bg-card/60">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-amber-400" />
+            <span className="text-xs text-muted-foreground">Convertidas (Pro)</span>
+          </div>
+          <p className="text-2xl font-bold">{totalPaidReferrals}</p>
+        </Card>
+        <Card className="p-4 space-y-1 border-border/50 bg-card/60">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" />
+            <span className="text-xs text-muted-foreground">Créditos Distribuídos</span>
+          </div>
+          <p className="text-2xl font-bold text-primary">{formatBRL(totalCreditsDistributed)}</p>
+        </Card>
+      </div>
 
-          {/* List */}
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou código..."
+          value={tenantSearch}
+          onChange={(e) => setTenantSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+        </div>
+      ) : filteredTenantAffiliates.length === 0 ? (
+        <Card className="border-border/50 bg-card/60">
+          <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <Users className="h-7 w-7 text-primary" />
             </div>
-          ) : filteredTenantAffiliates.length === 0 ? (
-            <Card className="border-border/50 bg-card/60">
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                  <Users className="h-7 w-7 text-primary" />
+            <p className="text-muted-foreground text-sm">
+              Nenhum cliente ativou o modo afiliado ainda
+            </p>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {filteredTenantAffiliates.map(t => {
+            const counts = referralCounts[t.id] ?? { total: 0, paid: 0 };
+            const bonusDaysEarned = counts.paid * config.referral_bonus_days;
+            return (
+              <div key={t.id} className="group flex items-center gap-4 rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 hover:border-primary/30 transition-all">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-pink shrink-0">
+                  <Users className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  Nenhum cliente ativou o modo afiliado ainda
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {filteredTenantAffiliates.map(t => {
-                const counts = referralCounts[t.id] ?? { total: 0, paid: 0 };
-                const bonusDaysEarned = counts.paid * config.referral_bonus_days;
-                return (
-                  <div key={t.id} className="group flex items-center gap-4 rounded-xl border border-border bg-card/50 backdrop-blur-sm p-4 hover:border-primary/30 transition-all">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-pink shrink-0">
-                      <Users className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold truncate">{t.name}</p>
-                        <Badge variant={t.plan === "pro" ? "default" : "secondary"} className="text-[10px]">
-                          {t.plan}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
-                        {t.referral_code && (
-                          <span className="font-mono flex items-center gap-1">
-                            <Link2 className="h-3 w-3" />
-                            ?ref={t.referral_code}
-                          </span>
-                        )}
-                        <span>{new Date(t.created_at).toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    </div>
-                    <div className="text-center shrink-0">
-                      <p className="text-sm font-bold">{counts.total}</p>
-                      <p className="text-[10px] text-muted-foreground">indicações</p>
-                    </div>
-                    <div className="text-center shrink-0">
-                      <p className="text-sm font-bold text-emerald-400">{counts.paid}</p>
-                      <p className="text-[10px] text-muted-foreground">convertidas</p>
-                    </div>
-                    <div className="text-center shrink-0">
-                      <p className="text-sm font-bold">+{bonusDaysEarned}d</p>
-                      <p className="text-[10px] text-muted-foreground">dias ganhos</p>
-                    </div>
-                    <div className="text-center shrink-0">
-                      <p className="text-sm font-bold text-primary">{formatBRL(t.referral_credits_cents)}</p>
-                      <p className="text-[10px] text-muted-foreground">créditos</p>
-                    </div>
-                    {t.referral_code && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => copyLink(t.referral_code!, t.id)}
-                      >
-                        {copiedId === t.id ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">{t.name}</p>
+                    <Badge variant={t.plan === "pro" ? "default" : "secondary"} className="text-[10px]">
+                      {t.plan}
+                    </Badge>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* TAB: Store Affiliates Overview */}
-        <TabsContent value="overview">
-          <AffiliateOverview
-            affiliates={affiliates}
-            orders={orders}
-            payouts={payouts}
-            loading={loading}
-          />
-        </TabsContent>
-
-        {/* TAB: Store Affiliates List */}
-        <TabsContent value="store_affiliates">
-          <AffiliateList
-            affiliates={affiliates}
-            loading={loading}
-            tenantId={null}
-            onRefresh={fetchData}
-            adminMode
-          />
-        </TabsContent>
-
-        {/* TAB: Payouts */}
-        <TabsContent value="payouts">
-          <AffiliatePayouts
-            affiliates={affiliates}
-            tenantId={null}
-            payouts={payouts}
-            onRefresh={fetchData}
-            adminMode
-          />
-        </TabsContent>
-      </Tabs>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
+                    {t.referral_code && (
+                      <span className="font-mono flex items-center gap-1">
+                        <Link2 className="h-3 w-3" />
+                        ?ref={t.referral_code}
+                      </span>
+                    )}
+                    <span>{new Date(t.created_at).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                </div>
+                <div className="text-center shrink-0">
+                  <p className="text-sm font-bold">{counts.total}</p>
+                  <p className="text-[10px] text-muted-foreground">indicações</p>
+                </div>
+                <div className="text-center shrink-0">
+                  <p className="text-sm font-bold text-emerald-400">{counts.paid}</p>
+                  <p className="text-[10px] text-muted-foreground">convertidas</p>
+                </div>
+                <div className="text-center shrink-0">
+                  <p className="text-sm font-bold">+{bonusDaysEarned}d</p>
+                  <p className="text-[10px] text-muted-foreground">dias ganhos</p>
+                </div>
+                <div className="text-center shrink-0">
+                  <p className="text-sm font-bold text-primary">{formatBRL(t.referral_credits_cents)}</p>
+                  <p className="text-[10px] text-muted-foreground">créditos</p>
+                </div>
+                {t.referral_code && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => copyLink(t.referral_code!, t.id)}
+                  >
+                    {copiedId === t.id ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Config modal */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
