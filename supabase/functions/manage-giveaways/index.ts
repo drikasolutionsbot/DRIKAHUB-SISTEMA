@@ -461,6 +461,7 @@ Deno.serve(async (req) => {
     // Reroll
     if (action === "reroll") {
       const { giveaway_id, count } = body;
+      const botToken = await getBotToken(supabase, tenant_id);
       const { data: entries } = await supabase
         .from("giveaway_entries")
         .select("*")
