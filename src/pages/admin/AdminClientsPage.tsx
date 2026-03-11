@@ -51,6 +51,7 @@ const AdminClientsPage = () => {
   // Renew dialog
   const [renewDialogTenantId, setRenewDialogTenantId] = useState<string | null>(null);
   const [renewDays, setRenewDays] = useState("30");
+  const [renewPlan, setRenewPlan] = useState<string>("free");
 
   // Token generation
   const [tokenLabel, setTokenLabel] = useState("");
@@ -166,6 +167,7 @@ const AdminClientsPage = () => {
       
       const updateData: any = {
         plan_expires_at: newExpiry.toISOString(),
+        plan: renewPlan,
       };
       // If no plan_started_at yet, set it
       if (!tenant?.plan_started_at) {
@@ -178,7 +180,7 @@ const AdminClientsPage = () => {
         .eq("id", tenantId);
       if (error) throw error;
       const tenantName = tenant?.name || tenantId;
-      await logAudit("plan_days_added", "tenant", tenantId, tenantName, { days, new_expires: newExpiry.toISOString() });
+      await logAudit("plan_days_added", "tenant", tenantId, tenantName, { days, plan: renewPlan, new_expires: newExpiry.toISOString() });
       setTenants((prev) =>
         prev.map((t) => (t.id === tenantId ? { ...t, ...updateData } : t))
       );
@@ -547,6 +549,7 @@ const AdminClientsPage = () => {
                               onClick={() => {
                                 setRenewDialogTenantId(tenant.id);
                                 setRenewDays("30");
+                                setRenewPlan(tenant.plan || "free");
                               }}
                             >
                               <CalendarClock className="h-3 w-3 mr-1" />
@@ -782,6 +785,22 @@ const AdminClientsPage = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Plano</Label>
+              <div className="flex gap-2">
+                {PLANS.map(p => (
+                  <Button
+                    key={p.value}
+                    size="sm"
+                    variant={renewPlan === p.value ? "default" : "outline"}
+                    className={`text-xs h-8 px-3 ${renewPlan === p.value ? "gradient-pink text-primary-foreground border-none" : ""}`}
+                    onClick={() => setRenewPlan(p.value)}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Quantidade de dias</Label>
               <Input
