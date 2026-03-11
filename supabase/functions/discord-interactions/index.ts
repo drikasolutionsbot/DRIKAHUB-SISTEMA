@@ -1543,7 +1543,7 @@ async function processPurchase(
   const checkoutEmbed: any = {
     title: `🛒 ${storeName} - Carrinho`,
     description: `> <@${userId}>, escaneie o QR Code ou copie o código PIX abaixo!`,
-    color: 0x2B2D31,
+    color: storeEmbedColor,
     fields: [
       { name: "🕐 Informações do Pedido", value: `**${orderName}**`, inline: false },
       { name: "💠 Pagamento PIX", value: `→ **Preço:** ${formatBRL(priceCents)}\n→ **Tempo Limite:** ${timeoutMin} minutos`, inline: false },
