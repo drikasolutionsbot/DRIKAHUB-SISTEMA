@@ -13,10 +13,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { tenant_id, ticket_id, action, closed_by, discord_channel_id } = await req.json();
+    const { tenant_id, ticket_id, action, closed_by, discord_channel_id, new_name } = await req.json();
 
-    if (!tenant_id || !ticket_id) {
-      return new Response(JSON.stringify({ error: "tenant_id and ticket_id required" }), {
+    if (!tenant_id) {
+      return new Response(JSON.stringify({ error: "tenant_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -42,6 +42,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── RENAME ACTION ──────────────────────────────────────
+    if (action === "rename" && discord_channel_id && new_name) {
+      const renameRes = await fetch(`${DISCORD_API}/channels/${discord_channel_id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: new_name.substring(0, 100) }),
+      });
+
+      if (!renameRes.ok) {
+        const errText = await renameRes.text();
+        return new Response(JSON.stringify({ error: "Failed to rename", details: errText }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── CLOSE/DELETE ACTION ────────────────────────────────
+    if (!ticket_id) {
+      return new Response(JSON.stringify({ error: "ticket_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get ticket details
     const { data: ticket } = await supabase
       .from("tickets")
@@ -62,6 +91,28 @@ Deno.serve(async (req) => {
       .select("ticket_logs_channel_id")
       .eq("tenant_id", tenant_id)
       .single();
+
+    const channelToProcess = discord_channel_id || ticket.discord_channel_id;
+
+    // Generate transcript
+    let transcript = "";
+    if (channelToProcess && sc?.ticket_logs_channel_id) {
+      try {
+        const msgsRes = await fetch(`${DISCORD_API}/channels/${channelToProcess}/messages?limit=100`, {
+          headers: { Authorization: `Bot ${botToken}` },
+        });
+        if (msgsRes.ok) {
+          const msgs = await msgsRes.json();
+          const sorted = msgs.reverse();
+          transcript = sorted.map((m: any) => {
+            const ts = new Date(m.timestamp).toLocaleString("pt-BR");
+            const author = m.author?.username || "Desconhecido";
+            const content = m.content || (m.embeds?.length ? "[embed]" : "[sem conteúdo]");
+            return `[${ts}] ${author}: ${content}`;
+          }).join("\n");
+        }
+      } catch (e) { console.error("Transcript fetch error:", e); }
+    }
 
     // Send detailed log embed
     if (sc?.ticket_logs_channel_id && action === "closed") {
@@ -97,33 +148,51 @@ Deno.serve(async (req) => {
         headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({ embeds: [logEmbed] }),
       });
+
+      // Send transcript as file
+      if (transcript) {
+        const formData = new FormData();
+        const blob = new Blob([transcript], { type: "text/plain" });
+        formData.append("files[0]", blob, `transcript-${ticket.discord_username || ticket.discord_user_id}-${ticket.id.slice(0, 8)}.txt`);
+        formData.append("payload_json", JSON.stringify({
+          content: `📜 **Transcript do Ticket** — ${ticket.discord_username || ticket.discord_user_id}`,
+        }));
+
+        await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
+          method: "POST",
+          headers: { Authorization: `Bot ${botToken}` },
+          body: formData,
+        });
+      }
     }
 
-    // Delete the Discord channel if it exists
-    const channelToDelete = discord_channel_id || ticket.discord_channel_id;
-    if (channelToDelete && action === "closed") {
+    // Archive and lock the thread if it exists
+    if (channelToProcess && action === "closed") {
       try {
-        // Send closing message first
-        await fetch(`${DISCORD_API}/channels/${channelToDelete}/messages`, {
+        // Send closing message
+        await fetch(`${DISCORD_API}/channels/${channelToProcess}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             embeds: [{
               title: "🔒 Ticket Fechado",
-              description: `Este ticket foi fechado pelo painel.\nO canal será excluído em 10 segundos.`,
+              description: `Este ticket foi fechado pelo painel.\nO tópico será arquivado.`,
               color: 0xED4245,
             }],
           }),
         });
 
-        // Wait and delete
-        await new Promise((r) => setTimeout(r, 10000));
-        await fetch(`${DISCORD_API}/channels/${channelToDelete}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bot ${botToken}` },
+        // Archive and lock the thread
+        await fetch(`${DISCORD_API}/channels/${channelToProcess}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            archived: true,
+            locked: true,
+          }),
         });
       } catch (e) {
-        console.error("Failed to delete ticket channel:", e);
+        console.error("Failed to archive ticket thread:", e);
       }
     }
 

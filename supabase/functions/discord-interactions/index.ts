@@ -556,14 +556,11 @@ serve(async (req) => {
           return ok();
         }
 
-        // Determine the category to create the ticket channel in
-        // ticket_channel_id may point to a category OR a text channel
-        // We need to resolve it to a category ID
-        let categoryId: string | null = null;
+        // Determine parent text channel for creating a private thread
+        let parentChannelId: string | null = null;
         const configuredChannelId = targetChannelId || storeConfig?.ticket_channel_id || null;
 
         if (configuredChannelId) {
-          // Check if the configured channel is a category (type 4) or a text channel
           try {
             const chInfoRes = await fetch(`${DISCORD_API}/channels/${configuredChannelId}`, {
               headers: { Authorization: `Bot ${botToken}` },
@@ -571,61 +568,59 @@ serve(async (req) => {
             if (chInfoRes.ok) {
               const chInfo = await chInfoRes.json();
               if (chInfo.type === 4) {
-                // It's already a category
-                categoryId = configuredChannelId;
-              } else if (chInfo.parent_id) {
-                // It's a text channel inside a category - use its parent
-                categoryId = chInfo.parent_id;
+                // It's a category - find first text channel inside it
+                const guildChRes = await fetch(`${DISCORD_API}/guilds/${guildId}/channels`, {
+                  headers: { Authorization: `Bot ${botToken}` },
+                });
+                if (guildChRes.ok) {
+                  const allChannels = await guildChRes.json();
+                  const textCh = allChannels.find((c: any) => c.parent_id === configuredChannelId && c.type === 0);
+                  if (textCh) parentChannelId = textCh.id;
+                }
+              } else if (chInfo.type === 0 || chInfo.type === 5) {
+                // Text or announcement channel - use directly
+                parentChannelId = configuredChannelId;
               }
-              // If it's a text channel without a parent, categoryId stays null (create at root)
             }
           } catch (e) {
             console.error("Error checking channel type:", e);
           }
         }
 
-        console.log("Ticket open: resolved categoryId =", categoryId, "from configuredChannelId =", configuredChannelId);
+        // Fallback: use the channel where the button was clicked
+        if (!parentChannelId) {
+          parentChannelId = interaction.channel_id;
+        }
 
-        // Create a private text channel under the category for this ticket
-        const channelName = `ticket-${username || userId}`.toLowerCase().replace(/[^a-z0-9-_]/g, "").substring(0, 100);
+        // Create a private thread for this ticket
+        const threadName = `ticket-${username || userId}`.toLowerCase().replace(/[^a-z0-9-_]/g, "").substring(0, 100);
 
-        const channelBody: any = {
-          name: channelName,
-          type: 0, // GUILD_TEXT
-          permission_overwrites: [
-            // Deny @everyone view
-            {
-              id: guildId, // @everyone role ID = guild ID
-              type: 0, // role
-              deny: "1024", // VIEW_CHANNEL
-            },
-            // Allow the ticket creator
-            {
-              id: userId,
-              type: 1, // member
-              allow: "1024", // VIEW_CHANNEL
-            },
-          ],
-        };
-
-        if (categoryId) channelBody.parent_id = categoryId;
-
-        const createChRes = await fetch(`${DISCORD_API}/guilds/${guildId}/channels`, {
+        const createThreadRes = await fetch(`${DISCORD_API}/channels/${parentChannelId}/threads`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify(channelBody),
+          body: JSON.stringify({
+            name: threadName,
+            type: 12, // GUILD_PRIVATE_THREAD
+            auto_archive_duration: 10080, // 7 days
+          }),
         });
 
-        console.log("Channel creation status:", createChRes.status);
+        console.log("Thread creation status:", createThreadRes.status);
 
-        if (!createChRes.ok) {
-          const errText = await createChRes.text();
-          console.error("Failed to create ticket channel:", errText);
-          await editFollowup(interaction, botToken, "❌ Não foi possível criar o canal do ticket. Verifique as permissões do bot.");
+        if (!createThreadRes.ok) {
+          const errText = await createThreadRes.text();
+          console.error("Failed to create ticket thread:", errText);
+          await editFollowup(interaction, botToken, "❌ Não foi possível criar o tópico do ticket. Verifique as permissões do bot.");
           return ok();
         }
 
-        const ticketChannel = await createChRes.json();
+        const ticketThread = await createThreadRes.json();
+
+        // Add the ticket creator to the thread
+        await fetch(`${DISCORD_API}/channels/${ticketThread.id}/thread-members/${userId}`, {
+          method: "PUT",
+          headers: { Authorization: `Bot ${botToken}` },
+        });
 
         // Insert ticket in DB
         const { data: ticket, error: ticketErr } = await supabase
@@ -634,7 +629,7 @@ serve(async (req) => {
             tenant_id: ticketTenantId,
             discord_user_id: userId,
             discord_username: username,
-            discord_channel_id: ticketChannel.id,
+            discord_channel_id: ticketThread.id,
             status: "open",
           })
           .select()
@@ -646,7 +641,7 @@ serve(async (req) => {
           return ok();
         }
 
-        // Send welcome embed in the thread with action buttons
+        // Send welcome embed with action buttons (including Rename)
         const embedColor = parseInt((storeConfig?.ticket_embed_color || "#5865F2").replace("#", ""), 16);
         const welcomeEmbed: any = {
           title: storeConfig?.ticket_embed_title || "🎫 Ticket de Suporte",
@@ -661,8 +656,7 @@ serve(async (req) => {
           welcomeEmbed.footer = { text: storeConfig.ticket_embed_footer };
         }
 
-        // Pin the welcome message
-        const welcomeMsgRes = await fetch(`${DISCORD_API}/channels/${ticketChannel.id}/messages`, {
+        const welcomeMsgRes = await fetch(`${DISCORD_API}/channels/${ticketThread.id}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -678,6 +672,13 @@ serve(async (req) => {
                     label: "Lembrar",
                     emoji: { name: "🕐" },
                     custom_id: `ticket_remind_${ticket.id}`,
+                  },
+                  {
+                    type: 2,
+                    style: 2, // Secondary (grey)
+                    label: "Renomear",
+                    emoji: { name: "✏️" },
+                    custom_id: `ticket_rename_${ticket.id}`,
                   },
                   {
                     type: 2,
@@ -720,14 +721,14 @@ serve(async (req) => {
         if (welcomeMsgRes.ok) {
           const welcomeMsg = await welcomeMsgRes.json();
           try {
-            await fetch(`${DISCORD_API}/channels/${ticketChannel.id}/pins/${welcomeMsg.id}`, {
+            await fetch(`${DISCORD_API}/channels/${ticketThread.id}/pins/${welcomeMsg.id}`, {
               method: "PUT",
               headers: { Authorization: `Bot ${botToken}` },
             });
           } catch (e) { console.error("Pin error:", e); }
         }
 
-        await editFollowup(interaction, botToken, `✅ Ticket criado! Acesse <#${ticketChannel.id}>`);
+        await editFollowup(interaction, botToken, `✅ Ticket criado! Acesse <#${ticketThread.id}>`);
         return ok();
       }
 
@@ -840,8 +841,85 @@ serve(async (req) => {
           })
           .eq("id", ticketId);
 
-        // Delete channel immediately
         const channelId = interaction.channel_id || ticket.discord_channel_id;
+
+        // Generate log + transcript before deleting
+        const { data: sc } = await supabase
+          .from("store_configs")
+          .select("ticket_logs_channel_id")
+          .eq("tenant_id", ticket.tenant_id)
+          .single();
+
+        if (sc?.ticket_logs_channel_id && channelId) {
+          // Fetch messages for transcript
+          let transcript = "";
+          try {
+            const msgsRes = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=100`, {
+              headers: { Authorization: `Bot ${botToken}` },
+            });
+            if (msgsRes.ok) {
+              const msgs = await msgsRes.json();
+              const sorted = msgs.reverse();
+              transcript = sorted.map((m: any) => {
+                const ts = new Date(m.timestamp).toLocaleString("pt-BR");
+                const author = m.author?.username || "Desconhecido";
+                const content = m.content || (m.embeds?.length ? "[embed]" : "[sem conteúdo]");
+                return `[${ts}] ${author}: ${content}`;
+              }).join("\n");
+            }
+          } catch (e) { console.error("Transcript fetch error:", e); }
+
+          // Send log embed
+          const createdAt = new Date(ticket.created_at);
+          const closedAt = new Date();
+          const diffMs = closedAt.getTime() - createdAt.getTime();
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffH = Math.floor(diffMin / 60);
+          const remainMin = diffMin % 60;
+          const totalTime = diffH > 0 ? `${diffH}h ${remainMin}m` : `${diffMin}m`;
+
+          const logEmbed: any = {
+            title: "⚙️ Sistema de Logs",
+            color: 0x2B2D31,
+            fields: [
+              { name: "➡️ Usuário que abriu:", value: `> <@${ticket.discord_user_id}>`, inline: false },
+              { name: "🗑️ Deletado por:", value: `> <@${userId}>`, inline: false },
+              { name: "📋 Código do Ticket:", value: `> ${ticket.discord_channel_id || ticket.id.slice(0, 20)}`, inline: false },
+              { name: "😊 Horário de abertura:", value: `> <t:${Math.floor(createdAt.getTime() / 1000)}:f> <t:${Math.floor(createdAt.getTime() / 1000)}:R>`, inline: false },
+              { name: "🗑️ Horário da exclusão:", value: `> <t:${Math.floor(closedAt.getTime() / 1000)}:f> (<t:${Math.floor(closedAt.getTime() / 1000)}:R>)`, inline: false },
+              { name: "➡️ Tempo total de atendimento:", value: `> ${totalTime}`, inline: false },
+            ],
+            timestamp: closedAt.toISOString(),
+          };
+
+          if (ticket.product_name) {
+            logEmbed.fields.splice(2, 0, { name: "📦 Produto:", value: `> ${ticket.product_name}`, inline: false });
+          }
+
+          await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ embeds: [logEmbed] }),
+          });
+
+          // Send transcript as file attachment
+          if (transcript) {
+            const formData = new FormData();
+            const blob = new Blob([transcript], { type: "text/plain" });
+            formData.append("files[0]", blob, `transcript-${ticket.discord_username || ticket.discord_user_id}-${ticket.id.slice(0, 8)}.txt`);
+            formData.append("payload_json", JSON.stringify({
+              content: `📜 **Transcript do Ticket** — ${ticket.discord_username || ticket.discord_user_id}`,
+            }));
+
+            await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
+              method: "POST",
+              headers: { Authorization: `Bot ${botToken}` },
+              body: formData,
+            });
+          }
+        }
+
+        // Send closing message then delete
         if (channelId) {
           await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
             method: "POST",
@@ -849,7 +927,7 @@ serve(async (req) => {
             body: JSON.stringify({
               embeds: [{
                 title: "🗑️ Ticket Deletado",
-                description: `Este ticket foi deletado por <@${userId}>.\nO canal será excluído em 5 segundos.`,
+                description: `Este ticket foi deletado por <@${userId}>.\nO tópico será excluído em 5 segundos.`,
                 color: 0xED4245,
               }],
             }),
@@ -861,7 +939,7 @@ serve(async (req) => {
                 method: "DELETE",
                 headers: { Authorization: `Bot ${botToken}` },
               });
-            } catch (e) { console.error("Failed to delete ticket channel:", e); }
+            } catch (e) { console.error("Failed to delete ticket thread:", e); }
           }, 5000);
         }
 
@@ -1029,8 +1107,45 @@ serve(async (req) => {
           });
         }
 
-        // Archive: send closing message and lock channel (don't delete)
+        // Generate transcript before archiving
         const channelId = interaction.channel_id || ticket.discord_channel_id;
+
+        if (sc?.ticket_logs_channel_id && channelId) {
+          let transcript = "";
+          try {
+            const msgsRes = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=100`, {
+              headers: { Authorization: `Bot ${botToken}` },
+            });
+            if (msgsRes.ok) {
+              const msgs = await msgsRes.json();
+              const sorted = msgs.reverse();
+              transcript = sorted.map((m: any) => {
+                const ts = new Date(m.timestamp).toLocaleString("pt-BR");
+                const author = m.author?.username || "Desconhecido";
+                const content = m.content || (m.embeds?.length ? "[embed]" : "[sem conteúdo]");
+                return `[${ts}] ${author}: ${content}`;
+              }).join("\n");
+            }
+          } catch (e) { console.error("Transcript fetch error:", e); }
+
+          // Send transcript as file
+          if (transcript) {
+            const formData = new FormData();
+            const blob = new Blob([transcript], { type: "text/plain" });
+            formData.append("files[0]", blob, `transcript-${ticket.discord_username || ticket.discord_user_id}-${ticket.id.slice(0, 8)}.txt`);
+            formData.append("payload_json", JSON.stringify({
+              content: `📜 **Transcript do Ticket** — ${ticket.discord_username || ticket.discord_user_id}`,
+            }));
+
+            await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
+              method: "POST",
+              headers: { Authorization: `Bot ${botToken}` },
+              body: formData,
+            });
+          }
+        }
+
+        // Archive: send closing message and lock thread
         if (channelId) {
           await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
             method: "POST",
@@ -1038,29 +1153,21 @@ serve(async (req) => {
             body: JSON.stringify({
               embeds: [{
                 title: "📁 Ticket Arquivado",
-                description: `Este ticket foi arquivado por <@${userId}>.\nO canal está agora somente leitura.`,
+                description: `Este ticket foi arquivado por <@${userId}>.\nO tópico está agora somente leitura.`,
                 color: 0xFEE75C,
               }],
             }),
           });
 
-          // Lock the channel by denying SEND_MESSAGES for @everyone
-          const { data: tenantGuild } = await supabase
-            .from("tenants")
-            .select("discord_guild_id")
-            .eq("id", ticket.tenant_id)
-            .single();
-
-          if (tenantGuild?.discord_guild_id) {
-            await fetch(`${DISCORD_API}/channels/${channelId}/permissions/${tenantGuild.discord_guild_id}`, {
-              method: "PUT",
-              headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                deny: "3072", // VIEW_CHANNEL (1024) + SEND_MESSAGES (2048)
-                type: 0, // role
-              }),
-            });
-          }
+          // Archive and lock the thread
+          await fetch(`${DISCORD_API}/channels/${channelId}`, {
+            method: "PATCH",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              archived: true,
+              locked: true,
+            }),
+          });
         }
 
         return ok();

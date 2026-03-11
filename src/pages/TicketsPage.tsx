@@ -395,6 +395,49 @@ const TicketsPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {selectedTicket.discord_channel_id && (
+                  <div className="space-y-2">
+                    <Label>✏️ Renomear Ticket</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Novo nome do ticket..."
+                        id="ticket-rename-input"
+                        defaultValue=""
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={updatingStatus}
+                        onClick={async () => {
+                          const input = document.getElementById("ticket-rename-input") as HTMLInputElement;
+                          const newName = input?.value?.trim();
+                          if (!newName) { toast.error("Digite um nome"); return; }
+                          setUpdatingStatus(true);
+                          try {
+                            const { error } = await supabase.functions.invoke("send-ticket-log", {
+                              body: {
+                                tenant_id: tenantId,
+                                action: "rename",
+                                discord_channel_id: selectedTicket.discord_channel_id,
+                                new_name: newName,
+                              },
+                            });
+                            if (error) throw error;
+                            toast.success("Ticket renomeado!");
+                            input.value = "";
+                          } catch (err: any) {
+                            toast.error("Erro ao renomear: " + err.message);
+                          } finally {
+                            setUpdatingStatus(false);
+                          }
+                        }}
+                      >
+                        Renomear
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
