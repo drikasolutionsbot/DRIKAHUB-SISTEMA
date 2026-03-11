@@ -48,6 +48,10 @@ const AdminClientsPage = () => {
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
 
+  // Renew dialog
+  const [renewDialogTenantId, setRenewDialogTenantId] = useState<string | null>(null);
+  const [renewDays, setRenewDays] = useState("30");
+
   // Token generation
   const [tokenLabel, setTokenLabel] = useState("");
   const [generatingToken, setGeneratingToken] = useState<string | null>(null);
@@ -149,26 +153,37 @@ const AdminClientsPage = () => {
     setSavingPlan(false);
   };
 
-  const handleRenewPlan = async (tenantId: string) => {
+  const handleRenewPlan = async (tenantId: string, days: number) => {
     setSavingPlan(true);
     try {
+      const tenant = tenants.find(t => t.id === tenantId);
       const now = new Date();
-      const updateData = {
-        plan: "pro",
-        plan_started_at: now.toISOString(),
-        plan_expires_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      // If tenant already has a future expiration, extend from that date; otherwise from now
+      const baseDate = tenant?.plan_expires_at && new Date(tenant.plan_expires_at) > now
+        ? new Date(tenant.plan_expires_at)
+        : now;
+      const newExpiry = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+      
+      const updateData: any = {
+        plan_expires_at: newExpiry.toISOString(),
       };
+      // If no plan_started_at yet, set it
+      if (!tenant?.plan_started_at) {
+        updateData.plan_started_at = now.toISOString();
+      }
+
       const { error } = await supabase
         .from("tenants")
         .update(updateData)
         .eq("id", tenantId);
       if (error) throw error;
-      const tenantName = tenants.find(t => t.id === tenantId)?.name || tenantId;
-      await logAudit("plan_changed", "tenant", tenantId, tenantName, { action: "renew_30d" });
+      const tenantName = tenant?.name || tenantId;
+      await logAudit("plan_days_added", "tenant", tenantId, tenantName, { days, new_expires: newExpiry.toISOString() });
       setTenants((prev) =>
         prev.map((t) => (t.id === tenantId ? { ...t, ...updateData } : t))
       );
-      toast({ title: "Plano renovado por +30 dias! ✅" });
+      toast({ title: `+${days} dias adicionados! ✅`, description: `Novo vencimento: ${format(newExpiry, "dd/MM/yyyy")}` });
+      setRenewDialogTenantId(null);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -525,18 +540,18 @@ const AdminClientsPage = () => {
                               <Settings className="h-3 w-3" />
                               {planInfo.label}
                             </button>
-                            {isPro && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 text-[10px] px-2 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
-                                onClick={() => handleRenewPlan(tenant.id)}
-                                disabled={savingPlan}
-                              >
-                                <CalendarClock className="h-3 w-3 mr-1" />
-                                Renovar +30d
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-[10px] px-2 border-primary/30 text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                setRenewDialogTenantId(tenant.id);
+                                setRenewDays("30");
+                              }}
+                            >
+                              <CalendarClock className="h-3 w-3 mr-1" />
+                              + Dias
+                            </Button>
                           </div>
                         )}
                         <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -753,6 +768,65 @@ const AdminClientsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Renew/Add Days Dialog */}
+      <Dialog open={!!renewDialogTenantId} onOpenChange={(open) => { if (!open) setRenewDialogTenantId(null); }}>
+        <DialogContent className="bg-card border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Adicionar Dias</DialogTitle>
+            <DialogDescription>
+              {renewDialogTenantId && (() => {
+                const t = tenants.find(x => x.id === renewDialogTenantId);
+                return t ? `Cliente: ${t.name} (${(t.plan || "free").toUpperCase()})` : "";
+              })()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Quantidade de dias</Label>
+              <Input
+                type="number"
+                min="1"
+                max="3650"
+                value={renewDays}
+                onChange={(e) => setRenewDays(e.target.value)}
+                placeholder="Ex: 30"
+                className="bg-muted border-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              {[7, 15, 30, 60, 90].map(d => (
+                <Button
+                  key={d}
+                  size="sm"
+                  variant={renewDays === String(d) ? "default" : "outline"}
+                  className="text-xs h-7 px-2"
+                  onClick={() => setRenewDays(String(d))}
+                >
+                  {d}d
+                </Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancelar</Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                const days = parseInt(renewDays);
+                if (!days || days < 1 || !renewDialogTenantId) return;
+                handleRenewPlan(renewDialogTenantId, days);
+              }}
+              disabled={savingPlan || !renewDays || parseInt(renewDays) < 1}
+              className="gradient-pink text-primary-foreground border-none hover:opacity-90"
+            >
+              {savingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarClock className="mr-2 h-4 w-4" />}
+              Adicionar +{renewDays || 0} dias
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
