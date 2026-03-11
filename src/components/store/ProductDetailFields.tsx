@@ -47,20 +47,16 @@ const FieldExpandedContent = ({
   field,
   tenantId,
   saving,
-  stockCounts,
   updateField,
   saveField,
   deleteField,
-  setStockModalFieldId,
 }: {
   field: ProductField;
   tenantId: string | null;
   saving: boolean;
-  stockCounts: Record<string, number>;
   updateField: (id: string, updates: Partial<ProductField>) => void;
   saveField: (field: ProductField) => void;
   deleteField: (id: string) => void;
-  setStockModalFieldId: (id: string | null) => void;
 }) => {
   const [priceDisplay, setPriceDisplay] = useState((field.price_cents / 100).toFixed(2));
   const [comparePriceDisplay, setComparePriceDisplay] = useState(
