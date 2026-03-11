@@ -118,6 +118,28 @@ export default function EditGiveawayModal({ open, onOpenChange, giveaway, onSave
     }
   };
 
+  const handleSaveEmbed = async () => {
+    if (!tenantId) return;
+    setSavingEmbed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-giveaways", {
+        body: {
+          action: "update",
+          tenant_id: tenantId,
+          giveaway_id: giveaway.id,
+          embed_config: embedConfig,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Erro ao salvar embed");
+      toast({ title: "✅ Embed atualizado no Discord!" });
+      onSaved();
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setSavingEmbed(false);
+    }
+  };
+
   const getRoleColor = (color: string | number) => {
     if (typeof color === "number") return `#${color.toString(16).padStart(6, "0")}`;
     return color || "#99AAB5";
