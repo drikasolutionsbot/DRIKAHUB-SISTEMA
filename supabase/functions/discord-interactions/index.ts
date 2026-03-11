@@ -1108,108 +1108,16 @@ serve(async (req) => {
           })
           .eq("id", ticketId);
 
-        // Send log to ticket_logs_channel_id
-        const { data: sc } = await supabase
-          .from("store_configs")
-          .select("ticket_logs_channel_id")
-          .eq("tenant_id", ticket.tenant_id)
+        const channelId = interaction.channel_id || ticket.discord_channel_id;
+
+        // Get tenant name for transcript
+        const { data: closeTenant } = await supabase
+          .from("tenants")
+          .select("name")
+          .eq("id", ticket.tenant_id)
           .single();
 
-        // Generate transcript before archiving
-        const channelId = interaction.channel_id || ticket.discord_channel_id;
-        let transcript = "";
-
-        if (channelId) {
-          try {
-            const msgsRes = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=100`, {
-              headers: { Authorization: `Bot ${botToken}` },
-            });
-            if (msgsRes.ok) {
-              const msgs = await msgsRes.json();
-              const sorted = msgs.reverse();
-              transcript = sorted.map((m: any) => {
-                const ts = new Date(m.timestamp).toLocaleString("pt-BR");
-                const author = m.author?.username || "Desconhecido";
-                const content = m.content || (m.embeds?.length ? "[embed]" : "[sem conteúdo]");
-                return `[${ts}] ${author}: ${content}`;
-              }).join("\n");
-            }
-          } catch (e) { console.error("Transcript fetch error:", e); }
-        }
-
-        if (sc?.ticket_logs_channel_id) {
-          const createdAt = new Date(ticket.created_at);
-          const closedAt = new Date();
-          const diffMs = closedAt.getTime() - createdAt.getTime();
-          const diffMin = Math.floor(diffMs / 60000);
-          const diffH = Math.floor(diffMin / 60);
-          const remainMin = diffMin % 60;
-          const totalTime = diffH > 0 ? `${diffH}h ${remainMin}m` : `${diffMin}m`;
-
-          const logEmbed: any = {
-            title: "⚙️ Sistema de Logs",
-            color: 0x2B2D31,
-            fields: [
-              { name: "➡️ Usuário que abriu:", value: `> <@${ticket.discord_user_id}>`, inline: false },
-              { name: "➡️ Usuário que fechou:", value: `> <@${userId}>`, inline: false },
-              { name: "➡️ Quem assumiu:", value: "> Ninguém Assumiu", inline: false },
-              { name: "📋 Código do Ticket:", value: `> ${ticket.discord_channel_id || ticket.id.slice(0, 20)}`, inline: false },
-              { name: "😊 Horário de abertura:", value: `> <t:${Math.floor(createdAt.getTime() / 1000)}:f> <t:${Math.floor(createdAt.getTime() / 1000)}:R>`, inline: false },
-              { name: "😔 Horário do fechamento:", value: `> <t:${Math.floor(closedAt.getTime() / 1000)}:f> (<t:${Math.floor(closedAt.getTime() / 1000)}:R>)`, inline: false },
-              { name: "➡️ Tempo total de atendimento:", value: `> ${totalTime}`, inline: false },
-            ],
-            timestamp: closedAt.toISOString(),
-          };
-
-          if (ticket.product_name) {
-            logEmbed.fields.splice(3, 0, { name: "📦 Produto:", value: `> ${ticket.product_name}`, inline: false });
-          }
-
-          await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
-            method: "POST",
-            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ embeds: [logEmbed] }),
-          });
-
-          if (transcript) {
-            const formData = new FormData();
-            const blob = new Blob([transcript], { type: "text/plain" });
-            formData.append("files[0]", blob, `transcript-${ticket.discord_username || ticket.discord_user_id}-${ticket.id.slice(0, 8)}.txt`);
-            formData.append("payload_json", JSON.stringify({
-              content: `📜 **Transcript do Ticket** — ${ticket.discord_username || ticket.discord_user_id}`,
-            }));
-
-            await fetch(`${DISCORD_API}/channels/${sc.ticket_logs_channel_id}/messages`, {
-              method: "POST",
-              headers: { Authorization: `Bot ${botToken}` },
-              body: formData,
-            });
-          }
-        }
-
-        try {
-          const dmChRes = await fetch(`${DISCORD_API}/users/@me/channels`, {
-            method: "POST",
-            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ recipient_id: ticket.discord_user_id }),
-          });
-
-          if (dmChRes.ok && transcript) {
-            const dmCh = await dmChRes.json();
-            const dmFormData = new FormData();
-            const dmBlob = new Blob([transcript], { type: "text/plain" });
-            dmFormData.append("files[0]", dmBlob, `transcript-${ticket.id.slice(0, 8)}.txt`);
-            dmFormData.append("payload_json", JSON.stringify({
-              content: "📜 Aqui está o transcript do seu ticket encerrado.",
-            }));
-
-            await fetch(`${DISCORD_API}/channels/${dmCh.id}/messages`, {
-              method: "POST",
-              headers: { Authorization: `Bot ${botToken}` },
-              body: dmFormData,
-            });
-          }
-        } catch (e) { console.error("DM transcript error:", e); }
+        await sendTicketLog(supabase, botToken, ticket, channelId, userId, username, "closed", closeTenant?.name || "Servidor");
 
         // Archive: send closing message and lock thread
         if (channelId) {
@@ -1225,14 +1133,10 @@ serve(async (req) => {
             }),
           });
 
-          // Archive and lock the thread
           await fetch(`${DISCORD_API}/channels/${channelId}`, {
             method: "PATCH",
             headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              archived: true,
-              locked: true,
-            }),
+            body: JSON.stringify({ archived: true, locked: true }),
           });
         }
 
