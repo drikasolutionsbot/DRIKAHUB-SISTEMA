@@ -3,7 +3,7 @@ import {
   LayoutDashboard, DollarSign, Palette, Box, Hash, ShieldCheck, Shield,
   Store, Ticket, Cloud, Headset, Settings,
   ChevronLeft, ChevronRight, ClipboardCheck, UserCheck, Sparkles, BookOpen,
-  ShoppingBag, Gift, Crown,
+  ShoppingBag, Gift, Crown, Users,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ const navGroups = [
     items: [
       { label: "Finanças", icon: DollarSign, path: "/finance" },
       { label: "Aprovações", icon: ClipboardCheck, path: "/approvals" },
+      { label: "Afiliados", icon: Users, path: "/affiliates" },
     ],
   },
   {
