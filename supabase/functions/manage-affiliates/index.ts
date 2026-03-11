@@ -104,6 +104,9 @@ Deno.serve(async (req) => {
           code: affiliate.code.toUpperCase().replace(/\s+/g, ""),
           commission_percent: affiliate.commission_percent ?? 5,
           active: true,
+          discord_username: affiliate.discord_username ?? null,
+          email: affiliate.email ?? null,
+          whatsapp: affiliate.whatsapp ?? null,
         })
         .select()
         .single();
@@ -121,6 +124,9 @@ Deno.serve(async (req) => {
       if (affiliate?.code !== undefined) updates.code = affiliate.code.toUpperCase().replace(/\s+/g, "");
       if (affiliate?.commission_percent !== undefined) updates.commission_percent = affiliate.commission_percent;
       if (affiliate?.active !== undefined) updates.active = affiliate.active;
+      if (affiliate?.discord_username !== undefined) updates.discord_username = affiliate.discord_username;
+      if (affiliate?.email !== undefined) updates.email = affiliate.email;
+      if (affiliate?.whatsapp !== undefined) updates.whatsapp = affiliate.whatsapp;
 
       const { data, error } = await supabase
         .from("affiliates")
