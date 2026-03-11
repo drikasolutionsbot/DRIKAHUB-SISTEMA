@@ -40,10 +40,23 @@ serve(async (req) => {
 
       const { data: product } = await supabase
         .from("products")
-        .select("auto_delivery, button_style")
+        .select("auto_delivery, button_style, stock")
         .eq("id", product_id)
         .eq("tenant_id", tenant_id)
         .single();
+
+      // Add stock field to embed if no compare_price (show "Restam" next to price)
+      if (embeds && embeds.length > 0 && product) {
+        const hasPromo = embeds[0].fields?.some((f: any) => f.name?.includes("promocional"));
+        if (!hasPromo) {
+          embeds[0].fields = embeds[0].fields || [];
+          embeds[0].fields.push({
+            name: "Restam",
+            value: `${product.stock ?? 0}`,
+            inline: true,
+          });
+        }
+      }
 
       // Prepend auto delivery badge to embed description if applicable
       if (product?.auto_delivery && embeds && embeds.length > 0) {
