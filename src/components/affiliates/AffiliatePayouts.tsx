@@ -28,6 +28,7 @@ interface Props {
   tenantId: string | null;
   payouts: AffiliatePayout[];
   onRefresh: () => void;
+  adminMode?: boolean;
 }
 
 const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh }: Props) => {
