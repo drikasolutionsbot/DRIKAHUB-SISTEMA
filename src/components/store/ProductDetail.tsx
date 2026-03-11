@@ -220,6 +220,10 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               </div>
             </TabsContent>
 
+            <TabsContent value="estoque" className="mt-0">
+              <ProductDetailStock productId={product.id} />
+            </TabsContent>
+
             <TabsContent value="cupons" className="mt-0">
               <ProductDetailCoupons productId={product.id} />
             </TabsContent>
