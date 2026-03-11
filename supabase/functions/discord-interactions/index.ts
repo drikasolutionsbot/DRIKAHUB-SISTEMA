@@ -1444,9 +1444,16 @@ async function processPurchase(
     const externalRef = `order_${order.id}`;
 
     if (providerKey === "mercadopago") {
-      const result = await generateMercadoPagoPix(apiKey, amountBRL, orderName, externalRef, webhookUrl);
-      brcode = result.brcode;
-      paymentId = result.payment_id;
+      console.log("Generating Mercado Pago PIX...", { amountBRL, orderName, externalRef });
+      try {
+        const result = await generateMercadoPagoPix(apiKey, amountBRL, orderName, externalRef, webhookUrl);
+        brcode = result.brcode;
+        paymentId = result.payment_id;
+        console.log("Mercado Pago PIX generated:", { brcode: brcode.substring(0, 30), paymentId });
+      } catch (mpErr) {
+        console.error("Mercado Pago PIX generation failed:", mpErr);
+        throw mpErr;
+      }
     } else if (providerKey === "pushinpay") {
       const result = await generatePushinPayPix(apiKey, priceCents, webhookUrl);
       brcode = result.brcode;
