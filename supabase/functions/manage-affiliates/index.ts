@@ -104,6 +104,9 @@ Deno.serve(async (req) => {
           code: affiliate.code.toUpperCase().replace(/\s+/g, ""),
           commission_percent: affiliate.commission_percent ?? 5,
           active: true,
+          discord_username: affiliate.discord_username ?? null,
+          email: affiliate.email ?? null,
+          whatsapp: affiliate.whatsapp ?? null,
         })
         .select()
         .single();
