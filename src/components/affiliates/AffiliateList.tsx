@@ -466,7 +466,7 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh, adminMode }: 
             </div>
 
             <p className="text-[11px] text-muted-foreground">
-              Link gerado: <span className="font-mono text-primary">https://drikahub.com?ref={form.code || "..."}</span>
+              Link gerado: <span className="font-mono text-primary">{window.location.origin}?ref={form.code || "..."}</span>
             </p>
           </div>
           <DialogFooter>
