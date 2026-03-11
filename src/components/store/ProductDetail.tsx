@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { type DiscordButtonStyle } from "@/components/discord/DiscordButtonStylePicker";
 import { ArrowLeft, RefreshCw, Send, Eye } from "lucide-react";
 import TrashIcon from "@/components/ui/trash-icon";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,11 @@ interface Product {
   banner_url?: string | null;
   auto_delivery?: boolean;
   category_id?: string | null;
+  enable_credits?: boolean;
+  show_stock?: boolean;
+  show_sold?: boolean;
+  enable_instructions?: boolean;
+  button_style?: DiscordButtonStyle;
 }
 
 interface ProductDetailProps {
