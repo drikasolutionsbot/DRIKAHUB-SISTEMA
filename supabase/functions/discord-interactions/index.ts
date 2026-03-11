@@ -1582,6 +1582,7 @@ async function processPurchase(
   }
 
   // Respond inline (ephemeral) with QR code + brcode + cancel button
+  console.log("Sending checkout embed via editFollowup...", { orderId: order.id, hasBrcode: !!brcode });
   await editFollowup(interaction, botToken, {
     content: `↓ Após o pagamento, seu pedido será processado automaticamente!`,
     embeds: [checkoutEmbed],
@@ -1596,6 +1597,7 @@ async function processPurchase(
       }],
     }],
   });
+  console.log("Checkout embed sent successfully for order:", order.id);
 }
 
 // ─── Discord response helpers ───────────────────────────────
