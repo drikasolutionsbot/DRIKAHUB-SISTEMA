@@ -90,7 +90,9 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
       const payload = {
         name: form.name.trim(),
         code: form.code,
+        commission_type: form.commission_type,
         commission_percent: form.commission_percent,
+        commission_fixed_cents: form.commission_fixed_cents,
         discord_username: form.discord_username.trim() || null,
         email: form.email.trim() || null,
         whatsapp: form.whatsapp.trim() || null,
