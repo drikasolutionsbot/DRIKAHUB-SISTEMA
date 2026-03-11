@@ -317,11 +317,12 @@ serve(async (req) => {
           .eq("product_id", productId)
           .eq("tenant_id", product.tenant_id);
 
+        const detailEmbedColor = await getStoreEmbedColor(product.tenant_id);
         const autoDeliveryText = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
         const embed: any = {
           title: `ℹ️ ${product.name}`,
           description: `${autoDeliveryText}${product.description || "Sem descrição."}`,
-          color: 0x2B2D31,
+          color: detailEmbedColor,
           fields: [
             { name: "💰 Preço", value: formatBRL(product.price_cents), inline: true },
             { name: "📦 Tipo", value: product.type === "digital_auto" ? "Digital" : product.type === "service" ? "Serviço" : "Híbrido", inline: true },
