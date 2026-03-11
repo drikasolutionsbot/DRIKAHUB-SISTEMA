@@ -80,25 +80,14 @@ serve(async (req) => {
           emoji: { name: "🛒" },
           custom_id: `buy_product:${product_id}`,
         },
-      ];
-
-      if (hasVariations) {
-        buttons.push({
+        {
           type: 2,
-          style: 2, // Secondary (gray)
-          label: "Variações",
-          emoji: { name: "📋" },
-          custom_id: `view_variations:${product_id}`,
-        });
-      }
-
-      buttons.push({
-        type: 2,
-        style: 2,
-        label: "Detalhes",
-        emoji: { name: "ℹ️" },
-        custom_id: `view_details:${product_id}`,
-      });
+          style: 2,
+          label: "Detalhes",
+          emoji: { name: "ℹ" },
+          custom_id: `view_details:${product_id}`,
+        },
+      ];
 
       payload.components = [
         {
