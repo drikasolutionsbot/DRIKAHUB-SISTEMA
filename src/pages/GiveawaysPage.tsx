@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -44,7 +44,7 @@ export default function GiveawaysPage() {
   const [editGiveaway, setEditGiveaway] = useState<Giveaway | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const { data: giveaways = [], isLoading } = useQuery<Giveaway[]>({
+  const { data: giveaways = [], isLoading, isFetching, refetch } = useQuery<Giveaway[]>({
     queryKey: ["giveaways", tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
@@ -57,9 +57,6 @@ export default function GiveawaysPage() {
     enabled: !!tenantId,
   });
 
-  const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["giveaways", tenantId] });
-  }, [queryClient, tenantId]);
 
   const activeGiveaways = giveaways.filter((g) => g.status === "active");
   const historyGiveaways = giveaways.filter((g) => g.status !== "active");
@@ -148,8 +145,13 @@ export default function GiveawaysPage() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Gerencie sorteios integrados ao Discord</p>
         </div>
-        <Button variant="outline" size="sm" onClick={refetch}>
-          <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading || isFetching}>
+          {isFetching ? (
+            <span className="inline-block w-5 h-5 border-[3px] border-solid border-primary border-t-transparent border-b-foreground rounded-full animate-spin mr-1" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-1" />
+          )}
+          {isFetching ? "Atualizando..." : "Atualizar"}
         </Button>
       </div>
 
