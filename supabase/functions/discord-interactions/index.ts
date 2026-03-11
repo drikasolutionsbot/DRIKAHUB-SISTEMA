@@ -672,6 +672,17 @@ serve(async (req) => {
           welcomeEmbed.footer = { text: storeConfig.ticket_embed_footer };
         }
 
+        const actionButtonStyleMap: Record<string, number> = {
+          primary: 1,
+          secondary: 2,
+          success: 3,
+          danger: 4,
+          glass: 2,
+          link: 2,
+        };
+
+        const configuredPrimaryButtonStyle = actionButtonStyleMap[storeConfig?.ticket_embed_button_style || "glass"] || 2;
+
         const welcomeMsgRes = await fetch(`${DISCORD_API}/channels/${ticketThread.id}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
@@ -684,30 +695,25 @@ serve(async (req) => {
                 components: [
                   {
                     type: 2,
-                    style: 3, // Success (green)
-                    label: "Lembrar",
+                    style: configuredPrimaryButtonStyle,
+                    label: storeConfig?.ticket_embed_button_label || "Lembrar",
                     custom_id: `ticket_remind_${ticket.id}`,
                   },
                   {
                     type: 2,
-                    style: 2, // Secondary (grey)
+                    style: 2,
                     label: "Renomear",
                     custom_id: `ticket_rename_${ticket.id}`,
                   },
                   {
                     type: 2,
-                    style: 2, // Secondary (grey)
+                    style: 2,
                     label: "Arquivar",
                     custom_id: `ticket_close_${ticket.id}`,
                   },
-                ],
-              },
-              {
-                type: 1,
-                components: [
                   {
                     type: 2,
-                    style: 4, // Danger (red)
+                    style: 4,
                     label: "Deletar",
                     custom_id: `ticket_delete_${ticket.id}`,
                   },
@@ -717,7 +723,7 @@ serve(async (req) => {
                 type: 1,
                 components: [
                   {
-                    type: 5, // User Select Menu
+                    type: 5,
                     custom_id: `ticket_assign_${ticket.id}`,
                     placeholder: "Selecione algum membro para Ação",
                     min_values: 1,
