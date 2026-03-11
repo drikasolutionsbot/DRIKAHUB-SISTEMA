@@ -161,11 +161,11 @@ verify_jwt = false
 [functions.discord-guild-emojis]
 verify_jwt = false
 
-[functions.discord-guild-invites]
-verify_jwt = false
-
 [functions.lzt-market]
 verify_jwt = false
 
 [functions.manage-marketplace]
+verify_jwt = false
+
+[functions.manage-affiliates]
 verify_jwt = false
