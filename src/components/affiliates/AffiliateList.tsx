@@ -99,11 +99,16 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
     }
   };
 
+  const getFullLink = (code: string) => {
+    const base = window.location.origin;
+    return `${base}?ref=${code}`;
+  };
+
   const copyLink = (aff: Affiliate) => {
-    const link = `?ref=${aff.code}`;
+    const link = getFullLink(aff.code);
     navigator.clipboard.writeText(link);
     setCopiedId(aff.id);
-    toast({ title: "Link copiado! 📋", description: `?ref=${aff.code}` });
+    toast({ title: "Link copiado! 📋", description: link });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
