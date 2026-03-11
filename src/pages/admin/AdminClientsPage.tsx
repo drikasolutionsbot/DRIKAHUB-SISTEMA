@@ -549,6 +549,7 @@ const AdminClientsPage = () => {
                               onClick={() => {
                                 setRenewDialogTenantId(tenant.id);
                                 setRenewDays("30");
+                                setRenewPlan(tenant.plan || "free");
                               }}
                             >
                               <CalendarClock className="h-3 w-3 mr-1" />
