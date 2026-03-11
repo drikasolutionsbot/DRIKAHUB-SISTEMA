@@ -2,7 +2,9 @@ export interface Affiliate {
   id: string;
   name: string;
   code: string;
+  commission_type: "percent" | "fixed";
   commission_percent: number;
+  commission_fixed_cents: number;
   total_sales: number;
   total_revenue_cents: number;
   active: boolean;
