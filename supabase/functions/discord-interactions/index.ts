@@ -244,11 +244,14 @@ serve(async (req) => {
 
       // ─── SELECT VARIATION (from dropdown) ─────────────────
       if (customId.startsWith("select_variation:")) {
+        console.log("SELECT_VARIATION handler entered, customId:", customId);
         const values = interaction.data?.values || [];
+        console.log("Selected values:", JSON.stringify(values));
         if (values.length === 0) return ok();
 
         const selectedValue = values[0]; // format: buy_field:productId:fieldId
         const parts = selectedValue.split(":");
+        console.log("Parsed parts:", JSON.stringify(parts));
         if (parts.length < 3) return ok();
 
         const productId = parts[1];
@@ -1613,20 +1616,32 @@ function parseEmoji(emoji: string): any {
 
 // Deferred ephemeral response (for long operations - creates NEW message)
 async function respondDeferred(interaction: any, botToken: string) {
-  await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
+  const res = await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
     method: "POST",
     headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({ type: 5, data: { flags: 64 } }), // 64 = ephemeral
   });
+  const resText = await res.text();
+  if (!res.ok) {
+    console.error("respondDeferred FAILED:", res.status, resText);
+  } else {
+    console.log("respondDeferred OK:", res.status);
+  }
 }
 
 // Deferred update (updates EXISTING message, no new message created)
 async function respondDeferredUpdate(interaction: any, botToken: string) {
-  await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
+  const res = await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
     method: "POST",
     headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({ type: 6 }), // DEFERRED_UPDATE_MESSAGE
   });
+  const resText = await res.text();
+  if (!res.ok) {
+    console.error("respondDeferredUpdate FAILED:", res.status, resText);
+  } else {
+    console.log("respondDeferredUpdate OK:", res.status);
+  }
 }
 
 // Immediate ephemeral response
@@ -1640,9 +1655,17 @@ function respondImmediate(interaction: any, content: string | Record<string, any
 // Edit the deferred followup
 async function editFollowup(interaction: any, botToken: string, content: string | Record<string, any>) {
   const payload = typeof content === "string" ? { content, components: [] } : { ...content, components: content.components || [] };
-  await fetch(`${DISCORD_API}/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, {
+  const url = `${DISCORD_API}/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`;
+  console.log("editFollowup URL:", url);
+  const res = await fetch(url, {
     method: "PATCH",
     headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  const resText = await res.text();
+  if (!res.ok) {
+    console.error("editFollowup FAILED:", res.status, resText);
+  } else {
+    console.log("editFollowup OK:", res.status);
+  }
 }
