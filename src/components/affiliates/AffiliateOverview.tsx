@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
-import { Affiliate, AffiliateOrder, AffiliatePayout, formatBRL } from "./types";
+import { Affiliate, AffiliateOrder, AffiliatePayout, formatBRL, calcCommission } from "./types";
 
 const COLORS = [
   "hsl(var(--primary))",
