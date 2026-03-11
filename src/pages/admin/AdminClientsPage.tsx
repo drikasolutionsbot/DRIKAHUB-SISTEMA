@@ -180,7 +180,7 @@ const AdminClientsPage = () => {
         .eq("id", tenantId);
       if (error) throw error;
       const tenantName = tenant?.name || tenantId;
-      await logAudit("plan_days_added", "tenant", tenantId, tenantName, { days, new_expires: newExpiry.toISOString() });
+      await logAudit("plan_days_added", "tenant", tenantId, tenantName, { days, plan: renewPlan, new_expires: newExpiry.toISOString() });
       setTenants((prev) =>
         prev.map((t) => (t.id === tenantId ? { ...t, ...updateData } : t))
       );
