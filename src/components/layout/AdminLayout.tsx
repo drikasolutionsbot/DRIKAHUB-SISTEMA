@@ -247,6 +247,7 @@ export const AdminLayout = () => {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
+          <ThemeToggle checked={theme === "dark"} onChange={(checked) => setTheme(checked ? "dark" : "light")} />
           <Popover open={notifOpen} onOpenChange={setNotifOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
