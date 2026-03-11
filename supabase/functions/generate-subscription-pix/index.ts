@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { tenant_id, email, password, whatsapp, name } = await req.json();
+    const { tenant_id, email, password, whatsapp, name, ref_code } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -48,8 +48,10 @@ serve(async (req) => {
     // For new subscribers, use a sentinel tenant_id
     const effectiveTenantId = isNewSubscriber ? "00000000-0000-0000-0000-000000000000" : tenant_id;
 
-    // Store registration metadata for new subscribers
-    const metadata = isNewSubscriber ? { email, password, whatsapp: whatsapp || null, name: name || email.split("@")[0] } : {};
+    // Store registration metadata for new subscribers (include ref_code for referral tracking)
+    const metadata = isNewSubscriber
+      ? { email, password, whatsapp: whatsapp || null, name: name || email.split("@")[0], ref_code: ref_code || null }
+      : { ref_code: ref_code || null };
 
     if (config.efi_active && config.efi_client_id && config.efi_client_secret && config.efi_cert_pem && config.efi_key_pem) {
       return await generateViaEfi(config, effectiveTenantId, email, amountCents, supabase, metadata);
