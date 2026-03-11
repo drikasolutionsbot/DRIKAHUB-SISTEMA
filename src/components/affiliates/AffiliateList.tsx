@@ -35,14 +35,16 @@ interface Props {
 interface AffiliateForm {
   name: string;
   code: string;
+  commission_type: "percent" | "fixed";
   commission_percent: number;
+  commission_fixed_cents: number;
   discord_username: string;
   email: string;
   whatsapp: string;
 }
 
 const emptyForm: AffiliateForm = {
-  name: "", code: "", commission_percent: 5,
+  name: "", code: "", commission_type: "percent", commission_percent: 5, commission_fixed_cents: 0,
   discord_username: "", email: "", whatsapp: "",
 };
 
