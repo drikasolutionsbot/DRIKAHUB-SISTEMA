@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
               // Add 🎉 reaction
               await fetch(`https://discord.com/api/v10/channels/${channel_id}/messages/${msg.id}/reactions/%F0%9F%8E%89/@me`, {
                 method: "PUT",
-                headers: { Authorization: `Bot ${tenant.bot_token_encrypted}` },
+                headers: { Authorization: `Bot ${botToken}` },
               });
             }
           }
