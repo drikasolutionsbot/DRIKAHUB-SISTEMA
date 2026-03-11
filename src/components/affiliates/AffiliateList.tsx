@@ -73,7 +73,9 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
     setForm({
       name: aff.name,
       code: aff.code,
+      commission_type: aff.commission_type || "percent",
       commission_percent: aff.commission_percent,
+      commission_fixed_cents: aff.commission_fixed_cents || 0,
       discord_username: aff.discord_username ?? "",
       email: aff.email ?? "",
       whatsapp: aff.whatsapp ?? "",
