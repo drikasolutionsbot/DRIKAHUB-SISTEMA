@@ -7,6 +7,9 @@ export interface Affiliate {
   total_revenue_cents: number;
   active: boolean;
   created_at: string;
+  discord_username: string | null;
+  email: string | null;
+  whatsapp: string | null;
 }
 
 export interface AffiliateOrder {
