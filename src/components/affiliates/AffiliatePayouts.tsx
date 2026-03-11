@@ -95,9 +95,11 @@ const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh, adminMode 
   };
 
   const handleDelete = async (payoutId: string) => {
+    const payout = payouts.find(p => p.id === payoutId);
+    const effectiveTenantId = payout ? getAffTenantId(payout.affiliate_id) : tenantId;
     try {
       await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "delete_payout", tenant_id: tenantId, payout_id: payoutId },
+        body: { action: "delete_payout", tenant_id: effectiveTenantId, payout_id: payoutId },
       });
       toast({ title: "Pagamento removido" });
       onRefresh();
