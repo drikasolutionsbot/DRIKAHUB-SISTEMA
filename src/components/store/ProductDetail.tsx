@@ -81,6 +81,15 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
     setDirty(true);
   };
 
+  const handleEmbedColorChange = (color: string) => {
+    setEmbedColor(color);
+    if (tenantId && /^#[0-9a-fA-F]{6}$/.test(color)) {
+      supabase.functions.invoke("manage-store-config", {
+        body: { action: "upsert", tenant_id: tenantId, config: { embed_color: color } },
+      });
+    }
+  };
+
   const handleSave = () => {
     onSave(edited);
     setDirty(false);
