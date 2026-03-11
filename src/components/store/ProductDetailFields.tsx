@@ -77,7 +77,7 @@ const FieldExpandedContent = ({
       <Tabs defaultValue="geral">
         <TabsList className="bg-muted mb-4">
           <TabsTrigger value="geral">Geral</TabsTrigger>
-          <TabsTrigger value="estoque">Estoque</TabsTrigger>
+          <TabsTrigger value="entrega">Entrega</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="space-y-5">
