@@ -171,6 +171,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
           password,
           whatsapp: whatsapp.trim() || null,
           name: name.trim() || email.split("@")[0],
+          ref_code: refCode,
         },
       });
       if (fnError) {
