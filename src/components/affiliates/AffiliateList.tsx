@@ -30,6 +30,7 @@ interface Props {
   loading: boolean;
   tenantId: string | null;
   onRefresh: () => void;
+  adminMode?: boolean;
 }
 
 interface AffiliateForm {
@@ -48,7 +49,8 @@ const emptyForm: AffiliateForm = {
   discord_username: "", email: "", whatsapp: "",
 };
 
-const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
+const AffiliateList = ({ affiliates, loading, tenantId, onRefresh, adminMode }: Props) => {
+  const getTenantId = (aff?: Affiliate | null) => tenantId || (aff as any)?.tenant_id || null;
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Affiliate | null>(null);
@@ -84,7 +86,8 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
   };
 
   const handleSave = async () => {
-    if (!tenantId || !form.name.trim() || !form.code.trim()) return;
+    const effectiveTenantId = getTenantId(editing);
+    if (!effectiveTenantId || !form.name.trim() || !form.code.trim()) return;
     setSaving(true);
     try {
       const payload = {
@@ -99,12 +102,12 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
       };
       if (editing) {
         await supabase.functions.invoke("manage-affiliates", {
-          body: { action: "update", tenant_id: tenantId, affiliate_id: editing.id, affiliate: payload },
+          body: { action: "update", tenant_id: effectiveTenantId, affiliate_id: editing.id, affiliate: payload },
         });
         toast({ title: "Afiliado atualizado ✅" });
       } else {
         await supabase.functions.invoke("manage-affiliates", {
-          body: { action: "create", tenant_id: tenantId, affiliate: payload },
+          body: { action: "create", tenant_id: effectiveTenantId, affiliate: payload },
         });
         toast({ title: "Afiliado criado ✅" });
       }
@@ -119,7 +122,7 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
   const handleToggle = async (aff: Affiliate) => {
     try {
       await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "update", tenant_id: tenantId, affiliate_id: aff.id, affiliate: { active: !aff.active } },
+        body: { action: "update", tenant_id: getTenantId(aff), affiliate_id: aff.id, affiliate: { active: !aff.active } },
       });
       onRefresh();
     } catch (e: any) {
@@ -128,9 +131,10 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
   };
 
   const handleDelete = async (id: string) => {
+    const aff = affiliates.find(a => a.id === id);
     try {
       await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "delete", tenant_id: tenantId, affiliate_id: id },
+        body: { action: "delete", tenant_id: getTenantId(aff), affiliate_id: id },
       });
       toast({ title: "Afiliado removido" });
       onRefresh();
@@ -154,7 +158,7 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh }: Props) => {
     setStatsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "stats", tenant_id: tenantId, affiliate_id: aff.id },
+        body: { action: "stats", tenant_id: getTenantId(aff), affiliate_id: aff.id },
       });
       if (error) throw error;
       setStatsOrders(data?.orders ?? []);

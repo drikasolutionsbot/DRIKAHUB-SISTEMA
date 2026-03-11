@@ -28,9 +28,11 @@ interface Props {
   tenantId: string | null;
   payouts: AffiliatePayout[];
   onRefresh: () => void;
+  adminMode?: boolean;
 }
 
-const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh }: Props) => {
+const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh, adminMode }: Props) => {
+  const getAffTenantId = (affId: string) => tenantId || (affiliates.find(a => a.id === affId) as any)?.tenant_id || null;
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -46,13 +48,15 @@ const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh }: Props) =
   };
 
   const handleCreate = async () => {
-    if (!tenantId || !form.affiliate_id || form.amount_cents <= 0) return;
+    if (!form.affiliate_id || form.amount_cents <= 0) return;
+    const effectiveTenantId = getAffTenantId(form.affiliate_id);
+    if (!effectiveTenantId) return;
     setSaving(true);
     try {
       await supabase.functions.invoke("manage-affiliates", {
         body: {
           action: "create_payout",
-          tenant_id: tenantId,
+          tenant_id: effectiveTenantId,
           affiliate_id: form.affiliate_id,
           payout: {
             amount_cents: form.amount_cents,
@@ -71,11 +75,13 @@ const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh }: Props) =
   };
 
   const handleUpdateStatus = async (payoutId: string, newStatus: string) => {
+    const payout = payouts.find(p => p.id === payoutId);
+    const effectiveTenantId = payout ? getAffTenantId(payout.affiliate_id) : tenantId;
     try {
       await supabase.functions.invoke("manage-affiliates", {
         body: {
           action: "update_payout",
-          tenant_id: tenantId,
+          tenant_id: effectiveTenantId,
           payout_id: payoutId,
           payout: { status: newStatus },
         },
@@ -89,9 +95,11 @@ const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh }: Props) =
   };
 
   const handleDelete = async (payoutId: string) => {
+    const payout = payouts.find(p => p.id === payoutId);
+    const effectiveTenantId = payout ? getAffTenantId(payout.affiliate_id) : tenantId;
     try {
       await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "delete_payout", tenant_id: tenantId, payout_id: payoutId },
+        body: { action: "delete_payout", tenant_id: effectiveTenantId, payout_id: payoutId },
       });
       toast({ title: "Pagamento removido" });
       onRefresh();
