@@ -104,6 +104,7 @@ const SidebarContent = ({ location, onNavigate }: { location: ReturnType<typeof 
 export const AdminLayout = () => {
   const { isSuperAdmin, loading } = useAdmin();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState<AdminNotif[]>([]);
