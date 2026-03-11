@@ -385,7 +385,7 @@ const AffiliateOverview = ({ affiliates, orders, payouts, loading }: Props) => {
               Performance Geral
             </span>
           </h3>
-          <div style={{ filter: "url(#surreal-warp)" }}>
+          <div style={{ filter: "url(#surreal-warp) url(#surreal-holo) url(#surreal-grain)" }}>
             <ResponsiveContainer width="100%" height={220}>
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
                 <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
