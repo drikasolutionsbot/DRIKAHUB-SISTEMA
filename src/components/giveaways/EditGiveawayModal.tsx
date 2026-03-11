@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, Save, ChevronDown, Eye, Settings } from "lucide-react";
+import { CalendarIcon, Loader2, Save, Eye, Settings, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "@/hooks/use-toast";
@@ -54,6 +54,7 @@ export default function EditGiveawayModal({ open, onOpenChange, giveaway, onSave
   const [requireRoleId, setRequireRoleId] = useState(giveaway.require_role_id || "");
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savingEmbed, setSavingEmbed] = useState(false);
   const [embedConfig, setEmbedConfig] = useState<GiveawayEmbedConfig>(
     giveaway.embed_config && Object.keys(giveaway.embed_config).length > 0
       ? { ...defaultEmbedConfig, ...giveaway.embed_config }
@@ -114,6 +115,28 @@ export default function EditGiveawayModal({ open, onOpenChange, giveaway, onSave
       toast({ title: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveEmbed = async () => {
+    if (!tenantId) return;
+    setSavingEmbed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-giveaways", {
+        body: {
+          action: "update",
+          tenant_id: tenantId,
+          giveaway_id: giveaway.id,
+          embed_config: embedConfig,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Erro ao salvar embed");
+      toast({ title: "✅ Embed atualizado no Discord!" });
+      onSaved();
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setSavingEmbed(false);
     }
   };
 
@@ -226,6 +249,10 @@ export default function EditGiveawayModal({ open, onOpenChange, giveaway, onSave
               <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
               <GiveawayEmbedPreview config={embedConfig} giveawayData={giveawayData} />
             </div>
+            <Button onClick={handleSaveEmbed} disabled={savingEmbed} variant="outline" className="w-full gap-2">
+              {savingEmbed ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Salvar Embed e Atualizar no Discord
+            </Button>
           </TabsContent>
         </Tabs>
 
