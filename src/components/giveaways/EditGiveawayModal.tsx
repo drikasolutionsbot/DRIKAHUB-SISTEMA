@@ -249,6 +249,10 @@ export default function EditGiveawayModal({ open, onOpenChange, giveaway, onSave
               <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
               <GiveawayEmbedPreview config={embedConfig} giveawayData={giveawayData} />
             </div>
+            <Button onClick={handleSaveEmbed} disabled={savingEmbed} variant="outline" className="w-full gap-2">
+              {savingEmbed ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Salvar Embed e Atualizar no Discord
+            </Button>
           </TabsContent>
         </Tabs>
 
