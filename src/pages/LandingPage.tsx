@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, useMemo, type RefObject } from "react";
 import { Crown, Zap, Check, ArrowRight, ShoppingCart, Shield, Lock, Users, TrendingUp, Package, ChevronDown, MessageSquare, Bot, Settings, Play, X, Copy, Loader2, Sparkles } from "lucide-react";
 import drikaLogo from "@/assets/DRIKA_HUB_SEM_FUNDO.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,6 +139,12 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
   const [whatsapp, setWhatsapp] = useState("");
   const [name, setName] = useState("");
 
+  // Capture ?ref=CODE from URL
+  const refCode = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("ref") || null;
+  }, []);
+
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -165,6 +171,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
           password,
           whatsapp: whatsapp.trim() || null,
           name: name.trim() || email.split("@")[0],
+          ref_code: refCode,
         },
       });
       if (fnError) {
