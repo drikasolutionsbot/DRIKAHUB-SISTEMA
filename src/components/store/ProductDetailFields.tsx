@@ -299,7 +299,7 @@ export const ProductDetailFields = ({ productId, onFieldsChange }: ProductDetail
       });
       if (error) throw error;
       if (data?.fields) setFields(data.fields);
-      if (data?.stockCounts) setStockCounts(data.stockCounts);
+      
     } catch (e: any) {
       console.error(e);
     }
