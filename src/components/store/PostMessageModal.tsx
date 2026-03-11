@@ -75,8 +75,18 @@ export const PostMessageModal = ({
   }, [guildId]);
 
   useEffect(() => {
-    if (open) fetchChannels();
-  }, [open, fetchChannels]);
+    if (open) {
+      fetchChannels();
+      // Fetch embed color from store config
+      if (tenantId) {
+        supabase.functions.invoke("manage-store-config", {
+          body: { action: "get", tenant_id: tenantId },
+        }).then(({ data }) => {
+          if (data?.embed_color) setEmbedColor(data.embed_color);
+        });
+      }
+    }
+  }, [open, fetchChannels, tenantId]);
 
   const handlePost = async () => {
     if (!selectedChannel || !guildId) {
