@@ -48,7 +48,9 @@ const AffiliatePayouts = ({ affiliates, tenantId, payouts, onRefresh, adminMode 
   };
 
   const handleCreate = async () => {
-    if (!tenantId || !form.affiliate_id || form.amount_cents <= 0) return;
+    if (!form.affiliate_id || form.amount_cents <= 0) return;
+    const effectiveTenantId = getAffTenantId(form.affiliate_id);
+    if (!effectiveTenantId) return;
     setSaving(true);
     try {
       await supabase.functions.invoke("manage-affiliates", {
