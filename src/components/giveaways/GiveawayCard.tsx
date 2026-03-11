@@ -88,8 +88,8 @@ export default function GiveawayCard({ giveaway, onDraw, onCancel, onEdit }: Giv
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span className={isFinished ? "text-yellow-500 font-medium" : ""}>
-              {isFinished ? "⏰ Tempo esgotado" : timeLeft}
+            <span className={isFinished ? "text-yellow-500 font-medium animate-pulse" : ""}>
+              {isEnded ? "⏰ Encerrado" : isExpired ? "🎲 Sorteando ganhador..." : timeLeft}
             </span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
