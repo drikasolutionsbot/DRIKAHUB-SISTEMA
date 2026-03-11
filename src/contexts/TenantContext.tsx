@@ -82,6 +82,9 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
               verify_enabled: null,
               verify_redirect_url: null,
               verify_role_id: null,
+              referral_code: null,
+              referred_by_tenant_id: null,
+              referral_credits_cents: 0,
             });
           }
           setLoading(false);
