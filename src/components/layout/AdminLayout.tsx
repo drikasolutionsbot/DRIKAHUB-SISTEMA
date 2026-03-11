@@ -4,6 +4,8 @@ import { useAdmin } from "@/contexts/AdminContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LayoutDashboard, CreditCard, Users, LogOut, Headphones, Globe, Bell, Crown, UserPlus, Inbox, CheckCircle, BarChart3, ClipboardList, Shield, Menu, BookOpen, Store } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTheme } from "next-themes";
+import ThemeToggle from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
