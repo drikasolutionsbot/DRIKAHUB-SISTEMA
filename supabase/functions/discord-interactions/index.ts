@@ -213,13 +213,14 @@ serve(async (req) => {
             };
           });
 
+          const embedColorVal = await getStoreEmbedColor(tenantId);
           const autoDelivery = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
           await editFollowup(interaction, botToken, {
             content: "",
             embeds: [{
               title: product.name,
               description: `${autoDelivery}${product.description || ""}`,
-              color: 0x2B2D31,
+              color: embedColorVal,
               image: product.banner_url ? { url: product.banner_url } : undefined,
               thumbnail: product.icon_url ? { url: product.icon_url } : undefined,
             }],
