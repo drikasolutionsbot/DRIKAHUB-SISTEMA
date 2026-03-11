@@ -7,20 +7,28 @@ const corsHeaders = {
 };
 
 const DEFAULT_COMMANDS = [
-  { name: "/painel", description: "Abre o painel administrativo no Discord", category: "Admin", enabled: true },
-  { name: "/comprar", description: "Inicia o fluxo de compra de um produto", category: "Loja", enabled: true },
-  { name: "/carrinho", description: "Exibe o carrinho do usuário", category: "Loja", enabled: true },
-  { name: "/estoque", description: "Verifica o estoque de um produto", category: "Loja", enabled: true },
-  { name: "/ticket", description: "Abre um ticket de suporte", category: "Suporte", enabled: true },
-  { name: "/fechar", description: "Fecha o ticket atual", category: "Suporte", enabled: true },
-  { name: "/rank", description: "Exibe o ranking de convites", category: "Convites", enabled: false },
-  { name: "/convites", description: "Mostra quantos convites o usuário tem", category: "Convites", enabled: false },
-  { name: "/sortear", description: "Cria um novo sorteio", category: "Sorteios", enabled: false },
-  { name: "/vip", description: "Ativa um plano VIP para o usuário", category: "VIP", enabled: true },
-  { name: "/ban", description: "Bane um usuário do servidor", category: "Moderação", enabled: true },
-  { name: "/kick", description: "Expulsa um usuário do servidor", category: "Moderação", enabled: true },
-  { name: "/clear", description: "Limpa mensagens do canal", category: "Moderação", enabled: true },
-  { name: "/afiliado", description: "Gera um link de afiliado", category: "Loja", enabled: false },
+  { name: "/painel", description: "Abre o painel administrativo no Discord", category: "Admin", enabled: true, options: [] },
+  { name: "/comprar", description: "Inicia o fluxo de compra de um produto", category: "Loja", enabled: true, options: [] },
+  { name: "/carrinho", description: "Exibe o carrinho do usuário", category: "Loja", enabled: true, options: [] },
+  { name: "/estoque", description: "Verifica o estoque de um produto", category: "Loja", enabled: true, options: [] },
+  { name: "/ticket", description: "Abre um ticket de suporte", category: "Suporte", enabled: true, options: [] },
+  { name: "/fechar", description: "Fecha o ticket atual", category: "Suporte", enabled: true, options: [] },
+  { name: "/rank", description: "Exibe o ranking de convites", category: "Convites", enabled: false, options: [] },
+  { name: "/convites", description: "Mostra quantos convites o usuário tem", category: "Convites", enabled: false, options: [] },
+  { name: "/sortear", description: "Cria um novo sorteio", category: "Sorteios", enabled: false, options: [] },
+  { name: "/vip", description: "Ativa um plano VIP para o usuário", category: "VIP", enabled: true, options: [] },
+  { name: "/ban", description: "Bane um usuário do servidor", category: "Moderação", enabled: true, options: [
+    { name: "usuario", description: "Usuário para banir", type: 6, required: true },
+    { name: "motivo", description: "Motivo do banimento", type: 3, required: false },
+  ] },
+  { name: "/kick", description: "Expulsa um usuário do servidor", category: "Moderação", enabled: true, options: [
+    { name: "usuario", description: "Usuário para expulsar", type: 6, required: true },
+    { name: "motivo", description: "Motivo da expulsão", type: 3, required: false },
+  ] },
+  { name: "/clear", description: "Limpa mensagens do canal", category: "Moderação", enabled: true, options: [
+    { name: "quantidade", description: "Quantidade de mensagens (1-100)", type: 4, required: false },
+  ] },
+  { name: "/afiliado", description: "Gera um link de afiliado", category: "Loja", enabled: false, options: [] },
 ];
 
 Deno.serve(async (req) => {
