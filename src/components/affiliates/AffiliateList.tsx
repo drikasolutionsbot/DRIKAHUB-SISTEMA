@@ -143,7 +143,7 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh, adminMode }: 
     }
   };
 
-  const getFullLink = (code: string) => `https://drikahub.com?ref=${code}`;
+  const getFullLink = (code: string) => `${window.location.origin}?ref=${code}`;
 
   const copyLink = (aff: Affiliate) => {
     const link = getFullLink(aff.code);
