@@ -476,6 +476,12 @@ const AdminClientsPage = () => {
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                            {tenant.owner_discord_username && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <AtSign className="h-3 w-3" /> {tenant.owner_discord_username}
+                                {tenant.owner_discord_id && <span className="text-muted-foreground/50 text-[10px]">({tenant.owner_discord_id})</span>}
+                              </span>
+                            )}
                             {tenant.email && (
                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Mail className="h-3 w-3" /> {tenant.email}
@@ -496,9 +502,11 @@ const AdminClientsPage = () => {
                                 <CalendarClock className="h-3 w-3" /> Vence: {format(new Date(tenant.plan_expires_at), "dd/MM/yyyy")}
                               </span>
                             )}
-                            {!tenant.email && !tenant.whatsapp && !isPro && (
+                            {!tenant.owner_discord_username && !tenant.email && !tenant.whatsapp && !isPro && (
                               <span className="text-xs text-muted-foreground font-mono">
                                 {tenant.discord_guild_id || "Sem contato"}
+                              </span>
+                            )}
                               </span>
                             )}
                           </div>
