@@ -533,19 +533,6 @@ export const ProductDetailFields = ({ productId, onFieldsChange }: ProductDetail
         </div>
       )}
 
-      {/* Stock modal */}
-      {stockModalFieldId && tenantId && (
-        <AddStockModal
-          open={!!stockModalFieldId}
-          onOpenChange={(open) => !open && setStockModalFieldId(null)}
-          fieldId={stockModalFieldId}
-          tenantId={tenantId}
-          onAdded={() => {
-            fetchFields();
-            setStockModalFieldId(null);
-          }}
-        />
-      )}
     </div>
   );
 };
