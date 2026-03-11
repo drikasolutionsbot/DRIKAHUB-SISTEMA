@@ -131,9 +131,10 @@ const AffiliateList = ({ affiliates, loading, tenantId, onRefresh, adminMode }: 
   };
 
   const handleDelete = async (id: string) => {
+    const aff = affiliates.find(a => a.id === id);
     try {
       await supabase.functions.invoke("manage-affiliates", {
-        body: { action: "delete", tenant_id: tenantId, affiliate_id: id },
+        body: { action: "delete", tenant_id: getTenantId(aff), affiliate_id: id },
       });
       toast({ title: "Afiliado removido" });
       onRefresh();
