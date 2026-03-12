@@ -196,6 +196,20 @@ const AdminClientsPage = () => {
   const handleGenerateToken = async (tenantId: string) => {
     setGeneratingToken(tenantId);
     try {
+      // Check if tenant already has an active (non-revoked) token
+      const { data: existingTokens } = await supabase
+        .from("access_tokens")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("revoked", false)
+        .limit(1);
+
+      if (existingTokens && existingTokens.length > 0) {
+        toast({ title: "Limite atingido", description: "Este cliente já possui um token ativo. Revogue o token atual antes de gerar um novo.", variant: "destructive" });
+        setGeneratingToken(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("access_tokens")
         .insert({
