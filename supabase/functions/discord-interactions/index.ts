@@ -655,14 +655,6 @@ serve(async (req) => {
           ],
         };
 
-        if (product.compare_price_cents && product.compare_price_cents > product.price_cents) {
-          embed.fields.unshift({
-            name: "🔥 Promoção",
-            value: `~~${formatBRL(product.compare_price_cents)}~~ → **${formatBRL(product.price_cents)}**`,
-            inline: true,
-          });
-        }
-
         if (product.show_stock && product.stock !== null) {
           embed.fields.push({ name: "📊 Estoque", value: `${product.stock} disponíveis`, inline: true });
         }
