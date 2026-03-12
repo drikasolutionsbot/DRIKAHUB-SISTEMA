@@ -1,0 +1,1 @@
+ALTER TABLE public.store_configs ADD COLUMN IF NOT EXISTS ticket_message_id text DEFAULT NULL;
