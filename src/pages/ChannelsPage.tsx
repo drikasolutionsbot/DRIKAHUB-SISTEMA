@@ -232,6 +232,12 @@ const ChannelsPage = () => {
   const clearChannelDraft = useCallback(() => {
     if (tenantId) localStorage.removeItem(storageKey);
   }, [storageKey, tenantId]);
+  const [saving, setSaving] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    channelSections.forEach(s => { initial[s.title] = true; });
+    return initial;
+  });
 
   // Realtime subscription for channel_configs
   useEffect(() => {
