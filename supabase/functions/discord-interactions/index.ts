@@ -1020,7 +1020,7 @@ serve(async (req) => {
                   {
                     type: 2,
                     style: configuredPrimaryButtonStyle,
-                    label: storeConfig?.ticket_embed_button_label || "Lembrar",
+                    label: "Lembrar",
                     custom_id: `ticket_remind_${ticket.id}`,
                   },
                   {
