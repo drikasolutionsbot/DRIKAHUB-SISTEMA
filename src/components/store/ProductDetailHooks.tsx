@@ -210,19 +210,19 @@ export const ProductDetailHooks = ({ productId }: ProductDetailHooksProps) => {
       </div>
 
       {/* Add hook buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="flex flex-wrap gap-2">
         {Object.entries(hookTypeConfig).map(([type, cfg]) => {
           const Icon = cfg.icon;
           return (
             <button
               key={type}
               onClick={() => handleCreate(type)}
-              className="group flex flex-col items-center gap-1.5 rounded-xl border border-border hover:border-primary/40 bg-muted/30 hover:bg-primary/5 p-3 transition-all duration-200"
+              className="group flex items-center gap-2 rounded-lg border border-border hover:border-primary/40 bg-muted/30 hover:bg-primary/5 px-3 py-2 transition-all duration-200"
             >
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${cfg.bgColor}`}>
-                <Icon className={`h-4 w-4 ${cfg.color}`} />
+              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${cfg.bgColor}`}>
+                <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
               </div>
-              <span className="text-[11px] font-medium text-center leading-tight">{cfg.label}</span>
+              <span className="text-xs font-medium whitespace-nowrap">{cfg.label}</span>
             </button>
           );
         })}
