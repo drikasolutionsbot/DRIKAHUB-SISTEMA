@@ -54,6 +54,7 @@ const defaultConfig: ServerConfig = {
 };
 
 const CustomizationPage = () => {
+  const navigate = useNavigate();
   const { tenant, tenantId, refetch } = useTenant();
   const [serverConfig, setServerConfig] = useState<ServerConfig>(defaultConfig);
   const [configLoaded, setConfigLoaded] = useState(false);
