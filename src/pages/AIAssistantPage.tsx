@@ -447,13 +447,22 @@ export default function AIAssistantPage() {
         <div className="flex flex-col rounded-2xl border border-primary/10 bg-card overflow-hidden min-h-[500px]">
           {/* Chat Header */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-border/20 bg-card/80">
-            <div className="flex items-center gap-2">
-              <div className={cn("h-2 w-2 rounded-full", loading ? "bg-yellow-500 animate-pulse" : messages.length > 0 ? "bg-green-500" : "bg-muted-foreground/30")} />
+            <div className="flex items-center gap-3">
+              <div className={cn("h-2 w-2 rounded-full transition-all duration-500", loading ? "bg-yellow-500 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]" : messages.length > 0 ? "bg-green-500" : "bg-muted-foreground/30")} />
               <p className="text-xs font-bold text-foreground/80 uppercase tracking-widest">
                 {activeSession ? activeSession.title.slice(0, 30) : selectedTool.label}
               </p>
+              {loading && (
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 animate-fade-in">
+                  <div className="relative h-3.5 w-3.5">
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-primary tracking-wide">P-CON processando...</span>
+                </div>
+              )}
             </div>
-            {messages.length > 0 && (
+            {messages.length > 0 && !loading && (
               <span className="text-[10px] text-muted-foreground/40">{messages.length} mensagens</span>
             )}
           </div>
@@ -523,13 +532,30 @@ export default function AIAssistantPage() {
                         </button>
                       )}
                       {msg.role === "assistant" && !msg.content && !msg.imageUrl && loading && (
-                        <div className="flex items-center gap-2 py-1">
-                          <div className="flex gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <div className="flex flex-col gap-3 py-2 min-w-[200px]">
+                          {/* Brain animation */}
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-6 w-6">
+                              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "1.5s" }} />
+                              <div className="relative h-6 w-6 rounded-full bg-gradient-to-br from-primary/30 to-[#C44AFF]/30 flex items-center justify-center">
+                                <Brain className="h-3 w-3 text-primary animate-pulse" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[11px] font-semibold text-foreground/70">P-CON IA está pensando</span>
+                              <div className="flex gap-1">
+                                <span className="h-1 w-1 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                                <span className="h-1 w-1 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                                <span className="h-1 w-1 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-[11px] text-muted-foreground/40">Gerando...</span>
+                          {/* Shimmer lines */}
+                          <div className="space-y-2">
+                            <div className="h-2 w-4/5 rounded-full bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60 animate-pulse" />
+                            <div className="h-2 w-3/5 rounded-full bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60 animate-pulse" style={{ animationDelay: "200ms" }} />
+                            <div className="h-2 w-2/5 rounded-full bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60 animate-pulse" style={{ animationDelay: "400ms" }} />
+                          </div>
                         </div>
                       )}
                     </div>
