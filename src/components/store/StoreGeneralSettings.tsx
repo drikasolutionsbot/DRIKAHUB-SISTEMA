@@ -32,27 +32,11 @@ interface StoreConfig {
   purchase_embed_thumbnail_url: string;
   customer_role_id: string;
 }
-  delivery_instructions: string;
-  embed_color: string;
-  store_title: string;
-  store_description: string;
-  store_banner_url: string;
-  store_logo_url: string;
-  purchase_embed_title: string;
-  purchase_embed_description: string;
-  purchase_embed_color: string;
-  purchase_embed_footer: string;
-  purchase_embed_image_url: string;
-  purchase_embed_thumbnail_url: string;
-  customer_role_id: string;
-}
 
 const defaultConfig: StoreConfig = {
   sales_channel_id: "",
   logs_channel_id: "",
   payment_timeout_minutes: 30,
-  auto_delivery_global: true,
-  delivery_instructions: "",
   embed_color: "#5865F2",
   store_title: "",
   store_description: "",
