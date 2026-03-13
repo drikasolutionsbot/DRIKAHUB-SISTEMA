@@ -39,7 +39,7 @@ const defaultConfig: VerifyConfig = {
   verify_button_style: "primary",
 };
 
-const VerificationPage = () => {
+const VerificationPage = ({ embedded }: { embedded?: boolean }) => {
   const { tenantId, tenant } = useTenant();
   const [serverConfig, setServerConfig] = useState<VerifyConfig>(defaultConfig);
   const [loading, setLoading] = useState(true);

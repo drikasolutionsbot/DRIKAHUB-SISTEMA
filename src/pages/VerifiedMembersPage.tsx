@@ -59,7 +59,7 @@ const getAvatarUrl = (userId: string, avatar: string | null) => {
   return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=64`;
 };
 
-const VerifiedMembersPage = () => {
+const VerifiedMembersPage = ({ embedded }: { embedded?: boolean }) => {
   const { tenantId, tenant } = useTenant();
   const navigate = useNavigate();
   const [members, setMembers] = useState<VerifiedMember[]>([]);
