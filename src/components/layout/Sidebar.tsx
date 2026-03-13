@@ -46,7 +46,7 @@ const navGroups = [
       { label: "Loja", icon: Store, path: "/store" },
       { label: "Marketplace", icon: ShoppingBag, path: "/marketplace" },
       { label: "Proteção", icon: Shield, path: "/protection" },
-      { label: "Verificação", icon: UserCheck, path: "/verification" },
+      { label: "Boas-vindas", icon: HandMetal, path: "/welcome" },
       { label: "Boas-vindas", icon: HandMetal, path: "/welcome" },
       { label: "Tickets", icon: Ticket, path: "/tickets" },
       { label: "Sorteios", icon: Gift, path: "/giveaways" },
