@@ -7,9 +7,7 @@ const corsHeaders = {
 
 const DISCORD_API = "https://discord.com/api/v10";
 
-function escHtml(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
+// Transcript is now sent as Discord embeds + .txt backup
 
 function generateTranscriptText(msgs: any[], serverName: string, ticketName: string, status: string): string {
   const now = new Date().toLocaleString("pt-BR");
