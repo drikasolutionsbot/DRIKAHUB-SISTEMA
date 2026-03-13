@@ -19,7 +19,19 @@ interface StoreConfig {
   sales_channel_id: string;
   logs_channel_id: string;
   payment_timeout_minutes: number;
-  auto_delivery_global: boolean;
+  embed_color: string;
+  store_title: string;
+  store_description: string;
+  store_banner_url: string;
+  store_logo_url: string;
+  purchase_embed_title: string;
+  purchase_embed_description: string;
+  purchase_embed_color: string;
+  purchase_embed_footer: string;
+  purchase_embed_image_url: string;
+  purchase_embed_thumbnail_url: string;
+  customer_role_id: string;
+}
   delivery_instructions: string;
   embed_color: string;
   store_title: string;
