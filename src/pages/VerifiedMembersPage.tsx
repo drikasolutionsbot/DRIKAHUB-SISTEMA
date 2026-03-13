@@ -257,6 +257,7 @@ const VerifiedMembersPage = () => {
                               src={getAvatarUrl(member.discord_user_id, member.discord_avatar)!}
                               alt=""
                               className="h-full w-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <span className="text-xs font-bold text-muted-foreground">
