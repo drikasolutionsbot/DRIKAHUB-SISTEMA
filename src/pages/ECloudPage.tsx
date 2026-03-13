@@ -1,9 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ECloudCharts } from "@/components/ecloud/ECloudCharts";
 import { ECloudDataTab } from "@/components/ecloud/ECloudDataTab";
+import { Loader2 } from "lucide-react";
+
+const VerificationPage = lazy(() => import("@/pages/VerificationPage"));
+const VerifiedMembersPage = lazy(() => import("@/pages/VerifiedMembersPage"));
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge, getStatusLabel } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -313,6 +317,12 @@ const ECloudPage = () => {
           <TabsTrigger value="dados" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
             Dados & Backups
           </TabsTrigger>
+          <TabsTrigger value="verificacao" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
+            Verificação
+          </TabsTrigger>
+          <TabsTrigger value="verificados" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
+            Verificados
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="monitor" className="mt-6 space-y-6">
@@ -460,6 +470,18 @@ const ECloudPage = () => {
 
         <TabsContent value="dados" className="mt-6">
           {tenantId && <ECloudDataTab tenantId={tenantId} />}
+        </TabsContent>
+
+        <TabsContent value="verificacao" className="mt-6">
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+            <VerificationPage embedded />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="verificados" className="mt-6">
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+            <VerifiedMembersPage embedded />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
