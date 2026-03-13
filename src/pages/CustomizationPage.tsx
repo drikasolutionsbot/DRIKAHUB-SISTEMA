@@ -21,6 +21,7 @@ import ChannelSelectWithCreate from "@/components/channels/ChannelSelectWithCrea
 import { DiscordButtonStylePicker, type DiscordButtonStyle, getDiscordButtonStyles } from "@/components/discord/DiscordButtonStylePicker";
 
 interface ServerConfig {
+  server_name: string;
   bot_status: string;
   bot_status_interval: string;
   bot_prefix: string;
