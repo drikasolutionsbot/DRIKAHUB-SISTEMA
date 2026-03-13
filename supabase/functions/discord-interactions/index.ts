@@ -1848,7 +1848,7 @@ serve(async (req) => {
   });
 });
 
-// ─── Process Purchase: create order + generate PIX ──────────
+// ─── Process Purchase: create order + checkout thread ────────
 async function processPurchase(
   supabase: any,
   interaction: any,
@@ -1858,6 +1858,8 @@ async function processPurchase(
   userId: string,
   username: string,
   priceCents: number,
+  guildId: string,
+  channelId: string,
   fieldId?: string,
   fieldName?: string
 ) {
@@ -1901,38 +1903,16 @@ async function processPurchase(
     });
   } catch (e) { console.error("Automation order_created failed:", e); }
 
-  // Generate PIX
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-
-  // Check for active payment provider
-  const { data: providers, error: provErr } = await supabase
-    .from("payment_providers")
-    .select("provider_key, api_key_encrypted, secret_key_encrypted, active, efi_cert_pem, efi_key_pem, efi_pix_key")
-    .eq("tenant_id", tenantId)
-    .eq("active", true);
-
-  console.log("Payment providers query:", { tenantId, providers: providers?.map((p: any) => ({ key: p.provider_key, hasApiKey: !!p.api_key_encrypted })), error: provErr?.message });
-
-  const activeProvider = providers?.find((p: any) => p.api_key_encrypted);
-  const amountBRL = priceCents / 100;
-  const webhookBaseUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
-  let brcode = "";
-  let paymentId = "";
-
-  console.log("Purchase debug:", { activeProvider: activeProvider?.provider_key, amountBRL, priceCents });
-
   // ─── FREE PRODUCT: deliver immediately without payment ────
   if (priceCents <= 0) {
-    // Mark order as paid and trigger delivery
     await supabase.from("orders").update({ 
       status: "paid", 
       payment_provider: "free",
       updated_at: new Date().toISOString() 
     }).eq("id", order.id);
 
-    // Trigger delivery via deliver-order
     try {
-      await fetch(`${supabaseUrl}/functions/v1/deliver-order`, {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/deliver-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
         body: JSON.stringify({ order_id: order.id }),
@@ -1943,111 +1923,38 @@ async function processPurchase(
     return;
   }
 
-  if (activeProvider && amountBRL > 0) {
-    const providerKey = activeProvider.provider_key;
-    const apiKey = activeProvider.api_key_encrypted;
-    const webhookUrl = `${webhookBaseUrl}/${providerKey}/${tenantId}`;
-    const externalRef = `order_${order.id}`;
+  // ─── Create private thread for checkout ───────────────────
+  const threadName = `🛒 • ${username || userId} • ${order.order_number}`.substring(0, 100);
 
-    if (providerKey === "mercadopago") {
-      console.log("Generating Mercado Pago PIX...", { amountBRL, orderName, externalRef });
-      try {
-        const result = await generateMercadoPagoPix(apiKey, amountBRL, orderName, externalRef, webhookUrl);
-        brcode = result.brcode;
-        paymentId = result.payment_id;
-        console.log("Mercado Pago PIX generated:", { brcode: brcode.substring(0, 30), paymentId });
-      } catch (mpErr) {
-        console.error("Mercado Pago PIX generation failed:", mpErr);
-        throw mpErr;
-      }
-    } else if (providerKey === "pushinpay") {
-      const result = await generatePushinPayPix(apiKey, priceCents, webhookUrl);
-      brcode = result.brcode;
-      paymentId = result.payment_id;
-    } else if (providerKey === "efi") {
-      const pixRes = await fetch(`${supabaseUrl}/functions/v1/generate-pix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
-        body: JSON.stringify({ tenant_id: tenantId, amount_cents: priceCents, product_name: orderName, tx_id: externalRef }),
-      });
-      const pixData = await pixRes.json();
-      if (pixData.error) throw new Error(pixData.error);
-      brcode = pixData.brcode || "";
-      paymentId = pixData.payment_id || externalRef;
-    } else if (providerKey === "misticpay") {
-      const pixRes = await fetch(`${supabaseUrl}/functions/v1/generate-pix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
-        body: JSON.stringify({ tenant_id: tenantId, amount_cents: priceCents, product_name: orderName, tx_id: externalRef }),
-      });
-      const pixData = await pixRes.json();
-      if (pixData.error) throw new Error(pixData.error);
-      brcode = pixData.brcode || "";
-      paymentId = pixData.payment_id || externalRef;
-    }
+  const createThreadRes = await fetch(`${DISCORD_API}/channels/${channelId}/threads`, {
+    method: "POST",
+    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: threadName,
+      type: 12, // GUILD_PRIVATE_THREAD
+      auto_archive_duration: 1440, // 24h
+    }),
+  });
 
-    // Update order with payment info
-    await supabase.from("orders").update({ payment_id: paymentId, payment_provider: providerKey }).eq("id", order.id);
-  } else {
-    // Static PIX fallback
-    const { data: tenant } = await supabase.from("tenants").select("name, pix_key, pix_key_type").eq("id", tenantId).single();
-    if (!tenant?.pix_key) throw new Error("Nenhum método de pagamento configurado.");
-    brcode = generateStaticBRCode(tenant.pix_key, tenant.name || "Loja", amountBRL, `PED${order.order_number}`);
-    await supabase.from("orders").update({ payment_provider: "static_pix" }).eq("id", order.id);
-
-    // ─── Send admin notification to logs channel ────────────
-    const { data: storeConfig } = await supabase
-      .from("store_configs")
-      .select("logs_channel_id")
-      .eq("tenant_id", tenantId)
-      .single();
-
-    if (storeConfig?.logs_channel_id) {
-      const adminEmbed = {
-        title: "🔔 Novo Pedido — PIX Estático",
-        description: `Um novo pedido foi criado com **PIX estático**.\nAguardando confirmação manual do pagamento.`,
-        color: 0xFEE75C,
-        fields: [
-          { name: "📦 Produto", value: orderName, inline: true },
-          { name: "💰 Valor", value: formatBRL(priceCents), inline: true },
-          { name: "🔢 Pedido", value: `#${order.order_number}`, inline: true },
-          { name: "👤 Comprador", value: `<@${userId}> (${username})`, inline: false },
-        ],
-        footer: { text: "Clique em Aprovar após confirmar o pagamento no seu banco" },
-        timestamp: new Date().toISOString(),
-      };
-
-      await fetch(`${DISCORD_API}/channels/${storeConfig.logs_channel_id}/messages`, {
-        method: "POST",
-        headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          embeds: [adminEmbed],
-          components: [{
-            type: 1,
-            components: [
-              {
-                type: 2,
-                style: 3,
-                label: "✅ Aprovar Pagamento",
-                custom_id: `approve_order:${order.id}`,
-              },
-              {
-                type: 2,
-                style: 4,
-                label: "❌ Recusar",
-                custom_id: `reject_order:${order.id}`,
-              },
-            ],
-          }],
-        }),
-      });
-    }
+  if (!createThreadRes.ok) {
+    const errText = await createThreadRes.text();
+    console.error("Failed to create checkout thread:", errText);
+    await editFollowup(interaction, botToken, "❌ Não foi possível criar o tópico de compra. Verifique as permissões do bot.");
+    return;
   }
+
+  const checkoutThread = await createThreadRes.json();
+
+  // Add buyer to thread
+  await fetch(`${DISCORD_API}/channels/${checkoutThread.id}/thread-members/${userId}`, {
+    method: "PUT",
+    headers: { Authorization: `Bot ${botToken}` },
+  });
 
   // Get store config for branding
   const { data: storeConfigForCheckout } = await supabase
     .from("store_configs")
-    .select("store_banner_url, store_logo_url, store_title, payment_timeout_minutes, embed_color")
+    .select("store_logo_url, store_title, embed_color, payment_timeout_minutes")
     .eq("tenant_id", tenantId)
     .single();
 
@@ -2059,51 +1966,83 @@ async function processPurchase(
 
   const storeName = storeConfigForCheckout?.store_title || tenantInfo?.name || "Loja";
   const storeLogo = storeConfigForCheckout?.store_logo_url || tenantInfo?.logo_url;
-  const timeoutMin = storeConfigForCheckout?.payment_timeout_minutes || 30;
   const storeEmbedColor = storeConfigForCheckout?.embed_color
     ? parseInt(storeConfigForCheckout.embed_color.replace("#", ""), 16)
     : 0x2B2D31;
 
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brcode)}`;
-
-  const checkoutEmbed: any = {
-    title: `🛒 ${storeName} - Carrinho`,
-    description: `> <@${userId}>, escaneie o QR Code ou copie o código PIX abaixo!`,
-    color: storeEmbedColor,
-    fields: [
-      { name: "🕐 Informações do Pedido", value: `**${orderName}**`, inline: false },
-      { name: "💠 Pagamento PIX", value: `→ **Preço:** ${formatBRL(priceCents)}\n→ **Tempo Limite:** ${timeoutMin} minutos`, inline: false },
-      { name: "📋 PIX Copia e Cola", value: `\`\`\`\n${brcode}\n\`\`\``, inline: false },
-    ],
-    image: { url: qrImageUrl },
-    footer: { 
-      text: `${storeName} • Pedido #${order.order_number}`,
-      icon_url: storeLogo || undefined,
-    },
-    timestamp: new Date().toISOString(),
-  };
-
-  if (storeLogo) {
-    checkoutEmbed.thumbnail = { url: storeLogo };
+  // Get stock count
+  let stockCount = "∞";
+  if (fieldId) {
+    const { count } = await supabase
+      .from("product_stock_items")
+      .select("id", { count: "exact", head: true })
+      .eq("field_id", fieldId)
+      .eq("tenant_id", tenantId)
+      .eq("delivered", false);
+    if (count !== null) stockCount = String(count);
+  } else if (product.stock !== null) {
+    stockCount = String(product.stock);
   }
 
-  // Respond inline (ephemeral) with QR code + brcode + cancel button
-  console.log("Sending checkout embed via editFollowup...", { orderId: order.id, hasBrcode: !!brcode });
-  await editFollowup(interaction, botToken, {
-    content: `↓ Após o pagamento, seu pedido será processado automaticamente!`,
-    embeds: [checkoutEmbed],
-    components: [{
-      type: 1,
-      components: [{
-        type: 2,
-        style: 4, // Danger (red)
-        label: "Cancelar Compra",
-        emoji: { name: "❌" },
-        custom_id: `cancel_order:${order.id}`,
-      }],
-    }],
+  // Build description from product description
+  const descLines: string[] = [];
+  if (product.description) {
+    descLines.push(product.description);
+  }
+  if (product.auto_delivery) {
+    descLines.unshift("⚡ **Entrega Automática!**");
+  }
+
+  // Send order review embed with buttons
+  const reviewEmbed: any = {
+    author: { name: username || userId, icon_url: `https://cdn.discordapp.com/embed/avatars/${(parseInt(userId) >> 22) % 6}.png` },
+    title: "Revisão do Pedido",
+    description: descLines.join("\n\n") || undefined,
+    color: storeEmbedColor,
+    fields: [
+      { name: "Valor à vista", value: formatBRL(priceCents), inline: true },
+      { name: "📦 Em estoque", value: stockCount, inline: true },
+    ],
+    footer: { 
+      text: `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      icon_url: storeLogo || undefined,
+    },
+  };
+
+  if (fieldName) {
+    reviewEmbed.fields.unshift({ name: "🛒 Carrinho", value: `1x ${orderName}`, inline: false });
+  }
+
+  if (product.banner_url) reviewEmbed.image = { url: product.banner_url };
+  if (product.icon_url) reviewEmbed.thumbnail = { url: product.icon_url };
+
+  await fetch(`${DISCORD_API}/channels/${checkoutThread.id}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      content: `<@${userId}>`,
+      embeds: [reviewEmbed],
+      components: [
+        {
+          type: 1,
+          components: [
+            { type: 2, style: 3, label: "Ir para o Pagamento", emoji: { name: "✅" }, custom_id: `checkout_pay:${order.id}` },
+            { type: 2, style: 2, label: "Editar Quantidade", emoji: { name: "✏️" }, custom_id: `checkout_quantity:${order.id}` },
+          ],
+        },
+        {
+          type: 1,
+          components: [
+            { type: 2, style: 2, label: "Usar Cupom", emoji: { name: "🏷️" }, custom_id: `checkout_coupon:${order.id}` },
+            { type: 2, style: 4, label: "Cancelar", emoji: { name: "🗑️" }, custom_id: `checkout_cancel:${order.id}` },
+          ],
+        },
+      ],
+    }),
   });
-  console.log("Checkout embed sent successfully for order:", order.id);
+
+  // Tell the user to go to the thread
+  await editFollowup(interaction, botToken, `🛒 Carrinho criado! Acesse <#${checkoutThread.id}> para finalizar sua compra.`);
 }
 
 // ─── Discord response helpers ───────────────────────────────
