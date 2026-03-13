@@ -27,6 +27,17 @@ export function useLocalDraft<T extends Record<string, any>>(
   const [draft, setDraft] = useState<T>(serverState);
   const [hasDraft, setHasDraft] = useState(false);
   const initialized = useRef(false);
+  const draftRef = useRef<T>(draft);
+  const storageKeyRef = useRef(storageKey);
+
+  // Keep refs in sync
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    storageKeyRef.current = storageKey;
+  }, [storageKey]);
 
   // On server state ready, check if there's a saved draft
   useEffect(() => {
@@ -70,6 +81,26 @@ export function useLocalDraft<T extends Record<string, any>>(
 
     return () => clearTimeout(timer);
   }, [draft, storageKey]);
+
+  // Flush draft to localStorage on beforeunload to prevent data loss
+  useEffect(() => {
+    if (!storageKey || !initialized.current) return;
+
+    const handleBeforeUnload = () => {
+      const key = storageKeyRef.current;
+      const value = draftRef.current;
+      if (key && initialized.current) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [storageKey]);
 
   const clearDraft = useCallback(() => {
     if (storageKey) {
