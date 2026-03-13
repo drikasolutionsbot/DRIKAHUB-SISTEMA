@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { action, tenant_id, product_id, field_id, field, items } = await req.json();
+    const { action, tenant_id, product_id, field_id, field, items, stock_item_id } = await req.json();
 
     if (!tenant_id) {
       return new Response(JSON.stringify({ error: "tenant_id obrigatório" }), {
