@@ -281,9 +281,6 @@ const CustomizationPage = () => {
           <TabsTrigger value="verificados" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5" onClick={() => navigate("/verified-members")}>
             Verificados
           </TabsTrigger>
-          <TabsTrigger value="embeds" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
-            Embeds
-          </TabsTrigger>
         </TabsList>
 
         {/* === GERAL === */}
@@ -595,11 +592,6 @@ const CustomizationPage = () => {
               <p className="text-[10px] text-muted-foreground">*Preview aproximado</p>
             </div>
           </div>
-        </TabsContent>
-
-        {/* === EMBEDS === */}
-        <TabsContent value="embeds" className="mt-6">
-          <EmbedBuilder />
         </TabsContent>
       </Tabs>
     </div>
