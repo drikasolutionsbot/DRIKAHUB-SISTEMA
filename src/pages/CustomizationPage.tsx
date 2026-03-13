@@ -70,7 +70,9 @@ const CustomizationPage = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const guildIconInputRef = useRef<HTMLInputElement>(null);
   const guildInfoLoadedRef = useRef(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
 
   const { draft: config, setDraft: setConfig, clearDraft, hasDraft, discardDraft } = useLocalDraft<ServerConfig>(
     "server-config",
