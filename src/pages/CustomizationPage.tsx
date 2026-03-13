@@ -173,6 +173,43 @@ const CustomizationPage = () => {
     setCheckingBot(false);
   };
 
+  const handleGuildIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tenantId) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione uma imagem válida");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Imagem deve ter no máximo 8MB");
+      return;
+    }
+    setUploadingIcon(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { error } = await supabase.functions.invoke("update-tenant", {
+        body: {
+          tenant_id: tenantId,
+          guild_icon_base64: base64,
+        },
+      });
+      if (error) throw error;
+      toast.success("Ícone do servidor atualizado!");
+      guildInfoLoadedRef.current = false;
+      await checkBotStatus();
+    } catch (err: any) {
+      toast.error("Erro ao atualizar ícone: " + (err.message || "Tente novamente"));
+    } finally {
+      setUploadingIcon(false);
+      if (guildIconInputRef.current) guildIconInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
     if (!tenantId) return;
     setSaving(true);
