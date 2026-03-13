@@ -593,11 +593,6 @@ const CustomizationPage = () => {
             </div>
           </div>
         </TabsContent>
-
-        {/* === EMBEDS === */}
-        <TabsContent value="embeds" className="mt-6">
-          <EmbedBuilder />
-        </TabsContent>
       </Tabs>
     </div>
   );
