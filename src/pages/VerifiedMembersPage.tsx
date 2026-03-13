@@ -54,6 +54,8 @@ const formatTimeAgo = (date: string) => {
 
 const getAvatarUrl = (userId: string, avatar: string | null) => {
   if (!avatar) return null;
+  // If already a full URL, use it directly
+  if (avatar.startsWith("http")) return avatar;
   return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=64`;
 };
 
@@ -255,6 +257,7 @@ const VerifiedMembersPage = () => {
                               src={getAvatarUrl(member.discord_user_id, member.discord_avatar)!}
                               alt=""
                               className="h-full w-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <span className="text-xs font-bold text-muted-foreground">
