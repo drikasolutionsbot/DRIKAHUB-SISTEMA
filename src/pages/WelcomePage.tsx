@@ -83,7 +83,7 @@ const defaultDmEmbed: EmbedData = {
 const defaultGoodbyeEmbed: EmbedData = {
   color: "#ED4245",
   title: "Até logo! 👋",
-  description: "{user} saiu do servidor. Agora somos {memberCount} membros.",
+  description: "**{username}** saiu do servidor. Agora somos **{memberCount}** membros.",
   thumbnail_url: "",
   image_url: "",
   footer_text: "",
