@@ -1325,6 +1325,13 @@ serve(async (req) => {
 
       // ─── TICKET DELETE (permanently delete channel) ────────
       if (customId.startsWith("ticket_delete_")) {
+        // Only staff with MANAGE_THREADS can delete tickets
+        const memberPermsDelete = BigInt(interaction.member?.permissions || "0");
+        if (!(memberPermsDelete & BigInt(0x4000000000)) && !(memberPermsDelete & BigInt(0x8))) {
+          await respondImmediate(interaction, "❌ Você não tem permissão para deletar tickets.");
+          return ok();
+        }
+
         const ticketId = customId.replace("ticket_delete_", "");
         await respondDeferredUpdate(interaction, botToken);
 
