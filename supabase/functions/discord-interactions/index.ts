@@ -1655,6 +1655,13 @@ serve(async (req) => {
       }
 
       if (customId.startsWith("ticket_close_")) {
+        // Only staff with MANAGE_THREADS can close tickets
+        const memberPermsClose = BigInt(interaction.member?.permissions || "0");
+        if (!(memberPermsClose & BigInt(0x4000000000)) && !(memberPermsClose & BigInt(0x8))) {
+          await respondImmediate(interaction, "❌ Você não tem permissão para arquivar tickets.");
+          return ok();
+        }
+
         const ticketId = customId.replace("ticket_close_", "");
         await respondDeferredUpdate(interaction, botToken);
 
