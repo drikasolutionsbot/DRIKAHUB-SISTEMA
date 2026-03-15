@@ -53,6 +53,7 @@ export const ProductList = ({
   categories = [],
   selectedCategoryId,
   onCategoryChange,
+  fieldCounts = {},
 }: ProductListProps) => {
   const filtered = products
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
