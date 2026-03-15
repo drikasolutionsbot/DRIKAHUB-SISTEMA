@@ -50,6 +50,13 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
   const botAvatar = tenant?.logo_url;
   const cfg: EmbedConfig = { ...DEFAULT_EMBED, ...embedConfig };
   const sideColor = embedColor || cfg.color || "#5865F2";
+  const bgStyle = cfg.bg_style || "default";
+
+  const embedBgMap: Record<string, string> = {
+    default: "#2f3136",
+    clean: "rgba(0,0,0,0.08)",
+    transparent: "transparent",
+  };
 
   const resolveTemplate = (tpl: string, fallback: string) => {
     if (!tpl) return fallback;
@@ -97,7 +104,13 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
         </div>
 
         {/* Embed */}
-        <div className="flex rounded" style={{ borderLeft: `4px solid ${sideColor}` }}>
+        <div
+          className="flex rounded"
+          style={{
+            borderLeft: `4px solid ${sideColor}`,
+            backgroundColor: embedBgMap[bgStyle],
+          }}
+        >
           <div className="flex-1 p-3 space-y-2">
             {/* Title */}
             <p className="text-white font-semibold text-sm">{title}</p>
