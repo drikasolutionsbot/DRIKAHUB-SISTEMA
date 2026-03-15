@@ -101,11 +101,15 @@ export const PostMessageModal = ({
 
     setPosting(true);
     try {
+      // Use product-level embed color override, then store-level, then default
+      const productEmbedColor = product.embed_config?.color;
+      const finalColor = productEmbedColor || embedColor;
+      
       const autoDeliveryLine = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
       const embed: Record<string, any> = {
         title: `${product.name}`,
         description: `${autoDeliveryLine}${product.description || ""}`,
-        color: parseInt(embedColor.replace("#", ""), 16),
+        color: parseInt(finalColor.replace("#", ""), 16),
         fields: [
           {
             name: "**Valor à vista**",
