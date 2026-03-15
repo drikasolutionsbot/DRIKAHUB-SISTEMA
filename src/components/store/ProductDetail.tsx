@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductDetailGeneral } from "./ProductDetailGeneral";
 import { ProductDetailFields } from "./ProductDetailFields";
 import { ProductDetailHooks } from "./ProductDetailHooks";
+import { ProductDetailStock } from "./ProductDetailStock";
 import { PostMessageModal } from "./PostMessageModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
