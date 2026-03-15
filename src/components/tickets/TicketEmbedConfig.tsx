@@ -50,6 +50,7 @@ const TicketEmbedConfig = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [staffRoleOpen, setStaffRoleOpen] = useState(false);
   const [channels, setChannels] = useState<{ id: string; name: string; parent_id?: string | null }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; position: number }[]>([]);
   const { roles: discordRoles, loading: rolesLoading } = useDiscordRoles();
