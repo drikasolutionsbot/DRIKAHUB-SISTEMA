@@ -162,33 +162,6 @@ export const ProductDetailEmbed = ({ product, onChange, storeEmbedColor }: Produ
           </div>
         </section>
 
-        {/* Título e Descrição */}
-        <section className="space-y-4">
-          <h3 className="text-base font-bold text-foreground">Título e Descrição</h3>
-          <p className="text-xs text-muted-foreground">
-            Deixe vazio para usar o nome/descrição padrão do produto. Use <code className="bg-muted px-1 rounded">{"{nome}"}</code> para incluir o nome do produto.
-          </p>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-bold">Título do Embed</Label>
-            <Input
-              value={config.title || ""}
-              onChange={(e) => update("title", e.target.value)}
-              placeholder="Ex: 🛒 {nome}"
-              className="bg-muted border-border"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-bold">Descrição do Embed</Label>
-            <Textarea
-              value={config.description || ""}
-              onChange={(e) => update("description", e.target.value)}
-              placeholder="Deixe vazio para usar a descrição do produto"
-              className="bg-muted border-border min-h-[80px] resize-y"
-            />
-          </div>
-        </section>
 
         {/* Badge de Entrega */}
         <section className="space-y-4">
