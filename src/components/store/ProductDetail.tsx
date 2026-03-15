@@ -8,6 +8,7 @@ import { ProductDetailGeneral } from "./ProductDetailGeneral";
 import { ProductDetailFields } from "./ProductDetailFields";
 import { ProductDetailHooks } from "./ProductDetailHooks";
 import { ProductDetailStock } from "./ProductDetailStock";
+import { ProductDetailEmbed, type EmbedConfig } from "./ProductDetailEmbed";
 import { PostMessageModal } from "./PostMessageModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -35,6 +36,7 @@ interface Product {
   show_sold?: boolean;
   enable_instructions?: boolean;
   button_style?: DiscordButtonStyle;
+  embed_config?: EmbedConfig;
 }
 
 interface ProductDetailProps {
@@ -150,6 +152,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
           <div className="px-6 pt-4">
             <TabsList className="bg-muted">
               <TabsTrigger value="geral">Geral</TabsTrigger>
+              <TabsTrigger value="embed">Embed</TabsTrigger>
               <TabsTrigger value="campos">Campos</TabsTrigger>
               <TabsTrigger value="estoque">Estoque</TabsTrigger>
               <TabsTrigger value="hooks">Hooks</TabsTrigger>
@@ -159,6 +162,10 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
           <div className="px-6 py-4">
             <TabsContent value="geral" className="mt-0">
               <ProductDetailGeneral product={edited} onChange={handleChange} categories={categories} />
+            </TabsContent>
+
+            <TabsContent value="embed" className="mt-0">
+              <ProductDetailEmbed product={edited} onChange={handleChange} />
             </TabsContent>
 
             <TabsContent value="campos" className="mt-0">
