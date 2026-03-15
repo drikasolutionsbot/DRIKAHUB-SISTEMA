@@ -63,6 +63,7 @@ interface Product {
 interface ProductDetailEmbedProps {
   product: Product;
   onChange: (updates: Partial<Product>) => void;
+  storeEmbedColor?: string;
 }
 
 const bgOptions: { value: EmbedBgStyle; label: string; desc: string; preview: string }[] = [
