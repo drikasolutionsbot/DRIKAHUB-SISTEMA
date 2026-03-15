@@ -39,6 +39,7 @@ interface ProductListProps {
   categories?: Category[];
   selectedCategoryId?: string | null;
   onCategoryChange?: (id: string | null) => void;
+  fieldCounts?: Record<string, number>;
 }
 
 export const ProductList = ({
@@ -52,6 +53,7 @@ export const ProductList = ({
   categories = [],
   selectedCategoryId,
   onCategoryChange,
+  fieldCounts = {},
 }: ProductListProps) => {
   const filtered = products
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -118,7 +120,7 @@ export const ProductList = ({
           <div className="p-2 space-y-0.5">
             {filtered.map((product) => {
               const hasStock = product.stock !== null && product.stock > 0;
-              const variationCount = product.stock ?? 0;
+              const variationCount = fieldCounts[product.id] ?? 0;
 
               return (
                 <button
