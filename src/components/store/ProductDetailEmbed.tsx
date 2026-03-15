@@ -306,7 +306,7 @@ export const ProductDetailEmbed = ({ product, onChange, storeEmbedColor }: Produ
       <div className="sticky top-4">
         <ProductDiscordPreview
           product={product}
-          embedColor={config.color || undefined}
+          embedColor={config.color || storeEmbedColor || undefined}
           embedConfig={config}
         />
       </div>
