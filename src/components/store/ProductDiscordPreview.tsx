@@ -58,15 +58,16 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
     queryKey: ["product-discord-preview-stock", tenantId, product.id],
     enabled: Boolean(tenantId && product.id),
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("product_stock_items")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId!)
-        .eq("product_id", product.id)
-        .eq("delivered", false);
+      const { data, error } = await supabase.functions.invoke("manage-product-fields", {
+        body: {
+          action: "get_stock",
+          tenant_id: tenantId,
+          product_id: product.id,
+        },
+      });
 
       if (error) throw error;
-      return count ?? 0;
+      return Number(data?.stock ?? 0);
     },
   });
 
