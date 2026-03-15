@@ -1328,9 +1328,12 @@ serve(async (req) => {
 
       // ─── TICKET DELETE (permanently delete channel) ────────
       if (customId.startsWith("ticket_delete_")) {
-        // Only staff with MANAGE_THREADS can delete tickets
-        const memberPermsDelete = BigInt(interaction.member?.permissions || "0");
-        if (!(memberPermsDelete & BigInt(0x4000000000)) && !(memberPermsDelete & BigInt(0x8))) {
+        const ticketIdDel = customId.replace("ticket_delete_", "");
+        const { data: delTicket } = await supabase.from("tickets").select("tenant_id").eq("id", ticketIdDel).single();
+        const delTenantId = delTicket?.tenant_id;
+        
+        const isStaffDel = delTenantId ? await checkTicketStaffPermission(supabase, botToken, delTenantId, interaction.guild_id, userId, interaction.member) : false;
+        if (!isStaffDel) {
           await respondImmediate(interaction, "❌ Você não tem permissão para deletar tickets.");
           return ok();
         }
