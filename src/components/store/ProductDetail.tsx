@@ -40,7 +40,7 @@ interface Product {
 interface ProductDetailProps {
   product: Product;
   onBack: () => void;
-  onSave: (product: Product) => void;
+  onSave: (product: Product) => Promise<boolean>;
   onDelete: (productId: string) => void;
   categories?: Category[];
 }
@@ -49,6 +49,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
   const { tenantId } = useTenant();
   const [edited, setEdited] = useState<Product>({ ...product });
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [embedColor, setEmbedColor] = useState("#5865F2");
 
@@ -66,9 +67,15 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
     setDirty(true);
   };
 
-  const handleSave = () => {
-    onSave(edited);
-    setDirty(false);
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const ok = await onSave(edited);
+      if (ok) setDirty(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDiscard = () => {
@@ -179,9 +186,10 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
           <Button
             size="sm"
             onClick={handleSave}
+            disabled={saving}
             className="bg-foreground text-background hover:bg-foreground/90"
           >
-            Salvar
+            {saving ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       )}
