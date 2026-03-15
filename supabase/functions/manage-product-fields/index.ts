@@ -26,6 +26,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // COUNT fields grouped by product_id (for all products of tenant)
+    if (action === "count_by_product") {
+      const { data, error } = await supabase
+        .from("product_fields")
+        .select("product_id")
+        .eq("tenant_id", tenant_id);
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      for (const row of data || []) {
+        counts[row.product_id] = (counts[row.product_id] || 0) + 1;
+      }
+      return new Response(JSON.stringify(counts), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // LIST fields for a product
     if (action === "list") {
       const { data, error } = await supabase
