@@ -36,6 +36,7 @@ interface Product {
   show_sold?: boolean;
   enable_instructions?: boolean;
   button_style?: DiscordButtonStyle;
+  embed_config?: EmbedConfig;
 }
 
 interface ProductDetailProps {
