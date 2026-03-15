@@ -51,7 +51,7 @@ interface Product {
   banner_url?: string | null;
   auto_delivery?: boolean;
   category_id?: string | null;
-  button_style?: string;
+  button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
   embed_config?: EmbedConfig;
 }
 
