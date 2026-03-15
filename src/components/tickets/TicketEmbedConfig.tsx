@@ -346,38 +346,58 @@ const TicketEmbedConfig = () => {
                 <Shield className="h-3.5 w-3.5" />
                 Cargos de Staff (Gerenciar Tickets)
               </Label>
-              <div className="space-y-2 rounded-lg border border-border p-3 max-h-48 overflow-y-auto">
-                {discordRoles.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Nenhum cargo encontrado</p>
-                )}
-                {discordRoles.map((role) => {
-                  const selectedIds = data.ticket_staff_role_id ? data.ticket_staff_role_id.split(",").filter(Boolean) : [];
-                  const isSelected = selectedIds.includes(role.id);
-                  const roleColor = typeof role.color === "string" ? role.color : `#${(role.color as number).toString(16).padStart(6, "0")}`;
-                  return (
-                    <label
-                      key={role.id}
-                      className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {
-                          const ids = data.ticket_staff_role_id ? data.ticket_staff_role_id.split(",").filter(Boolean) : [];
-                          const newIds = isSelected ? ids.filter((id) => id !== role.id) : [...ids, role.id];
-                          update("ticket_staff_role_id", newIds.join(","));
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: roleColor }}
-                      />
-                      <span className="text-sm">{role.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              {(() => {
+                const selectedIds = data.ticket_staff_role_id ? data.ticket_staff_role_id.split(",").filter(Boolean) : [];
+                const selectedCount = selectedIds.length;
+                const [staffOpen, setStaffOpen] = useState(false);
+                return (
+                  <Popover open={staffOpen} onOpenChange={setStaffOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between font-normal">
+                        <span className="truncate">
+                          {selectedCount === 0
+                            ? "Selecione os cargos..."
+                            : `${selectedCount} cargo${selectedCount > 1 ? "s" : ""} selecionado${selectedCount > 1 ? "s" : ""}`}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${staffOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-2" align="start">
+                      <div className="space-y-1 max-h-52 overflow-y-auto">
+                        {discordRoles.length === 0 && (
+                          <p className="text-xs text-muted-foreground p-2">Nenhum cargo encontrado</p>
+                        )}
+                        {discordRoles.map((role) => {
+                          const isSelected = selectedIds.includes(role.id);
+                          const roleColor = typeof role.color === "string" ? role.color : `#${(role.color as number).toString(16).padStart(6, "0")}`;
+                          return (
+                            <label
+                              key={role.id}
+                              className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  const ids = data.ticket_staff_role_id ? data.ticket_staff_role_id.split(",").filter(Boolean) : [];
+                                  const newIds = isSelected ? ids.filter((id) => id !== role.id) : [...ids, role.id];
+                                  update("ticket_staff_role_id", newIds.join(","));
+                                }}
+                                className="rounded border-border"
+                              />
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: roleColor }}
+                              />
+                              <span className="text-sm">{role.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })()}
               <p className="text-xs text-muted-foreground">
                 Membros com qualquer um desses cargos poderão fechar, arquivar e deletar tickets
               </p>
