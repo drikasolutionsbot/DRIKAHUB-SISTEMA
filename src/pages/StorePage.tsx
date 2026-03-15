@@ -76,7 +76,7 @@ const StorePage = () => {
     });
   }, [tenantId]);
 
-  const handleSave = async (product: Product) => {
+  const handleSave = async (product: Product): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke("manage-products", {
       body: {
         action: "update",
@@ -104,10 +104,13 @@ const StorePage = () => {
 
     if (error || data?.error) {
       toast({ title: "Erro ao salvar", description: error?.message || data?.error, variant: "destructive" });
-    } else {
-      toast({ title: "Produto salvo com sucesso!" });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      return false;
     }
+
+    toast({ title: "Produto salvo com sucesso!" });
+    setSelectedProduct(data as Product);
+    await queryClient.invalidateQueries({ queryKey: ["products"] });
+    return true;
   };
 
   const handleNewProduct = () => setSelectModalOpen(true);
