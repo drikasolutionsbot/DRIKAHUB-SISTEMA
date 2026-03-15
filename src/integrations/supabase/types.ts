@@ -1179,6 +1179,7 @@ export type Database = {
           compare_price_cents: number | null
           created_at: string
           description: string | null
+          embed_config: Json
           enable_credits: boolean
           enable_instructions: boolean
           icon_url: string | null
@@ -1201,6 +1202,7 @@ export type Database = {
           compare_price_cents?: number | null
           created_at?: string
           description?: string | null
+          embed_config?: Json
           enable_credits?: boolean
           enable_instructions?: boolean
           icon_url?: string | null
@@ -1223,6 +1225,7 @@ export type Database = {
           compare_price_cents?: number | null
           created_at?: string
           description?: string | null
+          embed_config?: Json
           enable_credits?: boolean
           enable_instructions?: boolean
           icon_url?: string | null
