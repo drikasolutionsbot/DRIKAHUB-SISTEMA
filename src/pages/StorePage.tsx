@@ -54,6 +54,19 @@ const StorePage = () => {
     enabled: !!tenantId,
   });
 
+  const { data: fieldCounts = {} } = useQuery<Record<string, number>>({
+    queryKey: ["product-field-counts", tenantId],
+    queryFn: async () => {
+      if (!tenantId) return {};
+      const { data, error } = await supabase.functions.invoke("manage-product-fields", {
+        body: { action: "count_by_product", tenant_id: tenantId },
+      });
+      if (error || data?.error) return {};
+      return data ?? {};
+    },
+    enabled: !!tenantId,
+  });
+
   useEffect(() => {
     if (!tenantId) return;
     supabase.functions.invoke("manage-categories", {
