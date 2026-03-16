@@ -112,22 +112,17 @@ const TicketsPage = () => {
   const handleStatusChange = async (ticketId: string, newStatus: string) => {
     setUpdatingStatus(true);
     try {
-      const updatePayload: any = { 
-        status: newStatus, 
-        updated_at: new Date().toISOString() 
-      };
-      
-      if (newStatus === "closed") {
-        updatePayload.closed_at = new Date().toISOString();
-        updatePayload.closed_by = "painel";
-      }
-
-      const { error } = await (supabase as any)
-        .from("tickets")
-        .update(updatePayload)
-        .eq("id", ticketId)
-        .eq("tenant_id", tenantId!);
+      const { data: updateRes, error } = await supabase.functions.invoke("manage-tickets", {
+        body: {
+          action: "update_status",
+          tenant_id: tenantId,
+          ticket_id: ticketId,
+          status: newStatus,
+          closed_by: "painel",
+        },
+      });
       if (error) throw error;
+      if (updateRes?.error) throw new Error(updateRes.error);
 
       // If closing, send log to Discord via edge function
       if (newStatus === "closed" && selectedTicket?.discord_channel_id) {
