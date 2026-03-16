@@ -1340,6 +1340,7 @@ serve(async (req) => {
       // ─── TICKET REMIND (send DM to ticket creator) ───────
       if (customId.startsWith("ticket_remind_")) {
         const ticketId = customId.replace("ticket_remind_", "");
+        console.log(`[TICKET_REMIND] ticketId=${ticketId}`);
         await respondDeferred(interaction, botToken);
 
         const { data: ticket } = await supabase
