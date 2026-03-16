@@ -5,6 +5,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function parseEmojiFromLabel(label: string) {
+  const customMatch = label.match(/^<(a?):(\w+):(\d+)>\s*/);
+  if (customMatch) {
+    return { emoji: customMatch[0].trim(), cleanLabel: label.slice(customMatch[0].length), isCustom: true, animated: customMatch[1] === "a", customName: customMatch[2], customId: customMatch[3] };
+  }
+  const unicodeMatch = label.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u);
+  if (unicodeMatch) {
+    return { emoji: unicodeMatch[1], cleanLabel: label.slice(unicodeMatch[0].length), isCustom: false, animated: false, customName: undefined, customId: undefined };
+  }
+  return { emoji: null, cleanLabel: label, isCustom: false, animated: false, customName: undefined, customId: undefined };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -54,23 +66,32 @@ Deno.serve(async (req) => {
       embed.image = { url: image_url };
     }
 
-    // Verification button is a URL button (style 5) since it redirects to verification page
-    // URL buttons MUST use style 5 per Discord API - no other style is allowed with url
+    const rawLabel = button_label || "Verificar";
+    const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(rawLabel);
+
+    const verifyButton: any = {
+      type: 2,
+      style: 5,
+      label: btnLabel || "Verificar",
+      url: tenant?.verify_slug
+        ? `https://drikahub.com/verify/${tenant.verify_slug}`
+        : `https://drikahub.com/verify/${tenant_id}`,
+    };
+
+    if (btnEmoji) {
+      if (isCustom && customId) {
+        verifyButton.emoji = { id: customId, name: customName, animated: !!animated };
+      } else {
+        verifyButton.emoji = { name: btnEmoji };
+      }
+    }
+
     const payload: any = {
       embeds: [embed],
       components: [
         {
           type: 1,
-          components: [
-            {
-              type: 2,
-              style: 5,
-              label: button_label || "Verificar",
-              url: tenant?.verify_slug
-                ? `https://drikahub.com/verify/${tenant.verify_slug}`
-                : `https://drikahub.com/verify/${tenant_id}`,
-            },
-          ],
+          components: [verifyButton],
         },
       ],
     };

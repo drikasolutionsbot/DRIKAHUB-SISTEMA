@@ -9,6 +9,32 @@ const corsHeaders = {
 
 const DISCORD_API = "https://discord.com/api/v10";
 
+function parseEmojiFromLabel(label: string) {
+  const customMatch = label.match(/^<(a?):(\w+):(\d+)>\s*/);
+  if (customMatch) {
+    return {
+      emoji: customMatch[0].trim(),
+      cleanLabel: label.slice(customMatch[0].length),
+      isCustom: true,
+      animated: customMatch[1] === "a",
+      customName: customMatch[2],
+      customId: customMatch[3],
+    };
+  }
+  const unicodeMatch = label.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u);
+  if (unicodeMatch) {
+    return {
+      emoji: unicodeMatch[1],
+      cleanLabel: label.slice(unicodeMatch[0].length),
+      isCustom: false,
+      animated: false,
+      customName: undefined,
+      customId: undefined,
+    };
+  }
+  return { emoji: null, cleanLabel: label, isCustom: false, animated: false, customName: undefined, customId: undefined };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -103,15 +129,25 @@ serve(async (req) => {
       };
       const discordBuyStyle = styleMap[product?.button_style || "success"] || 3;
 
-      const buyLabel = (product?.embed_config as any)?.buy_button_label || "Comprar";
-      const buttons: any[] = [
-        {
-          type: 2, // Button
-          style: discordBuyStyle,
-          label: buyLabel,
-          custom_id: `buy_product:${product_id}`,
-        },
-      ];
+      const rawBuyLabel = (product?.embed_config as any)?.buy_button_label || "Comprar";
+      const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(rawBuyLabel);
+
+      const buyButton: any = {
+        type: 2,
+        style: discordBuyStyle,
+        label: btnLabel || "Comprar",
+        custom_id: `buy_product:${product_id}`,
+      };
+
+      if (btnEmoji) {
+        if (isCustom && customId) {
+          buyButton.emoji = { id: customId, name: customName, animated: !!animated };
+        } else {
+          buyButton.emoji = { name: btnEmoji };
+        }
+      }
+
+      const buttons: any[] = [buyButton];
 
       payload.components = [
         {
