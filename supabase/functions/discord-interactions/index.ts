@@ -1632,11 +1632,12 @@ serve(async (req) => {
       // ─── TICKET RENAME (modal to rename the channel) ──────────
       if (customId.startsWith("ticket_rename_")) {
         const ticketId = customId.replace("ticket_rename_", "");
+        console.log(`[TICKET_RENAME] ticketId=${ticketId}, opening modal`);
 
         // Show a modal for the new name
-        await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
+        const modalRes = await fetch(`${DISCORD_API}/interactions/${interaction.id}/${interaction.token}/callback`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             type: 9, // MODAL
             data: {
@@ -1661,6 +1662,7 @@ serve(async (req) => {
             },
           }),
         });
+        console.log(`[TICKET_RENAME] modal response status=${modalRes.status}`);
         return ok();
       }
 
