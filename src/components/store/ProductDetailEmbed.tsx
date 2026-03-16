@@ -86,12 +86,20 @@ export const ProductDetailEmbed = ({ product, onChange, storeEmbedColor }: Produ
       {/* Form */}
       <div className="space-y-6">
         {/* Estilo do Botão */}
-        <section>
+        <section className="space-y-3">
           <DiscordButtonStylePicker
             value={product.button_style || "success"}
             onChange={(style) => onChange({ button_style: style })}
             label="Estilo do Botão de Compra"
           />
+          <div className="space-y-2">
+            <Label className="text-sm font-bold">Texto do Botão</Label>
+            <ButtonLabelWithEmoji
+              value={config.buy_button_label || "Comprar"}
+              onChange={(val) => update("buy_button_label", val)}
+              placeholder="Comprar"
+            />
+          </div>
         </section>
 
         {/* Fundo do Embed */}
