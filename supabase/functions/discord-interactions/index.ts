@@ -876,7 +876,7 @@ serve(async (req) => {
           embeds: [{
             title: "❌ Pedido Recusado",
             description: `Pedido **#${order.order_number}** recusado por <@${userId}>`,
-            color: 0xED4245,
+            color: 0x2B2D31,
             fields: [
               { name: "📦 Produto", value: order.product_name, inline: true },
               { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true },
