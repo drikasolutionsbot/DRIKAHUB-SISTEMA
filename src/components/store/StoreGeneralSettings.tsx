@@ -37,7 +37,7 @@ const defaultConfig: StoreConfig = {
   sales_channel_id: "",
   logs_channel_id: "",
   payment_timeout_minutes: 30,
-  embed_color: "#5865F2",
+  embed_color: "#2B2D31",
   store_title: "",
   store_description: "",
   store_banner_url: "",
