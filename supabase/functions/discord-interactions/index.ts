@@ -1245,7 +1245,7 @@ serve(async (req) => {
         }
 
         // Send welcome embed with action buttons (including Rename)
-        const embedColor = parseInt((storeConfig?.ticket_embed_color || "#5865F2").replace("#", ""), 16);
+        const embedColor = parseInt((storeConfig?.ticket_embed_color || "#2B2D31").replace("#", ""), 16);
         const welcomeEmbed: any = {
           title: storeConfig?.ticket_embed_title || "🎫 Ticket de Suporte",
           description: (storeConfig?.ticket_embed_description || "Seu ticket foi criado com sucesso! Aguarde atendimento.")
