@@ -482,7 +482,7 @@ serve(async (req) => {
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [{ title: "📁 Ticket Arquivado", description: `Ticket arquivado por <@${userId}>.`, color: 0xFEE75C }] }),
+          body: JSON.stringify({ embeds: [{ title: "📁 Ticket Arquivado", description: `Ticket arquivado por <@${userId}>.`, color: 0x2B2D31 }] }),
         });
         await fetch(`${DISCORD_API}/channels/${channelId}`, {
           method: "PATCH",
