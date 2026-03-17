@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, Palette, Type, Image, MessageSquare, Send, Undo2, Shield, ChevronDown } from "lucide-react";
+import { Loader2, Save, Palette, Type, Image, MessageSquare, Send, Undo2, Shield, ChevronDown, FolderOpen } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ImageUploadField from "@/components/customization/ImageUploadField";
 import ChannelSelectWithCreate from "@/components/channels/ChannelSelectWithCreate";
@@ -45,6 +45,12 @@ const defaults: TicketEmbedData = {
   ticket_staff_role_id: "",
 };
 
+interface SavedEmbed {
+  id: string;
+  name: string;
+  embed_data: any;
+}
+
 const TicketEmbedConfig = () => {
   const { tenantId, tenant } = useTenant();
   const [serverData, setServerData] = useState<TicketEmbedData>(defaults);
@@ -55,6 +61,7 @@ const TicketEmbedConfig = () => {
   const [channels, setChannels] = useState<{ id: string; name: string; parent_id?: string | null }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; position: number }[]>([]);
   const { roles: discordRoles, loading: rolesLoading } = useDiscordRoles();
+  const [savedEmbeds, setSavedEmbeds] = useState<SavedEmbed[]>([]);
 
   const { draft: data, setDraft: setData, clearDraft, hasDraft, discardDraft } = useLocalDraft<TicketEmbedData>(
     "ticket-embed",
@@ -64,6 +71,36 @@ const TicketEmbedConfig = () => {
   );
 
   const guildId = tenant?.discord_guild_id || null;
+
+  // Fetch saved embeds
+  useEffect(() => {
+    if (!tenantId) return;
+    const fetchEmbeds = async () => {
+      const { data: embeds } = await supabase
+        .from("saved_embeds")
+        .select("id, name, embed_data")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false });
+      setSavedEmbeds((embeds as unknown as SavedEmbed[]) || []);
+    };
+    fetchEmbeds();
+  }, [tenantId]);
+
+  const applySavedEmbed = (embedId: string) => {
+    const saved = savedEmbeds.find(e => e.id === embedId);
+    if (!saved) return;
+    const ed = saved.embed_data;
+    setData(prev => ({
+      ...prev,
+      ticket_embed_title: ed.title || prev.ticket_embed_title,
+      ticket_embed_description: ed.description || prev.ticket_embed_description,
+      ticket_embed_color: ed.color || prev.ticket_embed_color,
+      ticket_embed_image_url: ed.image_url || "",
+      ticket_embed_thumbnail_url: ed.thumbnail_url || "",
+      ticket_embed_footer: ed.footer_text || "",
+    }));
+    toast.success(`Embed "${saved.name}" aplicado!`);
+  };
 
   const fetchChannels = useCallback(async () => {
     if (!guildId && !tenantId) return;
@@ -224,6 +261,33 @@ const TicketEmbedConfig = () => {
               Descartar
             </Button>
           </div>
+        )}
+        {savedEmbeds.length > 0 && (
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Aplicar Embed Salvo
+                </Label>
+                <Select onValueChange={applySavedEmbed}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um embed salvo para aplicar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {savedEmbeds.map(embed => (
+                      <SelectItem key={embed.id} value={embed.id}>
+                        {embed.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Os embeds salvos na aba Personalização podem ser aplicados aqui
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         )}
         <Card>
           <CardHeader>
