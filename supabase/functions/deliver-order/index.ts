@@ -431,7 +431,7 @@ serve(async (req) => {
       try {
         const salesEmbedColor = storeConfig?.purchase_embed_color
           ? parseInt(storeConfig.purchase_embed_color.replace("#", ""), 16)
-          : 0xFF69B4;
+          : 0x2B2D31;
 
         const salesEmbed: any = {
           author: {
