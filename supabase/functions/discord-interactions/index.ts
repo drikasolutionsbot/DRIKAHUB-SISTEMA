@@ -429,11 +429,17 @@ serve(async (req) => {
 
         if (ticket) {
           const embedColor = parseInt((storeConfig?.ticket_embed_color || "#2B2D31").replace("#", ""), 16);
+          // Build staff mentions so the thread appears for staff
+          const staffRoleIds = (storeConfig?.ticket_staff_role_id || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+          const staffMentions = staffRoleIds.map((rid: string) => `<@&${rid}>`).join(" ");
+          const contentMention = staffMentions ? `<@${userId}> ${staffMentions}` : `<@${userId}>`;
+
           await fetch(`${DISCORD_API}/channels/${ticketThread.id}/messages`, {
             method: "POST",
             headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `<@${userId}>`,
+              content: contentMention,
+              allowed_mentions: { users: [userId], roles: staffRoleIds },
               embeds: [{ title: storeConfig?.ticket_embed_title || "🎫 Ticket de Suporte", description: (storeConfig?.ticket_embed_description || "Seu ticket foi criado! Aguarde atendimento.").replace("{user}", `<@${userId}>`).replace("{ticket_id}", ticket.id.slice(0, 8)), color: embedColor }],
               components: [
                 { type: 1, components: [
