@@ -57,6 +57,13 @@ serve(async (req) => {
         });
       }
 
+      if (tenantIdFromBody && tokenRecord.tenant_id !== tenantIdFromBody) {
+        return new Response(JSON.stringify({ error: "Token não pertence ao tenant informado" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       resolvedTenantId = tokenRecord.tenant_id;
     }
 
@@ -128,18 +135,28 @@ serve(async (req) => {
       .not("discord_guild_id", "is", null);
 
     if (resolvedTenantId) {
-      const currentTenant = (claimedRows || []).find((r: any) => r.id === resolvedTenantId);
-      const currentGuildId = currentTenant?.discord_guild_id;
+      const { data: currentTenant, error: currentTenantError } = await admin
+        .from("tenants")
+        .select("id, name, discord_guild_id, created_at")
+        .eq("id", resolvedTenantId)
+        .single();
 
-      if (currentGuildId) {
+      if (currentTenantError || !currentTenant) {
+        return new Response(JSON.stringify({ error: "Tenant não encontrado" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (currentTenant.discord_guild_id) {
         // Tenant já tem servidor: mostra somente ele
-        const result = mapped.filter((g: any) => g.id === currentGuildId);
+        const result = mapped.filter((g: any) => g.id === currentTenant.discord_guild_id);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Tenant SEM servidor: mostra servidores não reclamados por OUTROS tenants
+      // Tenant sem servidor: nunca retorna lista completa para evitar vazamento
       const claimedByOthers = new Set(
         (claimedRows || [])
           .filter((r: any) => r.id !== resolvedTenantId)
@@ -147,7 +164,59 @@ serve(async (req) => {
           .filter(Boolean)
       );
       const available = mapped.filter((g: any) => !claimedByOthers.has(g.id));
-      return new Response(JSON.stringify(available), {
+
+      const normalize = (value: string | null | undefined) =>
+        (value || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, "");
+
+      const normalizedTenantName = normalize(currentTenant.name);
+      let autoMatch = available.find((g: any) => normalize(g.name) === normalizedTenantName) ?? null;
+
+      if (!autoMatch && available.length === 1) {
+        autoMatch = available[0];
+      }
+
+      const tenantCreatedAtMs = new Date(currentTenant.created_at).getTime();
+      const tenantIsRecent =
+        Number.isFinite(tenantCreatedAtMs) && Date.now() - tenantCreatedAtMs <= 12 * 60 * 60 * 1000;
+
+      if (!autoMatch && tenantIsRecent && available.length > 0) {
+        autoMatch = [...available].sort((a: any, b: any) => {
+          try {
+            const aId = BigInt(a.id);
+            const bId = BigInt(b.id);
+            if (aId === bId) return 0;
+            return aId > bId ? -1 : 1;
+          } catch {
+            return 0;
+          }
+        })[0];
+      }
+
+      if (autoMatch) {
+        const { error: updateError } = await admin
+          .from("tenants")
+          .update({
+            discord_guild_id: autoMatch.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", resolvedTenantId)
+          .is("discord_guild_id", null);
+
+        if (updateError) {
+          throw new Error("Falha ao vincular servidor automaticamente");
+        }
+
+        return new Response(JSON.stringify([autoMatch]), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Sem match seguro: não retorna servidores para evitar exposição de dados cross-tenant
+      return new Response(JSON.stringify([]), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
