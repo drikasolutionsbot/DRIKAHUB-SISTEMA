@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { type DiscordButtonStyle } from "@/components/discord/DiscordButtonStylePicker";
 import { ArrowLeft, RefreshCw, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import { ProductDetailEmbed, type EmbedConfig } from "./ProductDetailEmbed";
 import { PostMessageModal } from "./PostMessageModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
-
 interface Category {
   id: string;
   name: string;
