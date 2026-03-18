@@ -286,6 +286,7 @@ const DashboardPage = () => {
         loadAuditLogs();
       }
       refetch();
+      setManualGuildId("");
       setServerModalOpen(false);
     } catch (err: any) {
       toast.error("Erro ao trocar servidor: " + (err.message || "Tente novamente"));
