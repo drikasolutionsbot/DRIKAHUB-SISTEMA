@@ -121,33 +121,38 @@ serve(async (req) => {
       icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
     }));
 
-    // Dashboard (com tenant): mostra SOMENTE o servidor vinculado ao tenant
-    if (resolvedTenantId) {
-      const { data: tenant } = await admin
-        .from("tenants")
-        .select("discord_guild_id")
-        .eq("id", resolvedTenantId)
-        .single();
+    // Busca servidores já vinculados a qualquer tenant
+    const { data: claimedRows } = await admin
+      .from("tenants")
+      .select("id, discord_guild_id")
+      .not("discord_guild_id", "is", null);
 
-      const currentGuildId = tenant?.discord_guild_id;
-      if (!currentGuildId) {
-        return new Response(JSON.stringify([]), {
+    if (resolvedTenantId) {
+      const currentTenant = (claimedRows || []).find((r: any) => r.id === resolvedTenantId);
+      const currentGuildId = currentTenant?.discord_guild_id;
+
+      if (currentGuildId) {
+        // Tenant já tem servidor: mostra somente ele
+        const result = mapped.filter((g: any) => g.id === currentGuildId);
+        return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const result = mapped.filter((g: any) => g.id === currentGuildId);
-      return new Response(JSON.stringify(result), {
+      // Tenant SEM servidor: mostra servidores não reclamados por OUTROS tenants
+      const claimedByOthers = new Set(
+        (claimedRows || [])
+          .filter((r: any) => r.id !== resolvedTenantId)
+          .map((r: any) => r.discord_guild_id)
+          .filter(Boolean)
+      );
+      const available = mapped.filter((g: any) => !claimedByOthers.has(g.id));
+      return new Response(JSON.stringify(available), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Onboarding (sem tenant): servidores não reclamados por ninguém
-    const { data: claimedRows } = await admin
-      .from("tenants")
-      .select("discord_guild_id")
-      .not("discord_guild_id", "is", null);
-
     const claimedIds = new Set((claimedRows || []).map((row: any) => row.discord_guild_id).filter(Boolean));
     const unclaimed = mapped.filter((g: any) => !claimedIds.has(g.id));
 
