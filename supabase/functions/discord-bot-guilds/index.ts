@@ -121,34 +121,23 @@ serve(async (req) => {
       icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
     }));
 
-    // Dashboard/cliente: retorna SOMENTE o servidor atual do tenant
-    if (resolvedTenantId) {
-      const { data: tenant } = await admin
-        .from("tenants")
-        .select("discord_guild_id")
-        .eq("id", resolvedTenantId)
-        .single();
-
-      const currentGuildId = tenant?.discord_guild_id;
-      const onlyCurrentGuild = currentGuildId
-        ? mapped.filter((g: any) => g.id === currentGuildId)
-        : [];
-
-      return new Response(JSON.stringify(onlyCurrentGuild), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Onboarding sem tenant: apenas servidores ainda não vinculados a ninguém
+    // Busca servidores já vinculados a OUTROS tenants
     const { data: claimedRows } = await admin
       .from("tenants")
-      .select("discord_guild_id")
+      .select("id, discord_guild_id")
       .not("discord_guild_id", "is", null);
 
-    const claimedIds = new Set((claimedRows || []).map((row: any) => row.discord_guild_id).filter(Boolean));
-    const unclaimedGuilds = mapped.filter((g: any) => !claimedIds.has(g.id));
+    const claimedByOthers = new Set(
+      (claimedRows || [])
+        .filter((row: any) => row.id !== resolvedTenantId)
+        .map((row: any) => row.discord_guild_id)
+        .filter(Boolean)
+    );
 
-    return new Response(JSON.stringify(unclaimedGuilds), {
+    // Retorna: servidor atual do tenant (se existir) + servidores não reclamados por ninguém
+    const available = mapped.filter((g: any) => !claimedByOthers.has(g.id));
+
+    return new Response(JSON.stringify(available), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
