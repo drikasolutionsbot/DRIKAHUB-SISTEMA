@@ -53,6 +53,12 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
   const [saving, setSaving] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [embedColor, setEmbedColor] = useState("#2B2D31");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editedRef = useRef(edited);
+
+  useEffect(() => {
+    editedRef.current = edited;
+  }, [edited]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -63,13 +69,41 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
     });
   }, [tenantId]);
 
+  // Auto-save with 2s debounce
+  const scheduleAutoSave = useCallback(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      const current = editedRef.current;
+      try {
+        const ok = await onSave(current);
+        if (ok) setDirty(false);
+      } catch {
+        // silent
+      }
+    }, 2000);
+  }, [onSave]);
+
+  // Cleanup timer on unmount & flush save
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+        if (editedRef.current && dirty) {
+          onSave(editedRef.current).catch(() => {});
+        }
+      }
+    };
+  }, [dirty, onSave]);
+
   const handleChange = (updates: Partial<Product>) => {
     setEdited((prev) => ({ ...prev, ...updates }));
     setDirty(true);
+    scheduleAutoSave();
   };
 
   const handleSave = async () => {
     if (saving) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     setSaving(true);
     try {
       const ok = await onSave(edited);
@@ -80,6 +114,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
   };
 
   const handleDiscard = () => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     setEdited({ ...product });
     setDirty(false);
   };
