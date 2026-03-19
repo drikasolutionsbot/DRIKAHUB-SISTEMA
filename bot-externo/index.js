@@ -47,6 +47,7 @@ const ticketCommand = require("./commands/ticket");
 const painelCommand = require("./commands/painel");
 const estoqueCommand = require("./commands/estoque");
 const verificarCommand = require("./commands/verificar");
+const sorteioCommand = require("./commands/sorteio");
 const interactionHandler = require("./events/interaction");
 const memberJoinHandler = require("./events/memberJoin");
 const protectionHandler = require("./events/protection");
@@ -68,6 +69,7 @@ client.on(Events.ClientReady, async () => {
     painelCommand.data,
     estoqueCommand.data,
     verificarCommand.data,
+    sorteioCommand.data,
     // Moderation commands
     new SlashCommandBuilder().setName("clear").setDescription("Limpa todas as mensagens do canal"),
     new SlashCommandBuilder().setName("ban").setDescription("Bane um usuário do servidor")

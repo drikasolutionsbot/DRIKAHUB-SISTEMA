@@ -5,6 +5,7 @@ const ticketCommand = require("../commands/ticket");
 const painelCommand = require("../commands/painel");
 const estoqueCommand = require("../commands/estoque");
 const verificarCommand = require("../commands/verificar");
+const sorteioCommand = require("../commands/sorteio");
 const checkoutHandler = require("../handlers/checkout");
 const ticketsHandler = require("../handlers/tickets");
 const moderationHandler = require("../handlers/moderation");
@@ -43,6 +44,7 @@ module.exports = async function handleInteraction(client, interaction) {
       case "painel": return painelCommand.execute(interaction, tenant);
       case "estoque": return estoqueCommand.execute(interaction, tenant);
       case "verificar": return verificarCommand.execute(interaction, tenant);
+      case "sorteio": return sorteioCommand.execute(interaction, client);
       case "clear": return moderationHandler.handleClear(interaction, tenant);
       case "ban": return moderationHandler.handleBan(interaction, tenant);
       case "kick": return moderationHandler.handleKick(interaction, tenant);
