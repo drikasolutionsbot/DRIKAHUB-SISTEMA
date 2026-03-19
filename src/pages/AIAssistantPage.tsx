@@ -791,23 +791,29 @@ export default function AIAssistantPage() {
             {/* Provider + Context controls */}
             <div className="mb-2 flex items-center gap-3 flex-wrap">
               {/* Mobile provider toggle */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/20 border border-border/10 lg:hidden">
+              <div className="flex items-center gap-0 p-1 rounded-xl bg-card/40 border border-border/20 backdrop-blur-md lg:hidden">
                 <button
                   onClick={() => setProvider("drika")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
-                    provider === "drika" ? "bg-primary/15 text-primary" : "text-muted-foreground/50"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                    provider === "drika"
+                      ? "bg-primary/15 text-primary border border-primary/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
                   )}
                 >
+                  <Zap className="h-3 w-3" />
                   Drika
                 </button>
                 <button
                   onClick={() => setProvider("groq")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
-                    provider === "groq" ? "bg-[#F55036]/15 text-[#F55036]" : "text-muted-foreground/50"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                    provider === "groq"
+                      ? "bg-[#F55036]/15 text-[#F55036] border border-[#F55036]/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
                   )}
                 >
+                  <Cpu className="h-3 w-3" />
                   Groq
                 </button>
               </div>
