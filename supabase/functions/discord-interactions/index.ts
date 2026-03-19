@@ -2326,7 +2326,7 @@ async function processPurchase(
   // Get store config for branding
   const { data: storeConfigForCheckout } = await supabase
     .from("store_configs")
-    .select("store_logo_url, store_title, embed_color, payment_timeout_minutes")
+    .select("store_logo_url, store_title, embed_color, payment_timeout_minutes, purchase_embed_footer")
     .eq("tenant_id", tenantId)
     .single();
 
