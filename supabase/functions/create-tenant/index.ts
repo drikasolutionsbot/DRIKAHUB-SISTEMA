@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    // Bot verification skipped - each tenant configures their own bot token after creation
 
     const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
