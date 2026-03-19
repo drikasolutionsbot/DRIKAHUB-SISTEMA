@@ -16,6 +16,7 @@ serve(async (req) => {
     const body = await req.json();
     let guild_id = body.guild_id;
 
+    let tenantBotToken: string | null = null;
     if (!guild_id && body.tenant_id) {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
