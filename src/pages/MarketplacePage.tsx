@@ -79,7 +79,35 @@ const MarketplacePage = () => {
   const categories = [...new Set(items.map((i) => i.category || "Outros"))];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      {/* Lock overlay for non-Pro users */}
+      {!isPro && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md rounded-xl" />
+          <div className="relative z-10 text-center p-8 max-w-md">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Acesso Exclusivo Pro</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              O Marketplace Atacadão está disponível apenas para clientes com plano Pro.
+              Faça upgrade para desbloquear contas digitais com preços de atacado.
+            </p>
+            <Button
+              onClick={() => {
+                sessionStorage.setItem("open_upgrade_modal", "true");
+                navigate("/settings");
+              }}
+              className="gradient-pink text-primary-foreground border-none gap-2"
+            >
+              <Crown className="h-4 w-4" />
+              Desbloquear Acesso
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className={!isPro ? "pointer-events-none select-none" : ""}>
       <div>
         <h1 className="font-display text-2xl font-bold">Marketplace Atacadão</h1>
         <p className="text-muted-foreground">
