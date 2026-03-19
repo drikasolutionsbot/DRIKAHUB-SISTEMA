@@ -23,10 +23,11 @@ serve(async (req) => {
       );
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("discord_guild_id")
+        .select("discord_guild_id, bot_token_encrypted")
         .eq("id", body.tenant_id)
         .single();
       guild_id = tenant?.discord_guild_id;
+      if (tenant?.bot_token_encrypted) tenantBotToken = tenant.bot_token_encrypted;
     }
 
     if (!guild_id) {
@@ -36,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    const botToken = tenantBotToken || Deno.env.get("DISCORD_BOT_TOKEN");
     if (!botToken) {
       return new Response(JSON.stringify({ error: "Bot token not configured" }), {
         status: 500,
