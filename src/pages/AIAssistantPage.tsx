@@ -397,7 +397,7 @@ export default function AIAssistantPage() {
                 v3.0 Quantum
               </span>
             </div>
-            <p className="text-sm text-muted-foreground/70 max-w-lg leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
               Motor de inteligência artificial da Drika — gere textos, imagens, descrições e estratégias com precisão sobrenatural.
             </p>
           </div>
