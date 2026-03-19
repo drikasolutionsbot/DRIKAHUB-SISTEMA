@@ -124,6 +124,17 @@ client.on(Events.GuildMemberAdd, async (member) => {
   }
 });
 
+// ── Member Leave (despedida) ──
+client.on(Events.GuildMemberRemove, async (member) => {
+  try {
+    if (memberJoinHandler.handleMemberLeave) {
+      await memberJoinHandler.handleMemberLeave(client, member);
+    }
+  } catch (err) {
+    console.error("Erro ao processar saída de membro:", err);
+  }
+});
+
 // ── Proteção anti-raid ──
 client.on(Events.GuildMemberAdd, async (member) => {
   try {
