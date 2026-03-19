@@ -18,7 +18,7 @@ import "@/components/wallet/wallet-card.css";
 import SettingsPlanTab from "@/components/settings/SettingsPlanTab";
 import SettingsProfileTab from "@/components/settings/SettingsProfileTab";
 import SettingsServerTab from "@/components/settings/SettingsServerTab";
-import SettingsBotExternoTab from "@/components/settings/SettingsBotExternoTab";
+
 import SettingsBotCustomizationTab from "@/components/settings/SettingsBotCustomizationTab";
 
 interface UserRole {
@@ -187,9 +187,6 @@ const SettingsPage = () => {
               </TabsTrigger>
               <TabsTrigger value="server" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
                 <Server className="h-4 w-4" /> Servidor
-              </TabsTrigger>
-              <TabsTrigger value="bot" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
-                <Bot className="h-4 w-4" /> Bot Externo
               </TabsTrigger>
             </TabsList>
           </div>
@@ -437,10 +434,6 @@ const SettingsPage = () => {
           <SettingsServerTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
         </TabsContent>
 
-        {/* Bot Externo Tab */}
-        <TabsContent value="bot">
-          <SettingsBotExternoTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
-        </TabsContent>
 
       </Tabs>
       </div>
