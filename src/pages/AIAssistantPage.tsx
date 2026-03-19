@@ -536,7 +536,7 @@ export default function AIAssistantPage() {
           {/* History */}
           <div className="rounded-2xl border border-border/20 bg-card/30 backdrop-blur-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-border/10 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+              <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">Histórico</p>
             </div>
             <ScrollArea className="h-[280px]">
