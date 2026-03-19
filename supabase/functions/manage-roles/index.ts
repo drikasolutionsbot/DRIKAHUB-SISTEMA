@@ -31,14 +31,19 @@ serve(async (req) => {
       .eq("id", tenant_id)
       .single();
 
-    if (tenantErr || !tenant?.discord_guild_id) {
-      throw new Error("Tenant not found or no Discord server connected");
+    if (tenantErr || !tenant) {
+      throw new Error("Tenant not found");
     }
 
-    const botToken = tenant.bot_token_encrypted;
-    if (!botToken) throw new Error("Bot token not configured");
+    const botToken = tenant.bot_token_encrypted || null;
+    const guildId = tenant.discord_guild_id || null;
 
-    const guildId = tenant.discord_guild_id;
+    // Helper: require bot token for Discord operations
+    const requireBot = () => {
+      if (!botToken) throw new Error("Bot token não configurado. Configure em Configurações → Bot Externo.");
+      if (!guildId) throw new Error("Nenhum servidor Discord conectado.");
+      return { botToken, guildId };
+    };
 
     switch (action) {
       case "list": {
@@ -55,10 +60,11 @@ serve(async (req) => {
       }
 
       case "list_discord": {
+        const bot = requireBot();
         const discordRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles`,
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles`,
           {
-            headers: { Authorization: `Bot ${botToken}` },
+            headers: { Authorization: `Bot ${bot.botToken}` },
           }
         );
 
@@ -79,18 +85,18 @@ serve(async (req) => {
       }
 
       case "create": {
+        const bot = requireBot();
         const { name, color = "#99AAB5" } = params;
         if (!name) throw new Error("Missing name");
 
-        // Accept both hex string and number for color
         const colorDecimal = typeof color === "number" ? color : hexToDecimal(String(color));
 
         const discordRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles`,
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles`,
           {
             method: "POST",
             headers: {
-              Authorization: `Bot ${botToken}`,
+              Authorization: `Bot ${bot.botToken}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -142,7 +148,7 @@ serve(async (req) => {
 
         if (roleErr || !role) throw new Error("Role not found");
 
-        if (role.discord_role_id && (updates.name || updates.color)) {
+        if (role.discord_role_id && (updates.name || updates.color) && botToken && guildId) {
           const discordBody: Record<string, unknown> = {};
           if (updates.name) discordBody.name = updates.name;
           if (updates.color) discordBody.color = hexToDecimal(updates.color);
@@ -192,16 +198,17 @@ serve(async (req) => {
       }
 
       case "update_discord_permissions": {
+        const bot = requireBot();
         const { role_id, permissions } = params;
         if (!role_id) throw new Error("Missing role_id");
         if (permissions === undefined) throw new Error("Missing permissions");
 
         const discordRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles/${role_id}`,
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles/${role_id}`,
           {
             method: "PATCH",
             headers: {
-              Authorization: `Bot ${botToken}`,
+              Authorization: `Bot ${bot.botToken}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ permissions: String(permissions) }),
@@ -230,7 +237,7 @@ serve(async (req) => {
           .eq("tenant_id", tenant_id)
           .single();
 
-        if (role?.discord_role_id) {
+        if (role?.discord_role_id && botToken && guildId) {
           const discordRes = await fetch(
             `https://discord.com/api/v10/guilds/${guildId}/roles/${role.discord_role_id}`,
             {
@@ -256,10 +263,10 @@ serve(async (req) => {
       }
 
       case "sync_from_discord": {
-        // Fetch all Discord roles
+        const bot = requireBot();
         const syncRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles`,
-          { headers: { Authorization: `Bot ${botToken}` } }
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles`,
+          { headers: { Authorization: `Bot ${bot.botToken}` } }
         );
         if (!syncRes.ok) {
           const text = await syncRes.text();
@@ -302,15 +309,15 @@ serve(async (req) => {
 
       // Delete directly by Discord role ID (used by RolesTab)
       case "delete_discord": {
+        const bot = requireBot();
         const { role_id } = params;
         if (!role_id) throw new Error("Missing role_id");
 
-        // Delete from Discord
         const discordRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles/${role_id}`,
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles/${role_id}`,
           {
             method: "DELETE",
-            headers: { Authorization: `Bot ${botToken}` },
+            headers: { Authorization: `Bot ${bot.botToken}` },
           }
         );
 
