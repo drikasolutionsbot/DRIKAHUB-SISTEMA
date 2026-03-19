@@ -55,6 +55,11 @@ const GOOGLE_AI_TEXT_MODELS = [
   "gemini-1.5-pro",
 ];
 
+const GOOGLE_AI_IMAGE_MODELS = [
+  "gemini-2.0-flash-exp-image-generation",
+  "gemini-2.0-flash",
+];
+
 async function tryModels(
   models: string[],
   buildBody: (model: string) => object,
