@@ -397,54 +397,66 @@ export default function AIAssistantPage() {
                 v3.0 Quantum
               </span>
             </div>
-            <p className="text-sm text-muted-foreground/70 max-w-lg leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
               Motor de inteligência artificial da Drika — gere textos, imagens, descrições e estratégias com precisão sobrenatural.
             </p>
           </div>
 
-          {/* Engine info + Provider Selector */}
-          <div className="hidden lg:flex flex-col items-end gap-2">
-            {/* Provider toggle */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-card/30 border border-border/10 backdrop-blur-md">
+          {/* Engine Selector — Desktop */}
+          <div className="hidden lg:flex flex-col items-end gap-3">
+            <div className="relative flex items-center gap-0 p-1.5 rounded-2xl bg-card/50 border border-border/20 backdrop-blur-xl shadow-lg">
+              {/* Sliding indicator */}
+              <div
+                className={cn(
+                  "absolute top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-xl transition-all duration-500 ease-out",
+                  provider === "drika"
+                    ? "left-1.5 bg-gradient-to-r from-primary/20 to-[#C44AFF]/20 border border-primary/30 shadow-[0_0_20px_hsl(330_100%_50%/0.15)]"
+                    : "left-[calc(50%+3px)] bg-gradient-to-r from-[#F55036]/20 to-[#FF8A65]/20 border border-[#F55036]/30 shadow-[0_0_20px_rgba(245,80,54,0.15)]"
+                )}
+              />
               <button
                 onClick={() => setProvider("drika")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                  "relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300",
                   provider === "drika"
-                    ? "bg-primary/15 text-primary shadow-[0_0_12px_hsl(330_100%_50%/0.15)] border border-primary/20"
-                    : "text-muted-foreground/50 hover:text-muted-foreground/80"
+                    ? "text-primary"
+                    : "text-muted-foreground/60 hover:text-foreground/80"
                 )}
               >
-                <Zap className="h-3.5 w-3.5" />
-                Drika Engine
+                <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-all duration-300",
+                  provider === "drika" ? "bg-primary/20" : "bg-muted/20"
+                )}>
+                  <Zap className={cn("h-4 w-4 transition-all", provider === "drika" ? "text-primary drop-shadow-[0_0_6px_rgba(255,105,180,0.6)]" : "text-muted-foreground/50")} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="leading-none">Drika Engine</span>
+                  <span className={cn("text-[9px] font-medium mt-0.5", provider === "drika" ? "text-primary/60" : "text-muted-foreground/30")}>Gemini • GPT</span>
+                </div>
               </button>
               <button
                 onClick={() => setProvider("groq")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                  "relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300",
                   provider === "groq"
-                    ? "bg-[#F55036]/15 text-[#F55036] shadow-[0_0_12px_rgba(245,80,54,0.15)] border border-[#F55036]/20"
-                    : "text-muted-foreground/50 hover:text-muted-foreground/80"
+                    ? "text-[#F55036]"
+                    : "text-muted-foreground/60 hover:text-foreground/80"
                 )}
               >
-                <Cpu className="h-3.5 w-3.5" />
-                Groq Cloud
+                <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-all duration-300",
+                  provider === "groq" ? "bg-[#F55036]/20" : "bg-muted/20"
+                )}>
+                  <Cpu className={cn("h-4 w-4 transition-all", provider === "groq" ? "text-[#F55036] drop-shadow-[0_0_6px_rgba(245,80,54,0.6)]" : "text-muted-foreground/50")} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="leading-none">Groq Cloud</span>
+                  <span className={cn("text-[9px] font-medium mt-0.5", provider === "groq" ? "text-[#F55036]/60" : "text-muted-foreground/30")}>Llama • Mixtral</span>
+                </div>
               </button>
             </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground/30">
-              {provider === "drika" ? (
-                <>
-                  <span className="flex items-center gap-1"><Globe className="h-3 w-3" /> Google Gemini</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1"><Stars className="h-3 w-3" /> OpenAI GPT</span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center gap-1"><Cpu className="h-3 w-3" /> Llama 3.3 70B</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Mixtral 8x7B</span>
-                </>
-              )}
+            {/* Active model info */}
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50">
+              <div className={cn("h-1.5 w-1.5 rounded-full", provider === "drika" ? "bg-primary/60" : "bg-[#F55036]/60")} />
+              <span className="font-medium">{provider === "drika" ? "Multi-model fallback • 8 modelos" : "Ultra-rápido • 4 keys ativas"}</span>
             </div>
           </div>
         </div>
@@ -495,7 +507,7 @@ export default function AIAssistantPage() {
               <span className={cn("text-xs font-bold tracking-wide", isActive ? "text-foreground" : "text-muted-foreground")}>
                 {tool.label}
               </span>
-              <span className="text-[10px] text-muted-foreground/50 leading-tight">{tool.description}</span>
+               <span className="text-[10px] text-muted-foreground/50 leading-tight">{tool.description}</span>
 
               {/* Active indicator bar */}
               {isActive && (
@@ -524,8 +536,8 @@ export default function AIAssistantPage() {
           {/* History */}
           <div className="rounded-2xl border border-border/20 bg-card/30 backdrop-blur-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-border/10 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">Histórico</p>
+              <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">Histórico</p>
             </div>
             <ScrollArea className="h-[280px]">
               {filteredSessions.length === 0 ? (
@@ -533,8 +545,8 @@ export default function AIAssistantPage() {
                   <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center mb-3">
                     <MessageSquare className="h-5 w-5 text-muted-foreground/15" />
                   </div>
-                  <p className="text-xs text-muted-foreground/40">Nenhum chat ainda</p>
-                  <p className="text-[10px] text-muted-foreground/25 mt-1">Comece uma conversa!</p>
+                   <p className="text-xs text-muted-foreground/50">Nenhum chat ainda</p>
+                   <p className="text-[10px] text-muted-foreground/40 mt-1">Comece uma conversa!</p>
                 </div>
               ) : (
                 <div className="p-2 space-y-1">
@@ -553,11 +565,11 @@ export default function AIAssistantPage() {
                         "h-6 w-6 rounded-lg flex items-center justify-center shrink-0",
                         activeSessionId === session.id ? "bg-primary/20" : "bg-muted/20"
                       )}>
-                        <MessageSquare className="h-3 w-3 text-muted-foreground/40" />
+                        <MessageSquare className="h-3 w-3 text-muted-foreground/60" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground/80 truncate">{session.title}</p>
-                        <p className="text-[10px] text-muted-foreground/35">
+                        <p className="text-[10px] text-muted-foreground/55">
                           {session.messages.length} msg • {session.createdAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                         </p>
                       </div>
@@ -624,7 +636,7 @@ export default function AIAssistantPage() {
                   {activeSession ? activeSession.title.slice(0, 30) : selectedTool.label}
                 </p>
                 {!loading && messages.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground/35">{messages.length} mensagens</p>
+                  <p className="text-[10px] text-muted-foreground/55">{messages.length} mensagens</p>
                 )}
               </div>
               {loading && (
@@ -648,16 +660,16 @@ export default function AIAssistantPage() {
                   <div className="relative">
                     <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-primary/10 to-[#C44AFF]/10 blur-2xl animate-pulse" />
                     <div className={cn("relative h-24 w-24 rounded-3xl flex items-center justify-center border border-border/15", selectedTool.bgAccent)}>
-                      <selectedTool.icon className="h-10 w-10 text-muted-foreground/20" />
+                      <selectedTool.icon className="h-10 w-10 text-muted-foreground/30" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-base font-bold text-foreground/60 mb-1">Inicie uma conversa</p>
-                    <p className="text-xs text-muted-foreground/35 max-w-[280px] leading-relaxed">
-                      Escolha uma sugestão rápida ou escreva seu prompt para começar a gerar com a Drika IA
+                     <p className="text-base font-bold text-foreground/80 mb-1">Inicie uma conversa</p>
+                    <p className="text-xs text-muted-foreground/60 max-w-[280px] leading-relaxed">
+                       Escolha uma sugestão rápida ou escreva seu prompt para começar a gerar com a Drika IA
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground/25">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground/45">
                     <Orbit className="h-3 w-3" />
                     <span>Powered by Drika Engine v3.0</span>
                   </div>
@@ -677,7 +689,7 @@ export default function AIAssistantPage() {
                       "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                       msg.role === "user"
                         ? "bg-primary/12 border border-primary/15 text-foreground"
-                        : "bg-muted/20 border border-border/15 text-foreground/85 backdrop-blur-sm"
+                        : "bg-muted/20 border border-border/15 text-foreground/90 backdrop-blur-sm"
                     )}>
                       {msg.imageUrl && (
                         <div className="mb-3 relative rounded-xl overflow-hidden border border-border/20 shadow-xl">
@@ -708,7 +720,7 @@ export default function AIAssistantPage() {
                       {msg.role === "assistant" && msg.content && !loading && (
                         <button
                           onClick={() => handleCopy(msg.content, msg.id)}
-                          className="mt-2.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+                          className="mt-2.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-primary transition-colors"
                         >
                           {copied === msg.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           {copied === msg.id ? "Copiado" : "Copiar"}
@@ -779,23 +791,29 @@ export default function AIAssistantPage() {
             {/* Provider + Context controls */}
             <div className="mb-2 flex items-center gap-3 flex-wrap">
               {/* Mobile provider toggle */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/20 border border-border/10 lg:hidden">
+              <div className="flex items-center gap-0 p-1 rounded-xl bg-card/40 border border-border/20 backdrop-blur-md lg:hidden">
                 <button
                   onClick={() => setProvider("drika")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
-                    provider === "drika" ? "bg-primary/15 text-primary" : "text-muted-foreground/50"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                    provider === "drika"
+                      ? "bg-primary/15 text-primary border border-primary/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
                   )}
                 >
+                  <Zap className="h-3 w-3" />
                   Drika
                 </button>
                 <button
                   onClick={() => setProvider("groq")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-bold transition-all",
-                    provider === "groq" ? "bg-[#F55036]/15 text-[#F55036]" : "text-muted-foreground/50"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-300",
+                    provider === "groq"
+                      ? "bg-[#F55036]/15 text-[#F55036] border border-[#F55036]/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
                   )}
                 >
+                  <Cpu className="h-3 w-3" />
                   Groq
                 </button>
               </div>
@@ -807,7 +825,7 @@ export default function AIAssistantPage() {
 
               <button
                 onClick={() => setShowContext(!showContext)}
-                className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-primary/70 transition-colors font-medium"
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-primary/80 transition-colors font-medium"
               >
                 <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", showContext && "rotate-180")} />
                 Contexto (opcional)
@@ -834,7 +852,7 @@ export default function AIAssistantPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                  className="min-h-[44px] max-h-[120px] bg-transparent border-0 text-sm resize-none focus-visible:ring-0 focus-visible:ring-offset-0 py-2.5 placeholder:text-muted-foreground/30"
+                  className="min-h-[44px] max-h-[120px] bg-transparent border-0 text-sm resize-none focus-visible:ring-0 focus-visible:ring-offset-0 py-2.5 placeholder:text-muted-foreground/40"
                 />
                 <Button
                   size="icon"
@@ -850,7 +868,7 @@ export default function AIAssistantPage() {
                 </Button>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground/20 mt-2 text-center tracking-wide">
+            <p className="text-[10px] text-muted-foreground/40 mt-2 text-center tracking-wide">
               Enter para enviar • Shift+Enter para nova linha • {provider === "groq" ? "Powered by Groq Cloud ⚡" : "Powered by Drika Engine"}
             </p>
           </div>
