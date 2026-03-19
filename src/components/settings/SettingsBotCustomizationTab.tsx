@@ -359,6 +359,48 @@ const SettingsBotCustomizationTab = ({ tenant, tenantId, refetchTenant }: Props)
             </p>
           </div>
 
+          {/* Bot Banner/Capa */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Capa / Banner</Label>
+            {botBannerUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-border">
+                <img src={botBannerUrl} alt="Banner" className="w-full h-32 object-cover" />
+                <button
+                  onClick={() => setBotBannerUrl("")}
+                  className="absolute top-2 right-2 h-6 w-6 rounded-full bg-destructive flex items-center justify-center"
+                >
+                  <X className="h-3.5 w-3.5 text-destructive-foreground" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-full h-32 rounded-xl bg-muted/50 border-2 border-dashed border-border flex flex-col items-center justify-center gap-2">
+                <Image className="h-6 w-6 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Nenhuma capa definida</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => bannerFileRef.current?.click()}
+                disabled={uploadingBanner}
+                className="gap-2"
+              >
+                {uploadingBanner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                Fazer upload
+              </Button>
+              <Input
+                value={botBannerUrl}
+                onChange={(e) => setBotBannerUrl(e.target.value)}
+                placeholder="https://... ou faça upload"
+                className="text-sm flex-1"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Imagem retangular recomendada (1200x400 ou similar). Usada como banner da loja.
+            </p>
+          </div>
+
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -371,6 +413,7 @@ const SettingsBotCustomizationTab = ({ tenant, tenantId, refetchTenant }: Props)
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} />
+      <input ref={bannerFileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadBanner} />
     </div>
   );
 };
