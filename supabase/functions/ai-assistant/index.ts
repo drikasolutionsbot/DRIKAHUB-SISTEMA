@@ -94,14 +94,14 @@ serve(async (req) => {
   try {
     const { type, prompt, context, provider } = await req.json();
     
-    // Determine provider: "groq" or "drika" (default)
-    const useGroq = provider === "groq";
+    // Determine provider: "groq", "inference" or "drika" (default)
+    const selectedProvider = provider || "drika";
     
     let apiKey: string;
     let apiUrl: string;
     let authHeader: string;
     
-    if (useGroq) {
+    if (selectedProvider === "groq") {
       // Rotate between multiple Groq API keys for higher rate limits
       const groqKeys = [
         Deno.env.get("GROQ_API_KEY"),
@@ -112,10 +112,14 @@ serve(async (req) => {
 
       if (groqKeys.length === 0) throw new Error("Nenhuma GROQ_API_KEY configurada. Adicione nas configurações do Supabase.");
 
-      // Simple round-robin based on current second
       apiKey = groqKeys[Math.floor(Date.now() / 1000) % groqKeys.length];
       console.log(`Using Groq key pool: ${groqKeys.length} keys available`);
       apiUrl = GROQ_API_URL;
+      authHeader = "Bearer";
+    } else if (selectedProvider === "inference") {
+      apiKey = Deno.env.get("INFERENCE_NET_API_KEY") || "";
+      if (!apiKey) throw new Error("INFERENCE_NET_API_KEY não está configurada. Adicione nas configurações do Supabase.");
+      apiUrl = INFERENCE_API_URL;
       authHeader = "Bearer";
     } else {
       apiKey = Deno.env.get("LOVABLE_API_KEY") || "";
