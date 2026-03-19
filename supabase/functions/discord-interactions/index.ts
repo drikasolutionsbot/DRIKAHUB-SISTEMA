@@ -2588,7 +2588,7 @@ async function generatePixInThread(
   // Get store branding
   const { data: scBrand } = await supabase
     .from("store_configs")
-    .select("store_logo_url, store_title, payment_timeout_minutes, embed_color")
+    .select("store_logo_url, store_title, payment_timeout_minutes, embed_color, purchase_embed_footer")
     .eq("tenant_id", tenantId)
     .single();
 
