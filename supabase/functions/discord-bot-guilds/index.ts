@@ -249,6 +249,7 @@ serve(async (req) => {
     }
 
     const guilds = await discordResponse.json();
+    console.log("[DEBUG] Bot guilds count:", guilds.length, "guilds:", JSON.stringify(guilds.map((g: any) => ({ id: g.id, name: g.name }))));
     const mapped = guilds.map((g: any) => ({
       id: g.id,
       name: g.name,
