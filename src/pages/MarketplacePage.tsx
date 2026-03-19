@@ -302,6 +302,7 @@ const MarketplacePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
