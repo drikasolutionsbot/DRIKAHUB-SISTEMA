@@ -47,6 +47,7 @@ const ticketCommand = require("./commands/ticket");
 const painelCommand = require("./commands/painel");
 const estoqueCommand = require("./commands/estoque");
 const verificarCommand = require("./commands/verificar");
+const sorteioCommand = require("./commands/sorteio");
 const interactionHandler = require("./events/interaction");
 const memberJoinHandler = require("./events/memberJoin");
 const protectionHandler = require("./events/protection");
