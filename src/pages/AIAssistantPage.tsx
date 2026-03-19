@@ -825,7 +825,7 @@ export default function AIAssistantPage() {
 
               <button
                 onClick={() => setShowContext(!showContext)}
-                className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-primary/70 transition-colors font-medium"
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-primary/80 transition-colors font-medium"
               >
                 <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", showContext && "rotate-180")} />
                 Contexto (opcional)
