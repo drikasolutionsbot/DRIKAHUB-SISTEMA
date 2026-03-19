@@ -198,16 +198,17 @@ serve(async (req) => {
       }
 
       case "update_discord_permissions": {
+        const bot = requireBot();
         const { role_id, permissions } = params;
         if (!role_id) throw new Error("Missing role_id");
         if (permissions === undefined) throw new Error("Missing permissions");
 
         const discordRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/roles/${role_id}`,
+          `https://discord.com/api/v10/guilds/${bot.guildId}/roles/${role_id}`,
           {
             method: "PATCH",
             headers: {
-              Authorization: `Bot ${botToken}`,
+              Authorization: `Bot ${bot.botToken}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ permissions: String(permissions) }),
