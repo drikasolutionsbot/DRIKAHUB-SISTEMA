@@ -412,7 +412,7 @@ async function cancelOrder(interaction, tenant, orderId) {
   }
 
   const channel = interaction.channel;
-  await channel.send({ embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(0x2B2D31)] });
+  await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(0x2B2D31)] });
 
   setTimeout(() => {
     channel.setArchived?.(true).catch(() => {});
