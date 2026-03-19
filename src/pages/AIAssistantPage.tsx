@@ -897,6 +897,18 @@ export default function AIAssistantPage() {
                   <Boxes className="h-3 w-3" />
                   HF
                 </button>
+                <button
+                  onClick={() => setProvider("google")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300",
+                    provider === "google"
+                      ? "bg-[#4285F4]/15 text-[#4285F4] border border-[#4285F4]/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
+                  )}
+                >
+                  <Gem className="h-3 w-3" />
+                  Google
+                </button>
               </div>
 
               {/* Image warning for non-drika providers */}
