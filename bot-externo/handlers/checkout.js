@@ -510,7 +510,7 @@ async function markDelivered(interaction, tenant, orderId) {
 
   await updateOrderStatus(orderId, "delivered");
 
-  await interaction.channel.send({
+  await sendWithIdentity(interaction.channel, tenant, {
     embeds: [new EmbedBuilder().setTitle("✅ Entrega Confirmada").setDescription(`Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`).setColor(0x2B2D31)],
   });
 
