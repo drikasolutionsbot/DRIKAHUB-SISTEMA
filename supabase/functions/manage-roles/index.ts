@@ -148,7 +148,7 @@ serve(async (req) => {
 
         if (roleErr || !role) throw new Error("Role not found");
 
-        if (role.discord_role_id && (updates.name || updates.color)) {
+        if (role.discord_role_id && (updates.name || updates.color) && botToken && guildId) {
           const discordBody: Record<string, unknown> = {};
           if (updates.name) discordBody.name = updates.name;
           if (updates.color) discordBody.color = hexToDecimal(updates.color);
