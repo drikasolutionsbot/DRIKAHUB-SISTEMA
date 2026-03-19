@@ -69,7 +69,6 @@ async function tryModels(
 }
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const GOOGLE_AI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
