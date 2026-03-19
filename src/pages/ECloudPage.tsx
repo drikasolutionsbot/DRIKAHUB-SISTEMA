@@ -315,6 +315,9 @@ const ECloudPage = () => {
           <TabsTrigger value="monitor" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
             Monitor
           </TabsTrigger>
+          <TabsTrigger value="saude" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
+            Saúde
+          </TabsTrigger>
           <TabsTrigger value="dados" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-5">
             Dados & Backups
           </TabsTrigger>
