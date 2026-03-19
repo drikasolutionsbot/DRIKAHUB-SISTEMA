@@ -260,7 +260,7 @@ serve(async (req) => {
 
       if (currentTenant.discord_guild_id) {
         const result = mapped.filter((g: any) => g.id === currentTenant.discord_guild_id);
-        return new Response(JSON.stringify(result), {
+        return new Response(JSON.stringify({ guilds: result, auto_linked: false }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
