@@ -21,19 +21,19 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Resolve tenant bot token
+    // Resolve tenant guild and use external bot token único
     const { data: tenantInfo } = await supabase
       .from("tenants")
-      .select("discord_guild_id, bot_token_encrypted")
+      .select("discord_guild_id")
       .eq("id", tenant_id)
       .single();
 
-    const tenantBotToken = tenantInfo?.bot_token_encrypted || null;
+    const tenantBotToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
 
     // Handle guild icon update (separate flow)
     if (guild_icon_base64) {
       if (!tenantInfo?.discord_guild_id) throw new Error("No Discord guild linked");
-      if (!tenantBotToken) throw new Error("Bot token não configurado para este tenant");
+      if (!tenantBotToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
 
       const iconRes = await fetch(
         `https://discord.com/api/v10/guilds/${tenantInfo.discord_guild_id}`,
@@ -58,7 +58,7 @@ serve(async (req) => {
       throw new Error("No updates provided");
     }
 
-    const allowedFields = ["name", "logo_url", "banner_url", "primary_color", "secondary_color", "bot_status", "bot_status_interval", "bot_prefix", "bot_name", "bot_avatar_url", "discord_guild_id", "ecloud_custom_url", "verify_enabled", "verify_redirect_url", "verify_role_id", "verify_channel_id", "verify_logs_channel_id", "verify_title", "verify_description", "verify_button_label", "verify_embed_color", "verify_image_url", "verify_button_style", "pix_key", "pix_key_type", "bot_token_encrypted"];
+    const allowedFields = ["name", "logo_url", "banner_url", "primary_color", "secondary_color", "bot_status", "bot_status_interval", "bot_prefix", "bot_name", "bot_avatar_url", "discord_guild_id", "ecloud_custom_url", "verify_enabled", "verify_redirect_url", "verify_role_id", "verify_channel_id", "verify_logs_channel_id", "verify_title", "verify_description", "verify_button_label", "verify_embed_color", "verify_image_url", "verify_button_style", "pix_key", "pix_key_type"];
     const safeUpdates: Record<string, string> = {};
     for (const key of Object.keys(updates)) {
       if (allowedFields.includes(key)) {
@@ -115,8 +115,8 @@ serve(async (req) => {
 
     // If name was updated, also rename the Discord guild
     if (safeUpdates.name && data.discord_guild_id) {
-      // Re-read bot token in case it was just updated
-      const effectiveBotToken = safeUpdates.bot_token_encrypted || data.bot_token_encrypted || tenantBotToken;
+      // Usa sempre o token do bot externo
+      const effectiveBotToken = tenantBotToken;
       console.log("Attempting Discord guild rename to:", safeUpdates.name, "for guild:", data.discord_guild_id);
       try {
         if (effectiveBotToken) {

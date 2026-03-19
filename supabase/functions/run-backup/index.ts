@@ -28,11 +28,14 @@ Deno.serve(async (req) => {
     if (action === "run" && tenant_id) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("id, discord_guild_id, bot_token_encrypted, name")
+        .select("id, discord_guild_id, name")
         .eq("id", tenant_id)
         .single();
 
       if (!tenant) throw new Error("Tenant not found");
+
+      const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
+      if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
 
       // Create backup record
       const { data: backup, error: insertErr } = await supabase
@@ -49,7 +52,6 @@ Deno.serve(async (req) => {
         let ordersCount = 0;
         let productsCount = 0;
 
-        const botToken = tenant.bot_token_encrypted;
         // 1. Fetch Discord members
         if (tenant.discord_guild_id && botToken) {
           let after = "0";
@@ -106,11 +108,11 @@ Deno.serve(async (req) => {
         productsCount = backupData.products.length;
 
         // 5. Roles from Discord
-        if (tenant.discord_guild_id && tenant.bot_token_encrypted) {
+        if (tenant.discord_guild_id && botToken) {
           try {
             const rolesRes = await fetch(
               `${DISCORD_API}/guilds/${tenant.discord_guild_id}/roles`,
-              { headers: { Authorization: `Bot ${tenant.bot_token_encrypted}` } }
+              { headers: { Authorization: `Bot ${botToken}` } }
             );
             if (rolesRes.ok) {
               backupData.roles = await rolesRes.json();
@@ -207,13 +209,13 @@ Deno.serve(async (req) => {
     if (action === "export" && tenant_id) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("discord_guild_id, bot_token_encrypted")
+        .select("discord_guild_id")
         .eq("id", tenant_id)
         .single();
 
       const exportData: any = {};
 
-      const botToken = tenant?.bot_token_encrypted;
+      const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
       // Members from Discord
       if (tenant?.discord_guild_id && botToken) {
         let after = "0";

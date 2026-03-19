@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,19 +44,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    let BOT_TOKEN: string | null = null;
+    const BOT_TOKEN = Deno.env.get("DISCORD_BOT_TOKEN") || null;
 
-    const { commands, guild_id, tenant_id } = await req.json();
-
-    // Resolve tenant bot token
-    if (tenant_id) {
-      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-      const { data: tenant } = await supabase.from("tenants").select("bot_token_encrypted").eq("id", tenant_id).single();
-      if (tenant?.bot_token_encrypted) BOT_TOKEN = tenant.bot_token_encrypted;
-    }
+    const { commands, guild_id } = await req.json();
 
     if (!BOT_TOKEN) {
-      return new Response(JSON.stringify({ success: false, registered: 0, commands: [], message: "Bot token não configurado. Configure em Configurações → Bot Externo." }), {
+      return new Response(JSON.stringify({ success: false, registered: 0, commands: [], message: "Bot externo não configurado (DISCORD_BOT_TOKEN)." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

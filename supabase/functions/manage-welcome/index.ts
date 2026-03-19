@@ -73,14 +73,9 @@ Deno.serve(async (req) => {
       const { channel_id, embed_data, content: msgContent } = body;
       if (!channel_id) throw new Error("channel_id required");
 
-      // Get bot token
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("bot_token_encrypted")
-        .eq("id", tenant_id)
-        .single();
-
-      if (!tenant?.bot_token_encrypted) throw new Error("Bot token not configured");
+      // Use external bot token único
+      const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
+      if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
 
       const embedPayload: any = {
         color: parseInt((embed_data.color || "#2B2D31").replace("#", ""), 16),
@@ -109,7 +104,7 @@ Deno.serve(async (req) => {
       const res = await fetch(`https://discord.com/api/v10/channels/${channel_id}/messages`, {
         method: "POST",
         headers: {
-          Authorization: `Bot ${tenant.bot_token_encrypted}`,
+          Authorization: `Bot ${botToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(discordPayload),
