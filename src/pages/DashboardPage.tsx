@@ -25,7 +25,6 @@ import { logTenantAudit, fetchTenantAuditLogs, type AuditLogEntry } from "@/lib/
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const DISCORD_CLIENT_ID_FALLBACK = "1477916070508757092";
 const BOT_PERMISSIONS = "536870920"; // Administrator + MANAGE_WEBHOOKS
 
 const DashboardPage = () => {
@@ -238,19 +237,30 @@ const DashboardPage = () => {
     );
   }
 
+  const appendGuildToInvite = (inviteUrl: string) => {
+    if (!tenant?.discord_guild_id) return inviteUrl;
+    try {
+      const url = new URL(inviteUrl);
+      url.searchParams.set("guild_id", tenant.discord_guild_id);
+      return url.toString();
+    } catch {
+      return inviteUrl;
+    }
+  };
+
   const handleAddBot = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("discord-bot-guilds", {
         body: { tenant_id: tenantId, action: "invite_url", permissions: BOT_PERMISSIONS },
       });
-      const inviteUrl = data?.invite_url || 
-        `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID_FALLBACK}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`;
-      window.open(inviteUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      window.open(
-        `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID_FALLBACK}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`,
-        "_blank"
-      );
+
+      if (error || !data?.invite_url) {
+        throw new Error(data?.error || error?.message || "Não foi possível gerar o convite do bot externo.");
+      }
+
+      window.open(appendGuildToInvite(data.invite_url), "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível abrir o convite do bot externo.");
     }
   };
 
@@ -377,7 +387,7 @@ const DashboardPage = () => {
                 <p className="text-sm font-medium text-foreground">Nenhum servidor conectado</p>
                 <p className="text-xs text-muted-foreground mt-1">Adicione o bot ao seu servidor Discord</p>
               </div>
-              <Button variant="outline" className="gap-2 text-sm" onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1477916070508757092&permissions=536870920&scope=bot%20applications.commands", "_blank")}>
+              <Button variant="outline" className="gap-2 text-sm" onClick={handleAddBot}>
                 <ExternalLink className="h-3.5 w-3.5" /> Adicionar Drika Bot
               </Button>
             </div>
