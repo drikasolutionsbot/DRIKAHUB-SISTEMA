@@ -215,7 +215,7 @@ Inclua estilo, cores, composição, iluminação e mood.`,
       { role: "user", content: prompt },
     ];
 
-    const textModels = selectedProvider === "groq" ? GROQ_TEXT_MODELS : selectedProvider === "inference" ? INFERENCE_TEXT_MODELS : TEXT_MODELS;
+    const textModels = selectedProvider === "groq" ? GROQ_TEXT_MODELS : selectedProvider === "inference" ? INFERENCE_TEXT_MODELS : selectedProvider === "huggingface" ? HF_TEXT_MODELS : TEXT_MODELS;
 
     const { response, model } = await tryModels(
       textModels,
