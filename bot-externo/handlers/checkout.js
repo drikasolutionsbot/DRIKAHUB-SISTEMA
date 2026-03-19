@@ -309,7 +309,7 @@ async function goToPayment(interaction, tenant, orderId) {
           new ButtonBuilder().setCustomId(`reject_order:${order.id}`).setLabel("Recusar").setEmoji("❌").setStyle(ButtonStyle.Danger),
         );
 
-        await logsChannel.send({ embeds: [logEmbed], components: [approvalRow] });
+        await sendWithIdentity(logsChannel, tenant, { embeds: [logEmbed], components: [approvalRow] });
       } catch {}
     }
   }
