@@ -42,6 +42,7 @@ module.exports = async function handleInteraction(client, interaction) {
       case "ticket": return ticketsHandler.openTicket(interaction, tenant);
       case "painel": return painelCommand.execute(interaction, tenant);
       case "estoque": return estoqueCommand.execute(interaction, tenant);
+      case "verificar": return verificarCommand.execute(interaction, tenant);
       case "clear": return moderationHandler.handleClear(interaction, tenant);
       case "ban": return moderationHandler.handleBan(interaction, tenant);
       case "kick": return moderationHandler.handleKick(interaction, tenant);
