@@ -12,7 +12,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
+  // Helper: fetch with rate limit retry
+  const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3): Promise<Response> => {
+    for (let i = 0; i <= maxRetries; i++) {
+      const res = await fetch(url, options);
+      if (res.status === 429) {
+        const body = await res.json().catch(() => ({}));
+        const retryAfter = (body?.retry_after || 1) * 1000;
+        if (i < maxRetries) {
+          await new Promise((r) => setTimeout(r, retryAfter + 100));
+          continue;
+        }
+      }
+      return res;
+    }
+    throw new Error("Max retries exceeded");
+  };
+
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
