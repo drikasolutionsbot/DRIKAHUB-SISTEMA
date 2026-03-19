@@ -219,13 +219,13 @@ Inclua estilo, cores, composição, iluminação e mood.`,
       });
     }
 
-    console.log(`Streaming response from model: ${model} (provider: ${useGroq ? "groq" : "drika"})`);
+    console.log(`Streaming response from model: ${model} (provider: ${selectedProvider})`);
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
         "X-Model-Used": model,
-        "X-Provider": useGroq ? "groq" : "drika",
+        "X-Provider": selectedProvider,
       },
     });
   } catch (e) {
