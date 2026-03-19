@@ -29,6 +29,7 @@ serve(async (req) => {
     throw new Error("Max retries exceeded");
   };
 
+  try {
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
