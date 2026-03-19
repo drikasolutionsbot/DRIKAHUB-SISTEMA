@@ -230,20 +230,12 @@ serve(async (req) => {
     });
   }
 
-  // Resolve bot token from guild_id → tenant
-  let botToken = "";
+  // Usa sempre o bot externo 24h (token único)
+  const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || "";
   const interactionGuildId = interaction.guild_id;
-  if (interactionGuildId) {
-    const { data: tenantByGuild } = await supabase
-      .from("tenants")
-      .select("bot_token_encrypted")
-      .eq("discord_guild_id", interactionGuildId)
-      .maybeSingle();
-    botToken = tenantByGuild?.bot_token_encrypted || "";
-  }
   if (!botToken) {
-    console.error("No bot token found for guild:", interactionGuildId);
-    return new Response(JSON.stringify({ type: 4, data: { content: "❌ Bot token não configurado.", flags: 64 } }), {
+    console.error("DISCORD_BOT_TOKEN not configured");
+    return new Response(JSON.stringify({ type: 4, data: { content: "❌ Bot externo não configurado.", flags: 64 } }), {
       headers: { "Content-Type": "application/json" },
     });
   }

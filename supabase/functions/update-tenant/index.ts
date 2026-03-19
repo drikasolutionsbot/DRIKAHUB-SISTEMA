@@ -21,19 +21,19 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Resolve tenant bot token
+    // Resolve tenant guild and use external bot token único
     const { data: tenantInfo } = await supabase
       .from("tenants")
-      .select("discord_guild_id, bot_token_encrypted")
+      .select("discord_guild_id")
       .eq("id", tenant_id)
       .single();
 
-    const tenantBotToken = tenantInfo?.bot_token_encrypted || null;
+    const tenantBotToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
 
     // Handle guild icon update (separate flow)
     if (guild_icon_base64) {
       if (!tenantInfo?.discord_guild_id) throw new Error("No Discord guild linked");
-      if (!tenantBotToken) throw new Error("Bot token não configurado para este tenant");
+      if (!tenantBotToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
 
       const iconRes = await fetch(
         `https://discord.com/api/v10/guilds/${tenantInfo.discord_guild_id}`,

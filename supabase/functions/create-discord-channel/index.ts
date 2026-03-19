@@ -31,23 +31,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve bot token from tenant
-    let botToken: string | null = null;
-    if (tenant_id) {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("bot_token_encrypted")
-        .eq("id", tenant_id)
-        .single();
-      botToken = tenant?.bot_token_encrypted || null;
-    }
+    // Sempre usar bot externo 24h
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
 
     if (!botToken) {
-      return new Response(JSON.stringify({ error: "Bot token não configurado para este tenant" }), {
+      return new Response(JSON.stringify({ error: "Bot externo não configurado (DISCORD_BOT_TOKEN)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
