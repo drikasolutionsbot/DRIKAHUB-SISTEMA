@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
-import { ShoppingCart, Tag, CreditCard, Package, History, Eye } from "lucide-react";
+import { ShoppingCart, Tag, CreditCard, Package, History, Eye, Lock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import PixGeneratorDialog from "@/components/pix/PixGeneratorDialog";
 import { MarketplaceItemDetail } from "@/components/marketplace/MarketplaceItemDetail";
+import { useNavigate } from "react-router-dom";
 
 interface MarketplaceItem {
   id: string;
@@ -30,9 +31,12 @@ interface MarketplaceItem {
 
 const MarketplacePage = () => {
   const { tenantId, tenant } = useTenant();
+  const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
   const [detailItem, setDetailItem] = useState<MarketplaceItem | null>(null);
   const [pixOpen, setPixOpen] = useState(false);
+
+  const isPro = tenant?.plan === "pro" || tenant?.plan === "business";
 
   // Available items
   const { data: items = [], isLoading } = useQuery<MarketplaceItem[]>({
@@ -75,7 +79,35 @@ const MarketplacePage = () => {
   const categories = [...new Set(items.map((i) => i.category || "Outros"))];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      {/* Lock overlay for non-Pro users */}
+      {!isPro && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md rounded-xl" />
+          <div className="relative z-10 text-center p-8 max-w-md">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Acesso Exclusivo Pro</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              O Marketplace Atacadão está disponível apenas para clientes com plano Pro.
+              Faça upgrade para desbloquear contas digitais com preços de atacado.
+            </p>
+            <Button
+              onClick={() => {
+                sessionStorage.setItem("open_upgrade_modal", "true");
+                navigate("/settings");
+              }}
+              className="gradient-pink text-primary-foreground border-none gap-2"
+            >
+              <Crown className="h-4 w-4" />
+              Desbloquear Acesso
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className={!isPro ? "pointer-events-none select-none" : ""}>
       <div>
         <h1 className="font-display text-2xl font-bold">Marketplace Atacadão</h1>
         <p className="text-muted-foreground">
@@ -270,6 +302,7 @@ const MarketplacePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
