@@ -720,7 +720,7 @@ export default function AIAssistantPage() {
                       {msg.role === "assistant" && msg.content && !loading && (
                         <button
                           onClick={() => handleCopy(msg.content, msg.id)}
-                          className="mt-2.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+                          className="mt-2.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-primary transition-colors"
                         >
                           {copied === msg.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           {copied === msg.id ? "Copiado" : "Copiar"}
