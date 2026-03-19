@@ -177,7 +177,7 @@ const BOT_PERMISSIONS = "536870920"; // Administrator + MANAGE_WEBHOOKS
                 <p className="text-sm font-medium text-foreground">Nenhum servidor conectado</p>
                 <p className="text-xs text-muted-foreground mt-1">Adicione o bot ao seu servidor Discord</p>
               </div>
-              <Button variant="outline" className="gap-2 text-sm" onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1477916070508757092&permissions=536870920&scope=bot%20applications.commands", "_blank")}>
+              <Button variant="outline" className="gap-2 text-sm" onClick={handleAddBot}>
                 <ExternalLink className="h-3.5 w-3.5" /> Adicionar Drika Bot
               </Button>
             </div>
