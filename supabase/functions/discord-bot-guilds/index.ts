@@ -22,11 +22,17 @@ serve(async (req) => {
 
     let tenantIdFromBody: string | null = null;
     let accessToken: string | null = null;
+    let action: string | null = null;
+    let invitePermissions = "536870920";
 
     try {
       const body = await req.json();
       tenantIdFromBody = body?.tenant_id || null;
       accessToken = body?.token || null;
+      action = body?.action || null;
+      if (typeof body?.permissions === "string" && /^\d+$/.test(body.permissions)) {
+        invitePermissions = body.permissions;
+      }
     } catch {
       // body opcional
     }
