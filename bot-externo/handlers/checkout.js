@@ -9,6 +9,7 @@ const {
   getStoreConfig, getCoupon, incrementCouponUsage,
   getActivePaymentProvider, triggerAutomation, deliverOrder, supabase,
 } = require("../supabase");
+const { sendWithIdentity } = require("./webhookSender");
 
 const formatBRL = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
