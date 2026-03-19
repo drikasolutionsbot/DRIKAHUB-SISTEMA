@@ -1,101 +1,110 @@
 const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChannelType,
-  PermissionFlagsBits,
+  EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  ChannelType, PermissionFlagsBits, ModalBuilder, TextInputBuilder,
+  TextInputStyle, StringSelectMenuBuilder,
 } = require("discord.js");
 const {
-  getProducts,
-  getProductFields,
-  countStock,
-  getAvailableStock,
-  createOrder,
-  updateOrderStatus,
-  deliverStockItems,
-  getStoreConfig,
+  getProducts, getProductFields, countStock, getAvailableStock,
+  createOrder, getOrder, updateOrderStatus, deliverStockItems,
+  getStoreConfig, getCoupon, incrementCouponUsage,
+  getActivePaymentProvider, triggerAutomation, deliverOrder, supabase,
 } = require("../supabase");
 
-/**
- * Inicia o checkout para um produto
- */
+const formatBRL = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+
+// ── PIX Helpers ──
+function tlv(id, value) { return `${id}${value.length.toString().padStart(2, "0")}${value}`; }
+function crc16(payload) {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) { crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1; crc &= 0xffff; }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+function generateStaticBRCode(pixKey, name, amount, txId) {
+  let p = tlv("00", "01") + tlv("01", amount ? "12" : "11");
+  p += tlv("26", tlv("00", "br.gov.bcb.pix") + tlv("01", pixKey));
+  p += tlv("52", "0000") + tlv("53", "986");
+  if (amount && amount > 0) p += tlv("54", amount.toFixed(2));
+  p += tlv("58", "BR") + tlv("59", name.substring(0, 25)) + tlv("60", "Brasil");
+  p += tlv("62", tlv("05", (txId || "***").substring(0, 25)));
+  p += "6304";
+  return p + crc16(p);
+}
+
+// ── Mercado Pago PIX ──
+async function generateMercadoPagoPix(apiKey, amount, desc, ref, webhook) {
+  const res = await fetch("https://api.mercadopago.com/v1/payments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "X-Idempotency-Key": ref },
+    body: JSON.stringify({ transaction_amount: amount, payment_method_id: "pix", description: desc, statement_descriptor: "Drika Solutions", external_reference: ref, notification_url: webhook, payer: { email: "customer@email.com" } }),
+  });
+  if (!res.ok) throw new Error(`Mercado Pago error: ${res.status}`);
+  const data = await res.json();
+  return { brcode: data.point_of_interaction?.transaction_data?.qr_code || "", payment_id: String(data.id) };
+}
+
+// ── PushinPay PIX ──
+async function generatePushinPayPix(apiKey, amountCents, webhook) {
+  const res = await fetch("https://api.pushinpay.com.br/api/pix/cashIn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ value: amountCents, webhook_url: webhook || undefined }),
+  });
+  if (!res.ok) throw new Error(`PushinPay error: ${res.status}`);
+  const data = await res.json();
+  return { brcode: data.qr_code || "", payment_id: data.id };
+}
+
+// ── Start Checkout (from buy_product button) ──
 async function startCheckout(interaction, tenant, productId) {
   await interaction.deferReply({ ephemeral: true });
 
   const products = await getProducts(tenant.id, false);
   const product = products.find((p) => p.id === productId);
+  if (!product) return interaction.editReply({ content: "❌ Produto não encontrado." });
+  if (!product.active) return interaction.editReply({ content: "❌ Este produto está indisponível." });
 
-  if (!product) {
-    return interaction.editReply({ content: "❌ Produto não encontrado." });
-  }
-
-  if (!product.active) {
-    return interaction.editReply({ content: "❌ Este produto está desativado." });
-  }
-
-  // Verificar se tem variações
   const fields = await getProductFields(product.id, tenant.id);
   if (fields.length > 0) {
-    return showFieldSelection(interaction, tenant, product, fields);
-  }
+    // Show variation selector
+    const storeConfig = await getStoreConfig(tenant.id);
+    const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
 
-  // Sem variações: checkout direto
-  const stock = await countStock(product.id, tenant.id);
-  if (stock <= 0 && product.auto_delivery) {
-    return interaction.editReply({ content: "❌ Produto sem estoque." });
-  }
+    // Get stock counts per field
+    const stockMap = {};
+    for (const f of fields) {
+      stockMap[f.id] = await countStock(product.id, tenant.id, f.id);
+    }
 
-  return createCheckoutThread(interaction, tenant, product, null);
-}
+    const options = fields.slice(0, 25).map((f) => ({
+      label: f.name,
+      value: `buy_field:${productId}:${f.id}`,
+      description: `Preço: ${formatBRL(f.price_cents)} | Estoque: ${stockMap[f.id] || 0}`,
+    }));
 
-/**
- * Mostra seleção de variações
- */
-async function showFieldSelection(interaction, tenant, product, fields) {
-  const storeConfig = await getStoreConfig(tenant.id);
-  const embedColor = parseInt((storeConfig?.embed_color || "#FF69B4").replace("#", ""), 16);
+    const autoDelivery = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
+    const embed = new EmbedBuilder()
+      .setTitle(product.name)
+      .setDescription(`${autoDelivery}${product.description || ""}`)
+      .setColor(embedColor);
+    if (product.banner_url) embed.setImage(product.banner_url);
+    if (product.icon_url) embed.setThumbnail(product.icon_url);
 
-  const embed = new EmbedBuilder()
-    .setTitle(`🛒 ${product.name}`)
-    .setDescription("Selecione uma opção:")
-    .setColor(embedColor);
-
-  const rows = [];
-  const buttons = [];
-
-  for (const field of fields.slice(0, 25)) {
-    const stock = await countStock(product.id, tenant.id, field.id);
-    const price = (field.price_cents / 100).toFixed(2);
-    const emoji = field.emoji || (stock > 0 ? "✅" : "❌");
-
-    embed.addFields({
-      name: `${field.name}`,
-      value: `R$ ${price}${field.show_stock ? ` | Estoque: ${stock}` : ""}`,
-      inline: true,
-    });
-
-    buttons.push(
-      new ButtonBuilder()
-        .setCustomId(`field_${field.id}_${product.id}`)
-        .setLabel(field.name.slice(0, 80))
-        .setStyle(stock > 0 ? ButtonStyle.Primary : ButtonStyle.Secondary)
-        .setDisabled(stock <= 0 && product.auto_delivery)
+    const row = new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder().setCustomId(`select_variation:${productId}`).setPlaceholder("Clique aqui para ver as opções").addOptions(options)
     );
+
+    return interaction.editReply({ embeds: [embed], components: [row] });
   }
 
-  // Agrupar botões em rows (5 por row)
-  for (let i = 0; i < buttons.length; i += 5) {
-    rows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-  }
-
-  return interaction.editReply({ embeds: [embed], components: rows.slice(0, 5) });
+  // No variations - direct purchase
+  await processPurchase(interaction, tenant, product, product.price_cents);
 }
 
-/**
- * Seleção de variação
- */
-async function selectField(interaction, tenant, fieldId, productId) {
+// ── Select Variation (from dropdown) ──
+async function selectVariation(interaction, tenant, productId, fieldId) {
   await interaction.deferReply({ ephemeral: true });
 
   const products = await getProducts(tenant.id, false);
@@ -104,268 +113,450 @@ async function selectField(interaction, tenant, fieldId, productId) {
 
   const fields = await getProductFields(product.id, tenant.id);
   const field = fields.find((f) => f.id === fieldId);
-  if (!field) return interaction.editReply({ content: "❌ Opção não encontrada." });
+  if (!field) return interaction.editReply({ content: "❌ Variação não encontrada." });
 
-  const stock = await countStock(product.id, tenant.id, field.id);
-  if (stock <= 0 && product.auto_delivery) {
-    return interaction.editReply({ content: "❌ Esta opção está sem estoque." });
-  }
-
-  return createCheckoutThread(interaction, tenant, product, field);
+  await processPurchase(interaction, tenant, product, field.price_cents, field.id, field.name);
 }
 
-/**
- * Cria thread de checkout
- */
-async function createCheckoutThread(interaction, tenant, product, field) {
-  const storeConfig = await getStoreConfig(tenant.id);
-  const guild = interaction.guild;
-  const member = interaction.member;
-  const price = field ? field.price_cents : product.price_cents;
-  const productName = field ? `${product.name} - ${field.name}` : product.name;
-  const embedColor = parseInt((storeConfig?.embed_color || "#FF69B4").replace("#", ""), 16);
+// ── Process Purchase ──
+async function processPurchase(interaction, tenant, product, priceCents, fieldId = null, fieldName = null) {
+  const userId = interaction.user.id;
+  const username = interaction.user.username;
+  const orderName = fieldName ? `${product.name} - ${fieldName}` : product.name;
 
-  // Criar pedido no banco
   const order = await createOrder({
-    tenant_id: tenant.id,
-    product_id: product.id,
-    field_id: field?.id || null,
-    product_name: productName,
-    discord_user_id: member.id,
-    discord_username: member.user.username,
-    total_cents: price,
-    status: "pending_payment",
+    tenant_id: tenant.id, product_id: product.id, field_id: fieldId,
+    product_name: orderName, discord_user_id: userId, discord_username: username,
+    total_cents: priceCents, status: "pending_payment",
   });
 
-  // Criar thread privada ou canal temporário
-  let checkoutChannel;
+  // Trigger automation
+  await triggerAutomation(tenant.id, "order_created", {
+    discord_user_id: userId, discord_username: username,
+    order_id: order.id, order_number: order.order_number,
+    product_name: orderName, total_cents: priceCents,
+  });
+
+  // ── Free product: deliver immediately ──
+  if (priceCents <= 0) {
+    await updateOrderStatus(order.id, "paid", { payment_provider: "free" });
+    await deliverOrder(order.id, tenant.id);
+    return interaction.editReply({ content: `✅ Pedido **#${order.order_number}** — **${orderName}** entregue gratuitamente! Verifique sua DM.` });
+  }
+
+  // ── Create private thread for checkout ──
+  const channel = interaction.channel;
+  const threadName = `🛒 • ${username} • ${order.order_number}`.substring(0, 100);
+
+  let checkoutThread;
   try {
-    // Tentar criar thread no canal atual
-    const parentChannel = interaction.channel;
-    checkoutChannel = await parentChannel.threads.create({
-      name: `🛒-${member.user.username}-${order.order_number}`,
-      autoArchiveDuration: 60,
-      type: ChannelType.PrivateThread,
-      reason: `Checkout #${order.order_number}`,
+    checkoutThread = await channel.threads.create({
+      name: threadName, autoArchiveDuration: 1440,
+      type: ChannelType.PrivateThread, reason: `Checkout #${order.order_number}`,
     });
-    await checkoutChannel.members.add(member.id);
+    await checkoutThread.members.add(userId);
   } catch {
-    // Fallback: criar canal de texto
-    checkoutChannel = await guild.channels.create({
-      name: `checkout-${order.order_number}`,
-      type: ChannelType.GuildText,
+    checkoutThread = await interaction.guild.channels.create({
+      name: `checkout-${order.order_number}`, type: ChannelType.GuildText,
       permissionOverwrites: [
-        { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-        { id: member.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+        { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+        { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
       ],
     });
   }
 
-  // Atualizar pedido com ID do checkout
-  await updateOrderStatus(order.id, "pending_payment", {
-    checkout_thread_id: checkoutChannel.id,
-  });
+  await updateOrderStatus(order.id, "pending_payment", { checkout_thread_id: checkoutThread.id });
 
-  // Embed do checkout
-  const embed = new EmbedBuilder()
-    .setTitle(`🛒 Checkout #${order.order_number}`)
-    .setDescription(
-      `**Produto:** ${productName}\n` +
-      `**Preço:** R$ ${(price / 100).toFixed(2)}\n\n` +
-      (tenant.pix_key
-        ? `**Chave PIX:** \`${tenant.pix_key}\`\nTipo: ${tenant.pix_key_type || "Aleatória"}\n\n` +
-          `Faça o pagamento e clique em **Confirmar Pagamento**.`
-        : `Aguardando configuração do pagamento.`)
-    )
+  // Get store branding
+  const storeConfig = await getStoreConfig(tenant.id);
+  const storeName = storeConfig?.store_title || tenant.name || "Loja";
+  const storeLogo = storeConfig?.store_logo_url || tenant.logo_url;
+  const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+
+  // Stock count
+  let stockCount = "∞";
+  const sc = await countStock(product.id, tenant.id, fieldId);
+  if (sc !== null) stockCount = String(sc);
+
+  // Build checkout embed
+  const descLines = [];
+  if (product.auto_delivery) descLines.push("⚡ **Entrega Automática!**");
+  if (product.description) descLines.push(product.description);
+
+  const reviewEmbed = new EmbedBuilder()
+    .setAuthor({ name: username, iconURL: interaction.user.displayAvatarURL() })
+    .setTitle("Revisão do Pedido")
     .setColor(embedColor)
-    .setFooter({ text: `Pedido expira em ${storeConfig?.payment_timeout_minutes || 30} minutos` })
+    .addFields(
+      { name: "🛒 Carrinho", value: `1x ${orderName}`, inline: false },
+      { name: "Valor à vista", value: formatBRL(priceCents), inline: true },
+      { name: "📦 Em estoque", value: stockCount, inline: true },
+    )
+    .setFooter({ text: `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`, iconURL: storeLogo || undefined })
     .setTimestamp();
 
-  if (product.banner_url) embed.setImage(product.banner_url);
-  if (product.icon_url) embed.setThumbnail(product.icon_url);
+  if (descLines.length) reviewEmbed.setDescription(descLines.join("\n\n"));
+  if (product.banner_url) reviewEmbed.setImage(product.banner_url);
+  if (product.icon_url) reviewEmbed.setThumbnail(product.icon_url);
 
-  const confirmBtn = new ButtonBuilder()
-    .setCustomId(`confirm_${order.id}`)
-    .setLabel("✅ Confirmar Pagamento")
-    .setStyle(ButtonStyle.Success);
+  const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`checkout_pay:${order.id}`).setLabel("Ir para o Pagamento").setEmoji("✅").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`checkout_quantity:${order.id}`).setLabel("Editar Quantidade").setEmoji("✏️").setStyle(ButtonStyle.Secondary),
+  );
+  const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`checkout_coupon:${order.id}`).setLabel("Usar Cupom").setEmoji("🏷️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel("Cancelar").setEmoji("🗑️").setStyle(ButtonStyle.Danger),
+  );
 
-  const cancelBtn = new ButtonBuilder()
-    .setCustomId(`cancel_${order.id}`)
-    .setLabel("❌ Cancelar")
-    .setStyle(ButtonStyle.Danger);
+  await checkoutThread.send({ content: `<@${userId}>`, embeds: [reviewEmbed], components: [row1, row2] });
 
-  const row = new ActionRowBuilder().addComponents(confirmBtn, cancelBtn);
+  // Tell user where to go
+  const threadLink = `https://discord.com/channels/${interaction.guild.id}/${checkoutThread.id}`;
+  const linkRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setLabel("Ir para o carrinho").setStyle(ButtonStyle.Link).setURL(threadLink)
+  );
 
-  await checkoutChannel.send({ content: `${member}`, embeds: [embed], components: [row] });
+  await interaction.editReply({ content: "✅ | Seu carrinho foi criado com êxito.", components: [linkRow] });
 
-  await interaction.editReply({
-    content: `✅ Seu carrinho foi criado! Vá para ${checkoutChannel} para finalizar.`,
-  });
-
-  // Auto-expirar pedido
+  // Auto-expire
   const timeout = (storeConfig?.payment_timeout_minutes || 30) * 60 * 1000;
   setTimeout(async () => {
     try {
-      const { supabase } = require("../supabase");
-      const { data: currentOrder } = await supabase
-        .from("orders")
-        .select("status")
-        .eq("id", order.id)
-        .single();
-
-      if (currentOrder?.status === "pending_payment") {
+      const current = await getOrder(order.id);
+      if (current?.status === "pending_payment") {
         await updateOrderStatus(order.id, "expired");
-        await checkoutChannel.send("⏰ Pedido expirado por falta de pagamento.").catch(() => {});
-        setTimeout(() => checkoutChannel.delete().catch(() => {}), 10000);
+        await checkoutThread.send("⏰ Pedido expirado por falta de pagamento.").catch(() => {});
+        setTimeout(() => {
+          checkoutThread.setArchived?.(true).catch(() => {});
+          checkoutThread.setLocked?.(true).catch(() => {});
+        }, 5000);
       }
     } catch {}
   }, timeout);
 }
 
-/**
- * Confirmar pagamento (aprovação manual)
- */
-async function confirmPayment(interaction, tenant, orderId) {
-  await interaction.deferReply({ ephemeral: true });
+// ── Go to Payment (generate PIX) ──
+async function goToPayment(interaction, tenant, orderId) {
+  await interaction.deferUpdate();
 
-  const { supabase } = require("../supabase");
-  const { data: order } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("id", orderId)
-    .eq("tenant_id", tenant.id)
-    .single();
+  const order = await getOrder(orderId);
+  if (!order) return interaction.followUp({ content: "❌ Pedido não encontrado.", ephemeral: true });
+  if (order.status !== "pending_payment") return interaction.followUp({ content: `ℹ️ Pedido não está mais pendente.`, ephemeral: true });
 
-  if (!order) return interaction.editReply({ content: "❌ Pedido não encontrado." });
-  if (order.status !== "pending_payment") {
-    return interaction.editReply({ content: "❌ Este pedido já foi processado." });
-  }
+  const channel = interaction.channel;
+  await channel.send({ embeds: [new EmbedBuilder().setDescription("⏳ | Gerando QR Code...\nQuase lá, só mais um instante!").setColor(0x2B2D31)] });
 
-  // Marcar como pago
-  await updateOrderStatus(orderId, "paid");
+  const priceCents = order.total_cents;
+  const amountBRL = priceCents / 100;
+  const webhookBaseUrl = `${process.env.SUPABASE_URL}/functions/v1/payment-webhook`;
+  let brcode = "";
+  let paymentId = "";
 
-  // Entrega automática
-  const products = await getProducts(tenant.id, false);
-  const product = products.find((p) => p.id === order.product_id);
+  const provider = await getActivePaymentProvider(tenant.id);
 
-  if (product?.auto_delivery) {
-    const stockItems = await getAvailableStock(
-      order.product_id,
-      tenant.id,
-      order.field_id,
-      product.type === "digital_auto" ? 1 : 1
-    );
+  if (provider && amountBRL > 0) {
+    const providerKey = provider.provider_key;
+    const apiKey = provider.api_key_encrypted;
+    const webhookUrl = `${webhookBaseUrl}/${providerKey}/${tenant.id}`;
+    const externalRef = `order_${order.id}`;
 
-    if (stockItems.length > 0) {
-      // Marcar como entregue
-      await deliverStockItems(
-        stockItems.map((s) => s.id),
-        order.discord_user_id
-      );
-      await updateOrderStatus(orderId, "delivered");
+    if (providerKey === "mercadopago") {
+      const r = await generateMercadoPagoPix(apiKey, amountBRL, order.product_name, externalRef, webhookUrl);
+      brcode = r.brcode; paymentId = r.payment_id;
+    } else if (providerKey === "pushinpay") {
+      const r = await generatePushinPayPix(apiKey, priceCents, webhookUrl);
+      brcode = r.brcode; paymentId = r.payment_id;
+    } else if (providerKey === "efi" || providerKey === "misticpay") {
+      const pixRes = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-pix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+        body: JSON.stringify({ tenant_id: tenant.id, amount_cents: priceCents, product_name: order.product_name, tx_id: externalRef }),
+      });
+      const pixData = await pixRes.json();
+      if (pixData.error) throw new Error(pixData.error);
+      brcode = pixData.brcode || ""; paymentId = pixData.payment_id || externalRef;
+    }
 
-      // Enviar produto via DM
-      const user = await interaction.client.users.fetch(order.discord_user_id);
-      const deliveryContent = stockItems.map((s) => s.content).join("\n");
+    await updateOrderStatus(order.id, "pending_payment", { payment_id: paymentId, payment_provider: providerKey });
+  } else {
+    // Static PIX
+    if (!tenant.pix_key) {
+      return channel.send({ embeds: [new EmbedBuilder().setTitle("❌ Erro").setDescription("Nenhum método de pagamento configurado.").setColor(0xED4245)] });
+    }
+    brcode = generateStaticBRCode(tenant.pix_key, tenant.name || "Loja", amountBRL, `PED${order.order_number}`);
+    await updateOrderStatus(order.id, "pending_payment", { payment_provider: "static_pix" });
 
+    // Send admin approval notification
+    const storeConfig = await getStoreConfig(tenant.id);
+    if (storeConfig?.logs_channel_id) {
       try {
-        const storeConfig = await getStoreConfig(tenant.id);
-        const embedColor = parseInt((storeConfig?.purchase_embed_color || "#57F287").replace("#", ""), 16);
-
-        const deliveryEmbed = new EmbedBuilder()
-          .setTitle(storeConfig?.purchase_embed_title || "Compra realizada! ✅")
-          .setDescription(
-            (storeConfig?.purchase_embed_description || "Obrigado pela sua compra, {user}!").replace(
-              "{user}",
-              user.username
-            ) +
-            `\n\n**Produto:** ${order.product_name}\n**Pedido:** #${order.order_number}`
+        const logsChannel = await interaction.guild.channels.fetch(storeConfig.logs_channel_id);
+        const logEmbed = new EmbedBuilder()
+          .setTitle("🔔 Novo Pedido — PIX Estático")
+          .setDescription("Aguardando confirmação manual do pagamento.")
+          .setColor(0xFEE75C)
+          .addFields(
+            { name: "📦 Produto", value: order.product_name, inline: true },
+            { name: "💰 Valor", value: formatBRL(priceCents), inline: true },
+            { name: "🔢 Pedido", value: `#${order.order_number}`, inline: true },
+            { name: "👤 Comprador", value: `<@${order.discord_user_id}> (${order.discord_username})`, inline: false },
           )
-          .setColor(embedColor)
           .setTimestamp();
 
-        if (storeConfig?.purchase_embed_footer) {
-          deliveryEmbed.setFooter({ text: storeConfig.purchase_embed_footer });
-        }
+        const approvalRow = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`approve_order:${order.id}`).setLabel("Aprovar Pagamento").setEmoji("✅").setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`reject_order:${order.id}`).setLabel("Recusar").setEmoji("❌").setStyle(ButtonStyle.Danger),
+        );
 
-        await user.send({ embeds: [deliveryEmbed], content: `\`\`\`\n${deliveryContent}\n\`\`\`` });
-      } catch (dmErr) {
-        // DM fechada, enviar no canal
-        await interaction.channel.send({
-          content: `📦 <@${order.discord_user_id}> Seu produto:\n\`\`\`\n${deliveryContent}\n\`\`\``,
-        });
-      }
-
-      await interaction.editReply({ content: "✅ Pagamento confirmado e produto entregue!" });
-    } else {
-      await interaction.editReply({ content: "⚠️ Pagamento confirmado, mas sem estoque para entrega automática." });
+        await logsChannel.send({ embeds: [logEmbed], components: [approvalRow] });
+      } catch {}
     }
-  } else {
-    await interaction.editReply({ content: "✅ Pagamento confirmado! Aguarde a entrega manual." });
   }
 
-  // Renomear thread/canal
-  try {
-    const channel = interaction.channel;
-    const newName = channel.name.replace("🛒", "✅");
-    await channel.setName(newName);
-    // Arquivar após 2min
-    setTimeout(() => {
-      channel.setArchived?.(true).catch(() => {});
-    }, 120000);
-  } catch {}
-
-  // Log de venda
+  // Send PIX embed
   const storeConfig = await getStoreConfig(tenant.id);
-  if (storeConfig?.logs_channel_id) {
-    try {
-      const logsChannel = await interaction.guild.channels.fetch(storeConfig.logs_channel_id);
-      const logEmbed = new EmbedBuilder()
-        .setTitle("💰 Nova Venda")
-        .setDescription(
-          `**Produto:** ${order.product_name}\n` +
-          `**Comprador:** <@${order.discord_user_id}>\n` +
-          `**Valor:** R$ ${(order.total_cents / 100).toFixed(2)}\n` +
-          `**Pedido:** #${order.order_number}`
-        )
-        .setColor(0x57f287)
-        .setTimestamp();
-      await logsChannel.send({ embeds: [logEmbed] });
-    } catch {}
-  }
+  const storeName = storeConfig?.store_title || tenant.name || "Loja";
+  const storeLogo = storeConfig?.store_logo_url || tenant.logo_url;
+  const timeoutMin = storeConfig?.payment_timeout_minutes || 30;
+  const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brcode)}`;
+
+  const pixEmbed = new EmbedBuilder()
+    .setAuthor({ name: order.discord_username || "Comprador" })
+    .setTitle("Pagamento via PIX criado")
+    .setDescription([
+      "🟢 **Ambiente Seguro**", "Seu pagamento será processado em um ambiente 100% seguro.\n",
+      "🟢 **Pagamento Instantâneo**", "Assim que confirmado, seu pedido será processado imediatamente.\n",
+      "**Código copia e cola**", `\`\`\`\n${brcode}\n\`\`\``,
+    ].join("\n"))
+    .setColor(embedColor)
+    .setImage(qrImageUrl)
+    .setFooter({ text: `${storeName} – Pagamento expira em ${timeoutMin} minutos.`, iconURL: storeLogo || undefined });
+
+  if (storeLogo) pixEmbed.setThumbnail(storeLogo);
+
+  const pixRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`copy_pix:${order.id}`).setLabel("Código copia e cola").setEmoji("📋").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel("Cancelar").setStyle(ButtonStyle.Danger),
+  );
+
+  await channel.send({ embeds: [pixEmbed], components: [pixRow] });
 }
 
-/**
- * Cancelar pedido
- */
+// ── Approve Order ──
+async function approveOrder(interaction, tenant, orderId) {
+  await interaction.deferUpdate();
+  const order = await getOrder(orderId);
+  if (!order) return interaction.followUp({ content: "❌ Pedido não encontrado.", ephemeral: true });
+  if (order.status !== "pending_payment") return interaction.followUp({ content: `ℹ️ Pedido #${order.order_number} já processado.`, ephemeral: true });
+
+  await updateOrderStatus(orderId, "paid", { payment_provider: "static_pix" });
+  await deliverOrder(orderId, order.tenant_id);
+
+  // Trigger automation
+  await triggerAutomation(order.tenant_id, "order_paid", {
+    discord_user_id: order.discord_user_id, discord_username: order.discord_username,
+    order_id: orderId, order_number: order.order_number,
+    product_name: order.product_name, total_cents: order.total_cents,
+  });
+
+  // DM buyer
+  try {
+    const user = await interaction.client.users.fetch(order.discord_user_id);
+    await user.send({ embeds: [new EmbedBuilder().setTitle("✅ Pagamento Confirmado!").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi aprovado!\nSeu produto será entregue em instantes.`).setColor(0x2B2D31).setTimestamp()] });
+  } catch {}
+
+  const approvedEmbed = new EmbedBuilder()
+    .setTitle("✅ Pedido Aprovado")
+    .setDescription(`Pedido **#${order.order_number}** aprovado por <@${interaction.user.id}>`)
+    .setColor(0x2B2D31)
+    .addFields(
+      { name: "📦 Produto", value: order.product_name, inline: true },
+      { name: "💰 Valor", value: formatBRL(order.total_cents), inline: true },
+      { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true },
+    )
+    .setTimestamp();
+
+  await interaction.editReply({ embeds: [approvedEmbed], components: [] });
+}
+
+// ── Reject Order ──
+async function rejectOrder(interaction, tenant, orderId) {
+  await interaction.deferUpdate();
+  const order = await getOrder(orderId);
+  if (!order) return interaction.followUp({ content: "❌ Pedido não encontrado.", ephemeral: true });
+  if (order.status !== "pending_payment") return interaction.followUp({ content: `ℹ️ Pedido #${order.order_number} já processado.`, ephemeral: true });
+
+  await updateOrderStatus(orderId, "canceled");
+
+  try {
+    const user = await interaction.client.users.fetch(order.discord_user_id);
+    await user.send({ embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi recusado.`).setColor(0x2B2D31).setTimestamp()] });
+  } catch {}
+
+  await interaction.editReply({
+    embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>`).setColor(0x2B2D31).addFields({ name: "📦 Produto", value: order.product_name, inline: true }, { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true }).setTimestamp()],
+    components: [],
+  });
+}
+
+// ── Cancel Order ──
 async function cancelOrder(interaction, tenant, orderId) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferUpdate();
+  const order = await getOrder(orderId);
+  if (!order) return;
 
-  const { supabase } = require("../supabase");
-  const { data: order } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("id", orderId)
-    .eq("tenant_id", tenant.id)
-    .single();
-
-  if (!order) return interaction.editReply({ content: "❌ Pedido não encontrado." });
-  if (order.status !== "pending_payment") {
-    return interaction.editReply({ content: "❌ Este pedido não pode ser cancelado." });
+  if (order.status === "pending_payment") {
+    await updateOrderStatus(orderId, "canceled");
   }
 
-  await updateOrderStatus(orderId, "cancelled");
-  await interaction.editReply({ content: "✅ Pedido cancelado." });
+  const channel = interaction.channel;
+  await channel.send({ embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(0x2B2D31)] });
 
-  // Deletar thread/canal
   setTimeout(() => {
-    interaction.channel?.delete?.().catch(() => {});
-  }, 5000);
+    channel.setArchived?.(true).catch(() => {});
+    channel.setLocked?.(true).catch(() => {});
+  }, 3000);
+}
+
+// ── Copy PIX ──
+async function copyPix(interaction, tenant, orderId) {
+  const order = await getOrder(orderId);
+  if (!order) return interaction.reply({ content: "❌ Pedido não encontrado.", ephemeral: true });
+
+  if (tenant.pix_key) {
+    const brcode = generateStaticBRCode(tenant.pix_key, tenant.name || "Loja", order.total_cents / 100, `PED${order.order_number}`);
+    return interaction.reply({ content: `📋 **Código PIX Copia e Cola:**\n\`\`\`\n${brcode}\n\`\`\``, ephemeral: true });
+  }
+  return interaction.reply({ content: "📋 O código PIX está na mensagem acima.", ephemeral: true });
+}
+
+// ── Coupon Modal ──
+async function showCouponModal(interaction, orderId) {
+  const modal = new ModalBuilder().setCustomId(`coupon_modal_${orderId}`).setTitle("Usar Cupom");
+  const input = new TextInputBuilder().setCustomId("coupon_code").setLabel("Código do Cupom").setStyle(TextInputStyle.Short).setPlaceholder("Digite o código...").setRequired(true).setMaxLength(50);
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  await interaction.showModal(modal);
+}
+
+// ── Coupon Modal Submit ──
+async function handleCouponModal(interaction, tenant, orderId) {
+  await interaction.deferReply({ ephemeral: true });
+  const couponCode = interaction.fields.getTextInputValue("coupon_code").trim().toUpperCase();
+  if (!couponCode) return interaction.editReply({ content: "❌ Código inválido." });
+
+  const order = await getOrder(orderId);
+  if (!order || order.status !== "pending_payment") return interaction.editReply({ content: "❌ Pedido não encontrado ou já processado." });
+
+  const coupon = await getCoupon(tenant.id, couponCode);
+  if (!coupon) return interaction.editReply({ content: "❌ Cupom não encontrado ou inativo." });
+  if (coupon.product_id && coupon.product_id !== order.product_id) return interaction.editReply({ content: "❌ Este cupom não é válido para este produto." });
+
+  let discount = coupon.type === "percent" ? Math.floor(order.total_cents * coupon.value / 100) : coupon.value;
+  const newTotal = Math.max(0, order.total_cents - discount);
+
+  await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal, coupon_id: coupon.id });
+  await incrementCouponUsage(coupon.id, coupon.used_count);
+
+  await interaction.channel.send({
+    embeds: [new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287)],
+  });
+
+  await interaction.editReply({ content: "✅ Cupom aplicado!" });
+}
+
+// ── Quantity Modal ──
+async function showQuantityModal(interaction, orderId) {
+  const modal = new ModalBuilder().setCustomId(`quantity_modal_${orderId}`).setTitle("Editar Quantidade");
+  const input = new TextInputBuilder().setCustomId("quantity_value").setLabel("Quantidade").setStyle(TextInputStyle.Short).setPlaceholder("1").setRequired(true).setMaxLength(3).setValue("1");
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  await interaction.showModal(modal);
+}
+
+// ── Quantity Modal Submit ──
+async function handleQuantityModal(interaction, tenant, orderId) {
+  await interaction.deferReply({ ephemeral: true });
+  const qty = parseInt(interaction.fields.getTextInputValue("quantity_value").trim());
+  if (isNaN(qty) || qty < 1 || qty > 99) return interaction.editReply({ content: "❌ Quantidade inválida (1-99)." });
+
+  const order = await getOrder(orderId);
+  if (!order || order.status !== "pending_payment") return interaction.editReply({ content: "❌ Pedido não encontrado ou já processado." });
+
+  let unitPrice = order.total_cents;
+  if (order.field_id) {
+    const { data: field } = await supabase.from("product_fields").select("price_cents").eq("id", order.field_id).single();
+    if (field) unitPrice = field.price_cents;
+  } else if (order.product_id) {
+    const { data: prod } = await supabase.from("products").select("price_cents").eq("id", order.product_id).single();
+    if (prod) unitPrice = prod.price_cents;
+  }
+
+  const newTotal = unitPrice * qty;
+  await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal });
+
+  await interaction.channel.send({
+    embeds: [new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(0x2B2D31)],
+  });
+
+  await interaction.editReply({ content: `✅ Quantidade atualizada para ${qty}x!` });
+}
+
+// ── Mark Delivered ──
+async function markDelivered(interaction, tenant, orderId) {
+  await interaction.deferUpdate();
+  const order = await getOrder(orderId);
+  if (!order) return;
+
+  await updateOrderStatus(orderId, "delivered");
+
+  await interaction.channel.send({
+    embeds: [new EmbedBuilder().setTitle("✅ Entrega Confirmada").setDescription(`Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`).setColor(0x2B2D31)],
+  });
+
+  await interaction.editReply({
+    embeds: [new EmbedBuilder().setTitle("✅ Pedido Entregue").setDescription(`Pedido **#${order.order_number}** (${order.product_name}) entregue.`).setColor(0x57F287)],
+    components: [],
+  });
+}
+
+// ── Cancel Manual ──
+async function cancelManual(interaction, tenant, orderId) {
+  await interaction.deferUpdate();
+  const order = await getOrder(orderId);
+  if (!order) return;
+
+  await updateOrderStatus(orderId, "canceled");
+
+  try {
+    const user = await interaction.client.users.fetch(order.discord_user_id);
+    await user.send({ embeds: [new EmbedBuilder().setTitle("❌ Pedido Cancelado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi cancelado.`).setColor(0xED4245)] });
+  } catch {}
+
+  await interaction.editReply({
+    embeds: [new EmbedBuilder().setTitle("❌ Pedido Cancelado").setDescription(`Pedido **#${order.order_number}** cancelado por <@${interaction.user.id}>.`).setColor(0xED4245)],
+    components: [],
+  });
+}
+
+// ── Copy Delivered ──
+async function copyDelivered(interaction, tenant, orderId) {
+  const order = await getOrder(orderId);
+  if (!order) return interaction.reply({ content: "❌ Pedido não encontrado.", ephemeral: true });
+
+  const { data: items } = await supabase.from("product_stock_items").select("content")
+    .eq("product_id", order.product_id).eq("tenant_id", order.tenant_id)
+    .eq("delivered_to", order.discord_user_id).eq("delivered", true)
+    .order("delivered_at", { ascending: false }).limit(10);
+
+  if (!items?.length) return interaction.reply({ content: "❌ Nenhum conteúdo entregue encontrado.", ephemeral: true });
+  const content = items.map((i) => i.content).join("\n");
+  return interaction.reply({ content: `📋 **Produto entregue:**\n\`\`\`\n${content}\n\`\`\``, ephemeral: true });
 }
 
 module.exports = {
-  startCheckout,
-  selectField,
-  confirmPayment,
-  cancelOrder,
+  startCheckout, selectVariation, processPurchase,
+  goToPayment, approveOrder, rejectOrder, cancelOrder,
+  copyPix, showCouponModal, handleCouponModal,
+  showQuantityModal, handleQuantityModal,
+  markDelivered, cancelManual, copyDelivered,
 };

@@ -54,7 +54,8 @@ client.on(Events.ClientReady, async () => {
   console.log(`📡 Conectado em ${client.guilds.cache.size} servidor(es)`);
 
   // Registrar slash commands em cada guild
-  const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_BOT_TOKEN);
+  const { SlashCommandBuilder } = require("discord.js");
+
   const commands = [
     pingCommand.data,
     lojaCommand.data,
@@ -62,6 +63,15 @@ client.on(Events.ClientReady, async () => {
     ticketCommand.data,
     painelCommand.data,
     estoqueCommand.data,
+    // Moderation commands
+    new SlashCommandBuilder().setName("clear").setDescription("Limpa todas as mensagens do canal"),
+    new SlashCommandBuilder().setName("ban").setDescription("Bane um usuário do servidor")
+      .addUserOption(o => o.setName("usuario").setDescription("Usuário para banir").setRequired(true))
+      .addStringOption(o => o.setName("motivo").setDescription("Motivo do ban")),
+    new SlashCommandBuilder().setName("kick").setDescription("Expulsa um usuário do servidor")
+      .addUserOption(o => o.setName("usuario").setDescription("Usuário para expulsar").setRequired(true))
+      .addStringOption(o => o.setName("motivo").setDescription("Motivo da expulsão")),
+    new SlashCommandBuilder().setName("fechar").setDescription("Fecha o ticket atual"),
   ];
 
   for (const guild of client.guilds.cache.values()) {
