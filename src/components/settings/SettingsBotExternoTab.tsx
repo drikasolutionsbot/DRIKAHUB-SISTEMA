@@ -128,7 +128,8 @@ const SettingsBotExternoTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   };
 
   const isConnected = !!tenant?.discord_guild_id;
-  const connectedGuild = guilds.find((g) => g.id === tenant?.discord_guild_id);
+  const safeGuilds = Array.isArray(guilds) ? guilds : [];
+  const connectedGuild = safeGuilds.find((g) => g.id === tenant?.discord_guild_id);
   const activeProducts = products.filter((p: any) => p.active);
   const totalStock = products.reduce((sum: number, p: any) => sum + (p.stock || 0), 0);
 
@@ -200,7 +201,7 @@ const SettingsBotExternoTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               <div className="space-y-2">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}
               </div>
-            ) : guilds.length === 0 ? (
+            ) : safeGuilds.length === 0 ? (
               <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-5 text-center">
                 <WifiOff className="h-8 w-8 text-amber-400/60 mx-auto mb-2" />
                 <p className="text-sm font-medium text-amber-400">Nenhum servidor encontrado</p>
@@ -220,10 +221,10 @@ const SettingsBotExternoTab = ({ tenant, tenantId, refetchTenant }: Props) => {
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">
-                  Servidores disponíveis onde o bot está presente ({guilds.length}):
+                  Servidores disponíveis onde o bot está presente ({safeGuilds.length}):
                 </p>
                 <div className="space-y-2 max-h-[280px] overflow-y-auto">
-                  {guilds.map((guild) => (
+                  {safeGuilds.map((guild) => (
                     <div
                       key={guild.id}
                       className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors px-4 py-3"
