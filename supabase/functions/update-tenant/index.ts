@@ -115,8 +115,8 @@ serve(async (req) => {
 
     // If name was updated, also rename the Discord guild
     if (safeUpdates.name && data.discord_guild_id) {
-      // Re-read bot token in case it was just updated
-      const effectiveBotToken = safeUpdates.bot_token_encrypted || data.bot_token_encrypted || tenantBotToken;
+      // Usa sempre o token do bot externo
+      const effectiveBotToken = tenantBotToken;
       console.log("Attempting Discord guild rename to:", safeUpdates.name, "for guild:", data.discord_guild_id);
       try {
         if (effectiveBotToken) {
