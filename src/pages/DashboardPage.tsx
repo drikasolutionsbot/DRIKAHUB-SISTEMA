@@ -375,10 +375,10 @@ const DashboardPage = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Nenhum servidor conectado</p>
-                <p className="text-xs text-muted-foreground mt-1">Conecte um servidor nas configurações</p>
+                <p className="text-xs text-muted-foreground mt-1">Adicione o bot ao seu servidor Discord</p>
               </div>
-              <Button variant="outline" className="gap-2 text-sm" onClick={() => window.location.href = "/settings?tab=server"}>
-                <Settings2 className="h-3.5 w-3.5" /> Conectar servidor
+              <Button variant="outline" className="gap-2 text-sm" onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1477916070508757092&permissions=536870920&scope=bot%20applications.commands", "_blank")}>
+                <ExternalLink className="h-3.5 w-3.5" /> Adicionar Drika Bot
               </Button>
             </div>
           )}
