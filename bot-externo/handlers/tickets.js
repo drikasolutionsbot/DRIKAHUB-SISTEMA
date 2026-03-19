@@ -122,7 +122,7 @@ async function openTicket(interaction, tenant, targetChannelId = null) {
     new UserSelectMenuBuilder().setCustomId(`ticket_assign_${ticket.id}`).setPlaceholder("Selecione algum membro").setMinValues(1).setMaxValues(1),
   );
 
-  const welcomeMsg = await ticketThread.send({
+  const welcomeMsg = await sendWithIdentity(ticketThread, tenant, {
     content: contentMention, allowedMentions: { users: [userId], roles: staffRoleIds },
     embeds: [welcomeEmbed], components: [row1, row2],
   });
