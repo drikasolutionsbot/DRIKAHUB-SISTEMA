@@ -442,11 +442,6 @@ const SettingsPage = () => {
           <SettingsBotExternoTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
         </TabsContent>
 
-        {/* Bot Customization Tab */}
-        <TabsContent value="bot-custom">
-          <SettingsBotCustomizationTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
-        </TabsContent>
-
       </Tabs>
       </div>
     </div>
