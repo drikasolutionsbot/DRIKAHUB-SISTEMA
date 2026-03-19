@@ -451,10 +451,10 @@ export default function AIAssistantPage() {
             {/* Active model info */}
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50">
               <div className={cn("h-1.5 w-1.5 rounded-full", 
-                provider === "drika" ? "bg-primary/60" : provider === "groq" ? "bg-[#F55036]/60" : provider === "inference" ? "bg-[#00D4AA]/60" : provider === "huggingface" ? "bg-[#FFD21E]/60" : "bg-[#4285F4]/60"
+                provider === "drika" ? "bg-primary/60" : "bg-[#4285F4]/60"
               )} />
               <span className="font-medium">
-                {provider === "drika" ? "Multi-model fallback • 8 modelos" : provider === "groq" ? "Ultra-rápido • 4 keys" : provider === "inference" ? "Inference.net • Nemotron" : provider === "huggingface" ? "Hugging Face • Qwen 72B" : "Google AI Studio • Gemini"}
+                {provider === "drika" ? "Multi-model fallback • 8 modelos" : "Google AI Studio • Gemini"}
               </span>
             </div>
           </div>
