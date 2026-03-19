@@ -119,7 +119,7 @@ serve(async (req) => {
       const checks = await Promise.all(
         candidates.map(async (guild) => {
           try {
-            const guildRes = await fetch(`https://discord.com/api/v10/guilds/${guild.id}`, {
+            const guildRes = await fetchWithRetry(`https://discord.com/api/v10/guilds/${guild.id}`, {
               headers: { Authorization: `Bot ${botToken}` },
             });
             if (!guildRes.ok) return null;
