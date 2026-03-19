@@ -144,6 +144,11 @@ serve(async (req) => {
       if (!apiKey) throw new Error("HUGGINGFACE_API_KEY não está configurada.");
       apiUrl = HF_API_URL;
       authHeader = "Bearer";
+    } else if (selectedProvider === "google") {
+      apiKey = Deno.env.get("GOOGLE_AI_API_KEY") || "";
+      if (!apiKey) throw new Error("GOOGLE_AI_API_KEY não está configurada.");
+      apiUrl = GOOGLE_AI_URL;
+      authHeader = "Bearer";
     } else {
       apiKey = Deno.env.get("LOVABLE_API_KEY") || "";
       if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
