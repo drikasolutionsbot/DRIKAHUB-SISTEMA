@@ -166,6 +166,7 @@ module.exports = {
   supabase,
   getTenantByGuild,
   getProducts,
+  getProductById,
   getProductFields,
   getAvailableStock,
   countStock,
