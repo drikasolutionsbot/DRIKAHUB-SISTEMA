@@ -201,7 +201,7 @@ const SettingsBotExternoTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               <div className="space-y-2">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}
               </div>
-            ) : guilds.length === 0 ? (
+            ) : safeGuilds.length === 0 ? (
               <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-5 text-center">
                 <WifiOff className="h-8 w-8 text-amber-400/60 mx-auto mb-2" />
                 <p className="text-sm font-medium text-amber-400">Nenhum servidor encontrado</p>
