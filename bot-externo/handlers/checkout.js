@@ -12,6 +12,45 @@ const {
 const { sendWithIdentity } = require("./webhookSender");
 
 const formatBRL = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+const formatDateTime = (dateObj = new Date()) => ({
+  date: dateObj.toLocaleDateString("pt-BR"),
+  time: dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+});
+
+function applyFooterTemplate(template, context = {}) {
+  if (!template || !String(template).trim()) return "";
+  return String(template)
+    .replace(/\{store\}/gi, context.storeName || "")
+    .replace(/\{product\}/gi, context.productName || "")
+    .replace(/\{order\}/gi, context.orderNumber ? `#${context.orderNumber}` : "")
+    .replace(/\{expires\}/gi, context.timeoutMin ? `${context.timeoutMin} minutos` : "")
+    .replace(/\{date\}/gi, context.date || "")
+    .replace(/\{time\}/gi, context.time || "")
+    .replace(/\{user\}/gi, context.username || "");
+}
+
+function resolveCheckoutFooter(storeConfig, product, stockCount, context) {
+  const embedConfig = product?.embed_config && typeof product.embed_config === "object"
+    ? product.embed_config
+    : {};
+
+  const numericStock = Number(stockCount);
+  const hasStock = stockCount === "∞" || (!Number.isNaN(numericStock) && numericStock > 0);
+
+  const productFooter = embedConfig.show_footer === false
+    ? ""
+    : (hasStock ? embedConfig.footer_available_text : embedConfig.footer_unavailable_text) || embedConfig.footer || "";
+
+  const storeFooter = storeConfig?.purchase_embed_footer || "";
+  const fallback = `${context.storeName} • ${context.date} ${context.time}`;
+  return applyFooterTemplate(storeFooter || productFooter || fallback, context);
+}
+
+function resolvePixFooter(storeConfig, context) {
+  const storeFooter = storeConfig?.purchase_embed_footer || "";
+  const fallback = `${context.storeName} – Pagamento expira em ${context.timeoutMin} minutos.\n• Hoje às ${context.time}`;
+  return applyFooterTemplate(storeFooter || fallback, context);
+}
 
 // ── PIX Helpers ──
 function tlv(id, value) { return `${id}${value.length.toString().padStart(2, "0")}${value}`; }
