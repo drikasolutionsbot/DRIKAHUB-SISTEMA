@@ -98,32 +98,7 @@ serve(async (req) => {
     let apiUrl: string;
     let authHeader: string;
     
-    if (selectedProvider === "groq") {
-      // Rotate between multiple Groq API keys for higher rate limits
-      const groqKeys = [
-        Deno.env.get("GROQ_API_KEY"),
-        Deno.env.get("GROQ_API_KEY_2"),
-        Deno.env.get("GROQ_API_KEY_3"),
-        Deno.env.get("GROQ_API_KEY_4"),
-      ].filter((k): k is string => !!k && k.length > 0);
-
-      if (groqKeys.length === 0) throw new Error("Nenhuma GROQ_API_KEY configurada. Adicione nas configurações do Supabase.");
-
-      apiKey = groqKeys[Math.floor(Date.now() / 1000) % groqKeys.length];
-      console.log(`Using Groq key pool: ${groqKeys.length} keys available`);
-      apiUrl = GROQ_API_URL;
-      authHeader = "Bearer";
-    } else if (selectedProvider === "inference") {
-      apiKey = Deno.env.get("INFERENCE_NET_API_KEY") || "";
-      if (!apiKey) throw new Error("INFERENCE_NET_API_KEY não está configurada.");
-      apiUrl = INFERENCE_API_URL;
-      authHeader = "Bearer";
-    } else if (selectedProvider === "huggingface") {
-      apiKey = Deno.env.get("HUGGINGFACE_API_KEY") || "";
-      if (!apiKey) throw new Error("HUGGINGFACE_API_KEY não está configurada.");
-      apiUrl = HF_API_URL;
-      authHeader = "Bearer";
-    } else if (selectedProvider === "google") {
+    if (selectedProvider === "google") {
       const googleKeys = [
         Deno.env.get("GOOGLE_AI_API_KEY"),
         Deno.env.get("GOOGLE_AI_API_KEY_2"),
