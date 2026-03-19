@@ -108,11 +108,11 @@ Deno.serve(async (req) => {
         productsCount = backupData.products.length;
 
         // 5. Roles from Discord
-        if (tenant.discord_guild_id && tenant.bot_token_encrypted) {
+        if (tenant.discord_guild_id && botToken) {
           try {
             const rolesRes = await fetch(
               `${DISCORD_API}/guilds/${tenant.discord_guild_id}/roles`,
-              { headers: { Authorization: `Bot ${tenant.bot_token_encrypted}` } }
+              { headers: { Authorization: `Bot ${botToken}` } }
             );
             if (rolesRes.ok) {
               backupData.roles = await rolesRes.json();
