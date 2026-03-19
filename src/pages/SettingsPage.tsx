@@ -19,6 +19,7 @@ import SettingsPlanTab from "@/components/settings/SettingsPlanTab";
 import SettingsProfileTab from "@/components/settings/SettingsProfileTab";
 import SettingsServerTab from "@/components/settings/SettingsServerTab";
 import SettingsBotExternoTab from "@/components/settings/SettingsBotExternoTab";
+import SettingsBotCustomizationTab from "@/components/settings/SettingsBotCustomizationTab";
 
 interface UserRole {
   id: string;
