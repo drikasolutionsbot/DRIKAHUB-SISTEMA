@@ -46,9 +46,11 @@ const comprarHandler = require("./commands/comprar");
 const ticketCommand = require("./commands/ticket");
 const painelCommand = require("./commands/painel");
 const estoqueCommand = require("./commands/estoque");
+const verificarCommand = require("./commands/verificar");
 const interactionHandler = require("./events/interaction");
 const memberJoinHandler = require("./events/memberJoin");
 const protectionHandler = require("./events/protection");
+const verificationHandler = require("./handlers/verification");
 
 // ── Ready ──
 client.on(Events.ClientReady, async () => {
