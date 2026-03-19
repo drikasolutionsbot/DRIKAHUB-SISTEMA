@@ -119,6 +119,7 @@ const AppRoutes = () => (
       <Route path="/approvals" element={<ApprovalsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/customization" element={<CustomizationPage />} />
+      <Route path="/bot-customization" element={<BotCustomizationPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/roles" element={<RolesPage />} />
       <Route path="/welcome" element={<WelcomePage />} />
