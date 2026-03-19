@@ -126,7 +126,7 @@ serve(async (req) => {
       .eq("id", tenant_id)
       .single();
 
-    const botToken = tenant?.bot_token_encrypted;
+    const botToken = tenant?.bot_token_encrypted || Deno.env.get("DISCORD_BOT_TOKEN");
     if (!botToken) throw new Error("Bot token não configurado para este tenant");
     const botUserId = await getBotUserId(botToken);
 
