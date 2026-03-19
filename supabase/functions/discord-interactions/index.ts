@@ -2615,7 +2615,7 @@ async function generatePixInThread(
     color: embedColor,
     image: { url: qrImageUrl },
     footer: {
-      text: `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      text: storeConfig?.purchase_embed_footer || `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
       icon_url: storeLogo || undefined,
     },
   };

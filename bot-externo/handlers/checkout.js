@@ -357,7 +357,7 @@ async function goToPayment(interaction, tenant, orderId) {
     ].join("\n"))
     .setColor(embedColor)
     .setImage(qrImageUrl)
-    .setFooter({ text: `${storeName} – Pagamento expira em ${timeoutMin} minutos.`, iconURL: storeLogo || undefined });
+    .setFooter({ text: storeConfig?.purchase_embed_footer || `${storeName} – Pagamento expira em ${timeoutMin} minutos.`, iconURL: storeLogo || undefined });
 
   if (storeLogo) pixEmbed.setThumbnail(storeLogo);
 
