@@ -2326,7 +2326,7 @@ async function processPurchase(
   // Get store config for branding
   const { data: storeConfigForCheckout } = await supabase
     .from("store_configs")
-    .select("store_logo_url, store_title, embed_color, payment_timeout_minutes")
+    .select("store_logo_url, store_title, embed_color, payment_timeout_minutes, purchase_embed_footer")
     .eq("tenant_id", tenantId)
     .single();
 
@@ -2383,7 +2383,7 @@ async function processPurchase(
       { name: "📦 Em estoque", value: stockCount, inline: true },
     ],
     footer: { 
-      text: storeConfig?.purchase_embed_footer || `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      text: storeConfigForCheckout?.purchase_embed_footer || `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
       icon_url: storeLogo || undefined,
     },
   };
@@ -2588,7 +2588,7 @@ async function generatePixInThread(
   // Get store branding
   const { data: scBrand } = await supabase
     .from("store_configs")
-    .select("store_logo_url, store_title, payment_timeout_minutes, embed_color")
+    .select("store_logo_url, store_title, payment_timeout_minutes, embed_color, purchase_embed_footer")
     .eq("tenant_id", tenantId)
     .single();
 
@@ -2615,7 +2615,7 @@ async function generatePixInThread(
     color: embedColor,
     image: { url: qrImageUrl },
     footer: {
-      text: storeConfig?.purchase_embed_footer || `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      text: scBrand?.purchase_embed_footer || `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
       icon_url: storeLogo || undefined,
     },
   };
