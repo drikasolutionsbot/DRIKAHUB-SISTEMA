@@ -32,6 +32,7 @@ import TicketsPage from "./pages/TicketsPage";
 import FinancePage from "./pages/FinancePage";
 import SettingsPage from "./pages/SettingsPage";
 import CustomizationPage from "./pages/CustomizationPage";
+import BotCustomizationPage from "./pages/BotCustomizationPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import RolesPage from "./pages/RolesPage";
 import WelcomePage from "./pages/WelcomePage";
@@ -118,6 +119,7 @@ const AppRoutes = () => (
       <Route path="/approvals" element={<ApprovalsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/customization" element={<CustomizationPage />} />
+      <Route path="/bot-customization" element={<BotCustomizationPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/roles" element={<RolesPage />} />
       <Route path="/welcome" element={<WelcomePage />} />

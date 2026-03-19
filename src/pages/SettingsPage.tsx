@@ -191,9 +191,6 @@ const SettingsPage = () => {
               <TabsTrigger value="bot" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
                 <Bot className="h-4 w-4" /> Bot Externo
               </TabsTrigger>
-              <TabsTrigger value="bot-custom" className="gap-2 data-[state=active]:bg-card data-[state=active]:shadow-md px-3 sm:px-4 py-2 text-xs sm:text-sm">
-                <Palette className="h-4 w-4" /> Personalização
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -443,11 +440,6 @@ const SettingsPage = () => {
         {/* Bot Externo Tab */}
         <TabsContent value="bot">
           <SettingsBotExternoTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
-        </TabsContent>
-
-        {/* Bot Customization Tab */}
-        <TabsContent value="bot-custom">
-          <SettingsBotCustomizationTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
         </TabsContent>
 
       </Tabs>

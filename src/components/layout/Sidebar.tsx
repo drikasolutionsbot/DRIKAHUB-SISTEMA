@@ -36,6 +36,7 @@ const navGroups = [
     items: [
       { label: "Servidor", icon: Server, path: "/customization" },
       { label: "Recursos", icon: Box, path: "/resources" },
+      { label: "Personalização", icon: Sparkles, path: "/bot-customization" },
     ],
   },
   {
