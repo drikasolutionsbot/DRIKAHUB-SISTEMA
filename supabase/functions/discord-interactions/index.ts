@@ -628,11 +628,7 @@ serve(async (req) => {
         // Defer with ephemeral (only the user sees it)
         await respondDeferred(interaction, botToken);
 
-        const { data: product } = await supabase
-          .from("products")
-          .select("*")
-          .eq("id", productId)
-          .single();
+        const product = await resolveProductFromCustomId(supabase, productId, interaction.guild_id);
 
         if (!product) {
           await editFollowup(interaction, botToken, "❌ Produto não encontrado.");
