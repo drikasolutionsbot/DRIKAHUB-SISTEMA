@@ -242,7 +242,7 @@ export default function AIAssistantPage() {
     try {
       if (selectedTool.id === "image") {
         const { data, error } = await supabase.functions.invoke("ai-assistant", {
-          body: { type: "image", prompt: currentPrompt, context },
+          body: { type: "image", prompt: currentPrompt, context, provider },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
