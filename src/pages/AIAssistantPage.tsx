@@ -865,6 +865,18 @@ export default function AIAssistantPage() {
                   <Network className="h-3 w-3" />
                   Inference
                 </button>
+                <button
+                  onClick={() => setProvider("huggingface")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300",
+                    provider === "huggingface"
+                      ? "bg-[#FFD21E]/15 text-[#FFD21E] border border-[#FFD21E]/25 shadow-sm"
+                      : "text-muted-foreground/60 hover:text-foreground/80"
+                  )}
+                >
+                  <Boxes className="h-3 w-3" />
+                  HF
+                </button>
               </div>
 
               {/* Image warning for non-drika providers */}
