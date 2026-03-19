@@ -114,8 +114,10 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     }
   };
 
+  const botClientId = tenant?.bot_client_id || GLOBAL_BOT_CLIENT_ID;
+
   const handleAddBot = () => {
-    const url = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`;
+    const url = `https://discord.com/oauth2/authorize?client_id=${botClientId}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`;
     window.open(url, "_blank");
   };
 
