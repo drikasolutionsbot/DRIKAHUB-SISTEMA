@@ -237,7 +237,7 @@ serve(async (req) => {
           .eq("tenant_id", tenant_id)
           .single();
 
-        if (role?.discord_role_id) {
+        if (role?.discord_role_id && botToken && guildId) {
           const discordRes = await fetch(
             `https://discord.com/api/v10/guilds/${guildId}/roles/${role.discord_role_id}`,
             {
