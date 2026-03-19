@@ -18,6 +18,8 @@ interface Tenant {
   bot_client_id: string | null;
   bot_prefix: string | null;
   bot_status: string | null;
+  bot_name: string | null;
+  bot_avatar_url: string | null;
   bot_status_interval: number | null;
   banner_url: string | null;
   ecloud_custom_url: string | null;
