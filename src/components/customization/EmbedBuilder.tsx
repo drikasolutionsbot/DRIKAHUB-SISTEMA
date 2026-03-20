@@ -106,17 +106,18 @@ const EmbedBuilder = () => {
     setSaving(true);
     try {
       if (editingId) {
-        const { error } = await supabase
-          .from("saved_embeds")
-          .update({ name: embedName.trim(), embed_data: JSON.parse(JSON.stringify(embed)), updated_at: new Date().toISOString() })
-          .eq("id", editingId);
+        const { data, error } = await supabase.functions.invoke("manage-saved-embeds", {
+          body: { action: "update", tenant_id: tenantId, id: editingId, name: embedName.trim(), embed_data: JSON.parse(JSON.stringify(embed)) },
+        });
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         toast.success("Embed atualizado!");
       } else {
-        const { error } = await supabase
-          .from("saved_embeds")
-          .insert([{ tenant_id: tenantId, name: embedName.trim(), embed_data: JSON.parse(JSON.stringify(embed)) }]);
+        const { data, error } = await supabase.functions.invoke("manage-saved-embeds", {
+          body: { action: "save", tenant_id: tenantId, name: embedName.trim(), embed_data: JSON.parse(JSON.stringify(embed)) },
+        });
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
         toast.success("Embed salvo!");
       }
       setSaveDialogOpen(false);
