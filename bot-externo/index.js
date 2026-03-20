@@ -59,19 +59,21 @@ let lastAppliedStatus = null;
 async function syncBotStatus() {
   for (const guild of client.guilds.cache.values()) {
     try {
-      // Bypass cache to get fresh data
       const tenant = await getTenantByGuild(guild.id);
       if (tenant) {
         tenantCache.set(guild.id, { data: tenant, ts: Date.now() });
       }
       const newStatus = tenant?.bot_status || "/panel";
       if (newStatus !== lastAppliedStatus) {
-        client.user.setActivity(newStatus, { type: ActivityType.Playing });
+        client.user.setPresence({
+          activities: [{ name: newStatus, type: ActivityType.Playing }],
+          status: "online",
+        });
         lastAppliedStatus = newStatus;
-        console.log(`🔄 Status atualizado: ${newStatus}`);
+        console.log(`🔄 Status atualizado: "${newStatus}"`);
       }
     } catch (err) {
-      console.error(`Erro ao sincronizar status:`, err.message);
+      console.error(`Erro ao sincronizar status para guild ${guild.id}:`, err.message);
     }
   }
 }
