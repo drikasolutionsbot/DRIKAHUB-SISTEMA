@@ -232,8 +232,8 @@ const EmbedBuilder = () => {
         body.buttons = enabledButtons.map(b => ({
           label: b.label,
           emoji: b.emoji || undefined,
-          style: b.style,
-          url: b.style === "link" ? b.url : undefined,
+          style: b.url ? "link" : b.style,
+          url: b.url || undefined,
         }));
       }
       const { data, error } = await supabase.functions.invoke("send-webhook-message", {
