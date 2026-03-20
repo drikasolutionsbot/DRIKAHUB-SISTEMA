@@ -38,8 +38,6 @@ interface ServerConfig {
 
 const defaultConfig: ServerConfig = {
   server_name: "",
-  bot_status: "/panel",
-  bot_status_interval: "30",
   bot_prefix: "d!",
   verify_enabled: false,
   verify_role_id: "",
