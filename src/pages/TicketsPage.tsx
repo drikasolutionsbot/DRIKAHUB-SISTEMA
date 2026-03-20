@@ -245,17 +245,17 @@ const TicketsPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-            <Ticket className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Ticket className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
             Tickets
           </h1>
-          <p className="text-muted-foreground text-sm">Gerencie tickets de suporte e serviço</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Gerencie tickets de suporte e serviço</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 shrink-0">
           <RefreshCw className="h-4 w-4" />
-          Atualizar
+          <span className="hidden sm:inline">Atualizar</span>
         </Button>
       </div>
 
