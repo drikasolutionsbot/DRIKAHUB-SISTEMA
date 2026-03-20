@@ -575,17 +575,17 @@ const FinancePage = () => {
             <p className="text-xs mt-1">Tente ajustar os filtros ou o período</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Pedido</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Usuário</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Produto</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Total</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Gateway</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Status</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Data</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Pedido</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Usuário</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] hidden sm:table-cell">Produto</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Total</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] hidden md:table-cell">Gateway</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">Status</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] hidden sm:table-cell">Data</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
