@@ -98,7 +98,7 @@ export const embedTemplates: EmbedTemplate[] = [
         { id: "f2", name: "💰 Valor", value: "R$ 0,00", inline: true },
         { id: "f3", name: "📦 Status", value: "Entregue", inline: true },
       ],
-    },
+      buttons: [],
   },
   {
     id: "ticket",
