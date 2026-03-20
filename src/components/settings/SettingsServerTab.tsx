@@ -59,12 +59,14 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     return body;
   };
 
-  const fetchAllBotGuilds = useCallback(async (): Promise<Guild[]> => {
+  const fetchAllBotGuilds = useCallback(async (): Promise<Guild[] | null> => {
     const { data, error } = await supabase.functions.invoke("discord-bot-guilds", {
       body: { ...getRequestBody(), action: "list_all" },
     });
-    if (error || data?.error) return [];
-    return Array.isArray(data) ? data : (data?.guilds ?? []);
+    if (error) return null;
+    if (data?.error) return null;
+    const guilds = Array.isArray(data) ? data : (data?.guilds ?? []);
+    return guilds.length > 0 ? guilds : null;
   }, [tenantId]);
 
   const {
