@@ -19,6 +19,7 @@ const BUTTON_STYLES = [
   { value: "secondary", label: "Cinza (Secondary)", color: "#4f545c" },
   { value: "success", label: "Verde (Success)", color: "#57F287" },
   { value: "danger", label: "Vermelho (Danger)", color: "#ED4245" },
+  { value: "glass", label: "Glass (Transparente)", color: "rgba(255,255,255,0.08)" },
   { value: "link", label: "Link (URL)", color: "#4f545c" },
 ];
 
