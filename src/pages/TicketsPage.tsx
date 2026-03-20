@@ -205,8 +205,8 @@ const TicketsPage = () => {
               onClick={() => openDetail(ticket)}
               className="flex items-center justify-between rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all duration-200 cursor-pointer group"
             >
-              <div className="flex items-center gap-4">
-                <div className={`rounded-lg p-2.5 ${sc.cls} transition-transform group-hover:scale-110`}>
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className={`rounded-lg p-2 sm:p-2.5 ${sc.cls} transition-transform group-hover:scale-110 shrink-0`}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
