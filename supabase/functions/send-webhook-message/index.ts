@@ -226,7 +226,7 @@ serve(async (req) => {
     } else if (buttons && Array.isArray(buttons) && buttons.length > 0) {
       // Custom buttons from embed builder
       const styleMap: Record<string, number> = {
-        primary: 1, secondary: 2, success: 3, danger: 4, link: 5,
+        primary: 1, secondary: 2, success: 3, danger: 4, link: 5, glass: 2,
       };
       const btnComponents = buttons.map((btn: any, idx: number) => {
         const comp: any = {

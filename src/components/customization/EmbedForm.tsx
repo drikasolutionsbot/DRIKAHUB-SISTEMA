@@ -19,6 +19,7 @@ const BUTTON_STYLES = [
   { value: "secondary", label: "Cinza (Secondary)", color: "#4f545c" },
   { value: "success", label: "Verde (Success)", color: "#57F287" },
   { value: "danger", label: "Vermelho (Danger)", color: "#ED4245" },
+  { value: "glass", label: "Glass (Transparente)", color: "rgba(255,255,255,0.08)" },
   { value: "link", label: "Link (URL)", color: "#4f545c" },
 ];
 
@@ -161,7 +162,7 @@ const EmbedForm = ({ embed, onChange }: EmbedFormProps) => {
         {/* Buttons */}
         <AccordionItem value="buttons" className="border border-border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-medium py-3">
-            Botões ({buttons.length}/5)
+            Botões ({buttons.length}/6)
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {buttons.map((btn, idx) => (
@@ -211,7 +212,7 @@ const EmbedForm = ({ embed, onChange }: EmbedFormProps) => {
                 )}
               </div>
             ))}
-            {buttons.length < 5 && (
+            {buttons.length < 6 && (
               <Button variant="outline" size="sm" className="w-full" onClick={addButton}>
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> Adicionar Botão
               </Button>
