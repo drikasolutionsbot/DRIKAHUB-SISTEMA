@@ -740,9 +740,9 @@ function PermissionPanel({
             <div className="space-y-1">
               {PERMISSION_LABELS.map(({ key, label, description }) => (
                 <div key={key} className="flex items-center justify-between rounded-lg border border-border px-3 sm:px-4 py-2.5 sm:py-3">
-                  <div className="pr-4">
-                    <p className="text-sm font-semibold">{label}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
+                  <div className="pr-3 sm:pr-4 min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-semibold">{label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">{description}</p>
                   </div>
                   <Switch checked={getValue(key)} onCheckedChange={() => onToggle(key)} />
                 </div>
