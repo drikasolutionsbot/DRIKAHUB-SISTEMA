@@ -59,12 +59,14 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     return body;
   };
 
-  const fetchAllBotGuilds = useCallback(async (): Promise<Guild[]> => {
+  const fetchAllBotGuilds = useCallback(async (): Promise<Guild[] | null> => {
     const { data, error } = await supabase.functions.invoke("discord-bot-guilds", {
       body: { ...getRequestBody(), action: "list_all" },
     });
-    if (error || data?.error) return [];
-    return Array.isArray(data) ? data : (data?.guilds ?? []);
+    if (error) return null;
+    if (data?.error) return null;
+    const guilds = Array.isArray(data) ? data : (data?.guilds ?? []);
+    return guilds.length > 0 ? guilds : null;
   }, [tenantId]);
 
   const {
@@ -126,8 +128,8 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     pollIntervalRef.current = setInterval(async () => {
       pollCountRef.current++;
 
-      // Stop after 60 polls (2 minutes)
-      if (pollCountRef.current > 60) {
+      // Stop after 40 polls (~3.5 minutes with 5s interval)
+      if (pollCountRef.current > 40) {
         stopPolling();
         setWaitingForBot(false);
         toast({
@@ -140,6 +142,9 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
 
       try {
         const currentGuilds = await fetchAllBotGuilds();
+        // null means API error / rate limit — skip this iteration
+        if (!currentGuilds) return;
+
         const newGuilds = currentGuilds.filter((g) => !guildsBeforeInviteRef.current.has(g.id));
 
         if (newGuilds.length > 0) {
@@ -161,9 +166,9 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
           await autoLinkGuild(newGuilds[0]);
         }
       } catch {
-        // silently retry
+        // silently retry next interval
       }
-    }, 2000);
+    }, 5000);
   }, [fetchAllBotGuilds, stopPolling]);
 
   const autoLinkGuild = async (guild: Guild) => {
@@ -216,7 +221,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     // Save current guilds before opening invite
     try {
       const currentGuilds = await fetchAllBotGuilds();
-      guildsBeforeInviteRef.current = new Set(currentGuilds.map((g) => g.id));
+      guildsBeforeInviteRef.current = new Set((currentGuilds || []).map((g) => g.id));
     } catch {
       guildsBeforeInviteRef.current = new Set();
     }
