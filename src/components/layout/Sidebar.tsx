@@ -52,6 +52,7 @@ const navGroups = [
       { label: "Tickets", icon: Ticket, path: "/tickets" },
       { label: "Sorteios", icon: Gift, path: "/giveaways" },
       { label: "eCloud", icon: Cloud, path: "/ecloud" },
+      { label: "Embeds", icon: LayoutTemplate, path: "/embeds" },
     ],
   },
 ];
