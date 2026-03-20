@@ -51,6 +51,7 @@ import MarketplacePage from "./pages/MarketplacePage";
 import VerifyResultPage from "./pages/VerifyResultPage";
 import VerifyRedirectPage from "./pages/VerifyRedirectPage";
 import GiveawaysPage from "./pages/GiveawaysPage";
+import EmbedsPage from "./pages/EmbedsPage";
 import AdminAffiliatesPage from "./pages/admin/AdminAffiliatesPage";
 import AdminBotConfigPage from "./pages/admin/AdminBotConfigPage";
 import VerifiedMembersPage from "./pages/VerifiedMembersPage";
