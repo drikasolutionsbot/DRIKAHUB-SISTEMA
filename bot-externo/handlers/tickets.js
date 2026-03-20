@@ -761,8 +761,16 @@ async function sendTicketLog(client, ticket, closedByUserId, closedByUsername, a
   }
 
   try {
-    await logsCh.send({ embeds: [logEmbed], components });
-    console.log(`[sendTicketLog] Log sent successfully to ${logsChannelId}`);
+    const sendPayload = { embeds: [logEmbed], components };
+
+    // If transcript upload failed but we have buffer, attach as file fallback
+    if (components.length === 0 && transcriptFallbackBuffer) {
+      const { AttachmentBuilder } = require("discord.js");
+      sendPayload.files = [new AttachmentBuilder(transcriptFallbackBuffer, { name: `transcript-${ticket.id.slice(0, 8)}.html` })];
+    }
+
+    await logsCh.send(sendPayload);
+    console.log(`[sendTicketLog] Log sent successfully to ${logsChannelId} (hasButton: ${components.length > 0}, hasFile: ${!!sendPayload.files})`);
   } catch (sendErr) {
     console.error(`[sendTicketLog] Failed to send log: ${sendErr.message}`);
     try {
