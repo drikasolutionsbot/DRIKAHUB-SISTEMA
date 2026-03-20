@@ -38,12 +38,14 @@ serve(async (req) => {
     let accessToken: string | null = null;
     let action: string | null = null;
     let invitePermissions = "536870920";
+    let guildIdFromBody: string | null = null;
 
     try {
       const body = await req.json();
       tenantIdFromBody = body?.tenant_id || null;
       accessToken = body?.token || null;
       action = body?.action || null;
+      guildIdFromBody = body?.guild_id || null;
       if (typeof body?.permissions === "string" && /^\d+$/.test(body.permissions)) {
         invitePermissions = body.permissions;
       }
@@ -82,13 +84,9 @@ serve(async (req) => {
     }
 
     if (action === "verify_guild") {
-      const body = { tenant_id: tenantIdFromBody, token: accessToken, guild_id: "" };
-      try {
-        const rawBody = await req.clone().json();
-        body.guild_id = rawBody?.guild_id || "";
-      } catch {}
+      const verifyGuildId = guildIdFromBody || "";
 
-      if (!body.guild_id || !/^\d{17,20}$/.test(body.guild_id)) {
+      if (!verifyGuildId || !/^\d{17,20}$/.test(verifyGuildId)) {
         return new Response(JSON.stringify({ error: "guild_id inválido" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -96,7 +94,7 @@ serve(async (req) => {
       }
 
       // Check if the bot is in this guild
-      const guildRes = await fetchWithRetry(`https://discord.com/api/v10/guilds/${body.guild_id}`, {
+      const guildRes = await fetchWithRetry(`https://discord.com/api/v10/guilds/${verifyGuildId}`, {
         headers: { Authorization: `Bot ${botToken}` },
       });
 
@@ -113,7 +111,7 @@ serve(async (req) => {
       const { data: claimedTenant } = await adminClient
         .from("tenants")
         .select("id")
-        .eq("discord_guild_id", body.guild_id)
+        .eq("discord_guild_id", verifyGuildId)
         .maybeSingle();
 
       if (claimedTenant && claimedTenant.id !== tenantIdFromBody) {
