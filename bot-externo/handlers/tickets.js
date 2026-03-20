@@ -206,7 +206,7 @@ async function handleCloseTicket(interaction, tenant, ticketId) {
       console.error("[handleCloseTicket] Log error:", logErr.message);
     }
 
-    await sendWithIdentity(interaction.channel, tenant, {
+    await interaction.channel.send({
       embeds: [new EmbedBuilder().setTitle("📁 Ticket Arquivado").setDescription(`Ticket arquivado por <@${interaction.user.id}>.`).setColor(0x2B2D31)],
     });
 
