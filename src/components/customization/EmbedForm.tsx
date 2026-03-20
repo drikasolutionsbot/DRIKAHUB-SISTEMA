@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, ChevronUp, ChevronDown } from "lucide-react";
 import TrashIcon from "@/components/ui/trash-icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
