@@ -134,6 +134,7 @@ const AppRoutes = () => (
       <Route path="/support" element={<SupportPage />} />
       <Route path="/tutorials" element={<TutorialsPage />} />
       <Route path="/giveaways" element={<GiveawaysPage />} />
+      <Route path="/embeds" element={<EmbedsPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>
