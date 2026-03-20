@@ -162,7 +162,7 @@ const EmbedForm = ({ embed, onChange }: EmbedFormProps) => {
         {/* Buttons */}
         <AccordionItem value="buttons" className="border border-border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-medium py-3">
-            Botões ({buttons.length}/5)
+            Botões ({buttons.length}/6)
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {buttons.map((btn, idx) => (
