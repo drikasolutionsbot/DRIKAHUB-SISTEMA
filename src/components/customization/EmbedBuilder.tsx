@@ -139,8 +139,10 @@ const EmbedBuilder = () => {
   };
 
   const deleteEmbed = async (id: string) => {
-    const { error } = await supabase.from("saved_embeds").delete().eq("id", id);
-    if (error) {
+    const { data, error } = await supabase.functions.invoke("manage-saved-embeds", {
+      body: { action: "delete", tenant_id: tenantId, id },
+    });
+    if (error || data?.error) {
       toast.error("Erro ao excluir");
       return;
     }
