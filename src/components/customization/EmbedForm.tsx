@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, ChevronUp, ChevronDown } from "lucide-react";
 import TrashIcon from "@/components/ui/trash-icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,6 +58,14 @@ const EmbedForm = ({ embed, onChange }: EmbedFormProps) => {
 
   const removeButton = (id: string) => {
     update("buttons", buttons.filter(b => b.id !== id));
+  };
+
+  const moveButton = (idx: number, dir: -1 | 1) => {
+    const arr = [...buttons];
+    const target = idx + dir;
+    if (target < 0 || target >= arr.length) return;
+    [arr[idx], arr[target]] = [arr[target], arr[idx]];
+    update("buttons", arr);
   };
 
   return (
@@ -168,8 +176,14 @@ const EmbedForm = ({ embed, onChange }: EmbedFormProps) => {
             {buttons.map((btn, idx) => (
               <div key={btn.id} className="rounded-lg border border-border bg-background p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Botão {idx + 1}</span>
-                  <div className="flex items-center gap-2">
+                 <span className="text-xs font-medium text-muted-foreground">Botão {idx + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0} onClick={() => moveButton(idx, -1)}>
+                      <ChevronUp className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === buttons.length - 1} onClick={() => moveButton(idx, 1)}>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
                     <Switch checked={btn.enabled} onCheckedChange={v => updateButton(btn.id, { enabled: v })} />
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeButton(btn.id)}>
                       <TrashIcon className="h-3 w-3" />
