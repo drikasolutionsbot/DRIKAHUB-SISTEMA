@@ -252,7 +252,7 @@ async function handleDeleteTicket(interaction, tenant, ticketId) {
       console.error("[handleDeleteTicket] Log error:", logErr.message);
     }
 
-    await sendWithIdentity(interaction.channel, tenant, {
+    await interaction.channel.send({
       embeds: [new EmbedBuilder().setTitle("🗑️ Ticket Deletado").setDescription(`Ticket deletado por <@${interaction.user.id}>.\nO tópico será excluído em 5 segundos.`).setColor(0x2B2D31)],
     });
 
