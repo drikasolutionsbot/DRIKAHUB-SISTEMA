@@ -111,7 +111,7 @@ serve(async (req) => {
       const { data: claimedTenant } = await adminClient
         .from("tenants")
         .select("id")
-        .eq("discord_guild_id", body.guild_id)
+        .eq("discord_guild_id", verifyGuildId)
         .maybeSingle();
 
       if (claimedTenant && claimedTenant.id !== tenantIdFromBody) {
