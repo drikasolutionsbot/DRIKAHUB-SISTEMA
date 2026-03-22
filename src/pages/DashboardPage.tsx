@@ -541,9 +541,19 @@ const DashboardPage = () => {
           {tenant.discord_guild_id ? (
             <>
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs sm:text-sm shrink-0">{tenant.name[0]?.toUpperCase()}</div>
+                {guildInfo?.icon ? (
+                  <img
+                    src={`https://cdn.discordapp.com/icons/${tenant.discord_guild_id}/${guildInfo.icon}.png?size=64`}
+                    alt="Server icon"
+                    className="h-9 w-9 sm:h-10 sm:w-10 rounded-full shrink-0"
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs sm:text-sm shrink-0">
+                    {(guildInfo?.name || tenant.name)[0]?.toUpperCase()}
+                  </div>
+                )}
                 <div>
-                  <p className="font-medium">{tenant.name}</p>
+                  <p className="font-medium">{guildInfo?.name || tenant.name}</p>
                   <p className="text-xs font-mono text-muted-foreground">({tenant.discord_guild_id})</p>
                 </div>
               </div>
