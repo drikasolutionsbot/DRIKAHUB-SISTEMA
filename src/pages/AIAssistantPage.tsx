@@ -180,8 +180,9 @@ interface ChatSession {
 }
 
 interface CreditsState {
-  used: number;
-  date: string;
+  remaining: number;
+  daily: number;
+  loaded: boolean;
 }
 
 interface DbGeneration {
@@ -196,7 +197,6 @@ interface DbGeneration {
 }
 
 const STORAGE_KEY = "drika-ai-sessions";
-const CREDITS_KEY = "drika-ai-credits";
 const SAVED_KEY = "drika-ai-saved";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
