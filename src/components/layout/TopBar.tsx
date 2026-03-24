@@ -35,14 +35,14 @@ const providerLabels: Record<string, string> = {
   mistic_pay: "Mistic Pay",
 };
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: any): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "agora";
-  if (mins < 60) return `${mins} min atrás`;
+  if (mins < 1) return t.topbar.now;
+  if (mins < 60) return `${mins} ${t.topbar.minAgo}`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h atrás`;
-  return `${Math.floor(hours / 24)}d atrás`;
+  if (hours < 24) return `${hours}${t.topbar.hAgo}`;
+  return `${Math.floor(hours / 24)}${t.topbar.dAgo}`;
 }
 
 const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string | null; plan_started_at: string | null } }) => {
