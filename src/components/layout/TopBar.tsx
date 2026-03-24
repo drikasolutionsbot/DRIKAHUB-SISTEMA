@@ -424,20 +424,20 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
-              Configurações
+              {t.topbar.settings}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings?tab=wallet")} className="cursor-pointer">
               <Wallet className="mr-2 h-4 w-4" />
-              Carteira
+              {t.topbar.wallet}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings?tab=pix")} className="cursor-pointer">
               <QrCode className="mr-2 h-4 w-4" />
-              Configurar PIX
+              {t.topbar.configurePix}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              {t.topbar.logout}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
