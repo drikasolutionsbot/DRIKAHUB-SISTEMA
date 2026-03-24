@@ -788,7 +788,7 @@ const DashboardPage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t.dashboard.roleName}</label>
               <Input
-                placeholder="Ex: Moderador"
+                placeholder={t.dashboard.roleNamePlaceholder}
                 value={newRoleName}
                 onChange={e => setNewRoleName(e.target.value)}
                 autoFocus
