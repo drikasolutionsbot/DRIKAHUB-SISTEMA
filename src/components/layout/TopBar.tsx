@@ -124,7 +124,7 @@ const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string
           
           {expiresLabel && (
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Expira em</span>
+              <span className="text-muted-foreground">{t.plan.expiresAt}</span>
               <span className={`font-semibold ${isExpired ? "text-destructive" : isExpiring ? "text-destructive" : ""}`}>{expiresLabel}</span>
             </div>
           )}
