@@ -48,23 +48,7 @@ const statusColors: Record<string, string> = {
   refunded: "bg-muted text-muted-foreground border-border",
 };
 
-const statusLabels: Record<string, string> = {
-  paid: "Pago",
-  delivered: "Entregue",
-  delivering: "Entregando",
-  pending_payment: "Pendente",
-  canceled: "Cancelado",
-  refunded: "Reembolsado",
-};
-
 const PAID_STATUSES = ["paid", "delivered", "delivering"];
-
-const periodButtons: { key: PeriodKey; label: string }[] = [
-  { key: "today", label: "Hoje" },
-  { key: "7d", label: "7 dias" },
-  { key: "30d", label: "30 dias" },
-  { key: "custom", label: "Personalizado" },
-];
 
 export const DashboardOverview = () => {
   const { tenantId } = useTenant();
