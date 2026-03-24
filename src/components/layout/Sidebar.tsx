@@ -406,7 +406,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
               <div key={group.key}>
                 <div className="flex items-center justify-between px-3 mb-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/40">
-                    {group.label}
+                    {groupLabelKeys[group.key] ? t.nav[groupLabelKeys[group.key]] : group.label}
                   </p>
                   {group.reorderable && (
                     <button
