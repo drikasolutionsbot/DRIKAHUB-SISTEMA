@@ -301,8 +301,8 @@ export default function AIAssistantPage() {
   // TODO: Replace with real plan from tenant context
   const currentPlan = "pro";
   const planConfig = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.free;
-  const creditsRemaining = Math.max(0, planConfig.daily - credits.used);
-  const creditsPercent = (credits.used / planConfig.daily) * 100;
+  const creditsRemaining = Math.max(0, credits.remaining);
+  const creditsPercent = ((credits.daily - credits.remaining) / credits.daily) * 100;
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   const messages = activeSession?.messages || [];
