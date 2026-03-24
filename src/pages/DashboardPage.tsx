@@ -808,9 +808,9 @@ const DashboardPage = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreateRoleOpen(false)} disabled={creatingRole}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => setCreateRoleOpen(false)} disabled={creatingRole}>{t.common.cancel}</Button>
             <Button onClick={handleCreateRole} disabled={creatingRole || !newRoleName.trim()}>
-              {creatingRole ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando...</> : "Criar cargo"}
+              {creatingRole ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t.dashboard.creating}</> : t.dashboard.createRole}
             </Button>
           </DialogFooter>
         </DialogContent>
