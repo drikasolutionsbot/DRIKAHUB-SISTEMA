@@ -73,11 +73,11 @@ const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string
       const mins = differenceInMinutes(expires, now) % 60;
       
       if (days > 0) {
-        timeLeft = `${days}d ${hours}h restantes`;
+        timeLeft = `${days}d ${hours}h ${t.plan.remaining}`;
       } else if (hours > 0) {
-        timeLeft = `${hours}h ${mins}m restantes`;
+        timeLeft = `${hours}h ${mins}m ${t.plan.remaining}`;
       } else {
-        timeLeft = `${mins}m restantes`;
+        timeLeft = `${mins}m ${t.plan.remaining}`;
       }
       isExpiring = days < 2;
     }
