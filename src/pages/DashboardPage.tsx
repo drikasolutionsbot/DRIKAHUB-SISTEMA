@@ -694,9 +694,9 @@ const DashboardPage = () => {
             </div>
 
             <PermissionPanel
-              title={selectedMember ? `Permissões para ${selectedMember.discord_display_name || selectedMember.discord_username}` : null}
-              subtitle="Selecione as permissões que deseja conceder a este usuário"
-              emptyText="Selecione um membro para configurar as permissões"
+              title={selectedMember ? `${t.dashboard.permissionsFor} ${selectedMember.discord_display_name || selectedMember.discord_username}` : null}
+              subtitle={t.dashboard.selectPermissions}
+              emptyText={t.dashboard.selectMember}
               getValue={getMemberValue}
               onToggle={toggleMemberPerm}
               hasChanges={memberHasChanges}
