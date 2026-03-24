@@ -678,6 +678,7 @@ export default function AIAssistantPage() {
             attachments: apiAttachments.length > 0 ? apiAttachments : undefined,
           },
         });
+        if (abortController.signal.aborted) throw new Error("Geração cancelada");
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
