@@ -423,7 +423,7 @@ export const DashboardOverview = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{client.username}</p>
-                    <p className="text-xs text-muted-foreground">{client.count} pedido{client.count > 1 ? "s" : ""}</p>
+                    <p className="text-xs text-muted-foreground">{client.count} {client.count > 1 ? t.dashboardOverview.orders_plural : t.dashboardOverview.order}</p>
                   </div>
                   <span className="text-sm font-bold tabular-nums">{formatCurrency(client.total)}</span>
                 </div>
