@@ -7,10 +7,13 @@ import WifiLoader from "@/components/ui/wifi-loader";
 import drikaLogo from "@/assets/DRIKA_HUB_SEM_FUNDO.png";
 import TermsModal from "@/components/TermsModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { languageFlags, languageLabels, type Language } from "@/i18n/LanguageContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const [token, setToken] = useState("");
   const [validating, setValidating] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -33,7 +36,7 @@ const LoginPage = () => {
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       if (error || data?.error) {
-        toast({ title: "Token inválido", description: data?.error || error?.message, variant: "destructive" });
+        toast({ title: t.login.invalidToken, description: data?.error || error?.message, variant: "destructive" });
         setValidating(false);
       } else {
         sessionStorage.setItem("token_session", JSON.stringify({
@@ -41,17 +44,30 @@ const LoginPage = () => {
           tenant_name: data.tenant_name,
           token: token.trim(),
         }));
-        toast({ title: `👋 Bem-vindo, ${data.tenant_name}!`, description: "Painel carregado com sucesso.", variant: "success" as any });
+        toast({ title: `👋 ${t.login.welcome}, ${data.tenant_name}!`, description: t.login.panelLoaded, variant: "success" as any });
         navigate("/dashboard", { replace: true });
       }
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+      toast({ title: t.login.error, description: e.message, variant: "destructive" });
       setValidating(false);
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center relative overflow-hidden login-pattern-bg">
+      {/* Language switcher */}
+      <div className="absolute top-4 right-4 z-20 flex gap-1">
+        {(Object.keys(languageLabels) as Language[]).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setLanguage(lang)}
+            className={`px-2 py-1 rounded-lg text-sm transition-colors ${language === lang ? "bg-primary/20 text-primary border border-primary/30" : "bg-white/10 text-white/60 hover:bg-white/20 border border-transparent"}`}
+          >
+            {languageFlags[lang]}
+          </button>
+        ))}
+      </div>
+
       {/* Overlay de validação */}
       {validating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -85,7 +101,7 @@ const LoginPage = () => {
                 className="w-full text-base px-4 py-3 bg-white/10 border-2 border-white/30 rounded-[20px] outline-none text-white transition-colors focus:border-primary"
               />
               <label className="absolute left-0 px-4 py-3 ml-2 pointer-events-none text-white/70 font-semibold text-base tracking-wide transition-all duration-300">
-                Token de acesso
+                {t.login.tokenPlaceholder}
               </label>
             </div>
             <button
@@ -94,19 +110,19 @@ const LoginPage = () => {
               className="w-full h-10 flex items-center justify-center gap-2 rounded-full bg-[#FF2849] hover:bg-[#e52441] text-white font-medium text-base tracking-wide cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors group"
             >
               <LogIn className="h-5 w-5 group-hover:animate-[flickering_2s_linear_infinite]" />
-              <span>Entrar</span>
+              <span>{t.login.tokenLogin}</span>
             </button>
           </div>
 
           {/* Terms */}
           <div className="text-center space-y-2">
             <p className="text-center text-sm font-medium text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              Ao entrar, você concorda com nossos{" "}
+              {language === "pt-BR" ? "Ao entrar, você concorda com nossos " : language === "de" ? "Mit dem Login stimmen Sie unseren " : "By logging in, you agree to our "}
               <button
                 onClick={() => setTermsOpen(true)}
                 className="underline text-white hover:text-primary transition-colors bg-transparent border-none cursor-pointer font-medium text-sm p-0"
               >
-                Termos de Serviço
+                {t.login.terms}
               </button>
             </p>
           </div>

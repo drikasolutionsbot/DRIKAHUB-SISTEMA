@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Menu, Search, LogOut, User, Settings, ChevronDown, QrCode, Zap, CheckCircle, AlertCircle, Inbox, Wallet, Crown, Clock } from "lucide-react";
+import { Bell, Menu, Search, LogOut, User, Settings, ChevronDown, QrCode, Zap, CheckCircle, AlertCircle, Inbox, Wallet, Crown, Clock, Globe } from "lucide-react";
 import { useTheme } from "next-themes";
 import { differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { WalletBadge } from "@/components/wallet/WalletBadge";
@@ -13,6 +13,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage, languageLabels, languageFlags, type Language } from "@/i18n/LanguageContext";
 
 interface TopBarProps {
   onToggleSidebar: () => void;
@@ -183,11 +184,12 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
   const { user, signOut } = useAuth();
   const { tenant, tenantId } = useTenant();
   const { theme, setTheme } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const tokenSession = sessionStorage.getItem("token_session");
   const tokenData = tokenSession ? JSON.parse(tokenSession) : null;
   const avatar = user?.user_metadata?.avatar_url;
-  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || tokenData?.tenant_name || "Usuário";
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || tokenData?.tenant_name || t.topbar.user;
   const email = user?.email || "token@acesso";
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -295,7 +297,7 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
         </Button>
         <div className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar..." className="w-64 bg-muted pl-9 border-none focus-visible:ring-primary" />
+          <Input placeholder={t.topbar.search} className="w-64 bg-muted pl-9 border-none focus-visible:ring-primary" />
         </div>
       </div>
       <div className="flex items-center gap-1.5 md:gap-3">
@@ -303,6 +305,26 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
         {tenant && <PlanBadge tenant={tenant} />}
         {/* Wallet */}
         <WalletBadge />
+        {/* Language Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <span className="text-base leading-none">{languageFlags[language]}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[140px] bg-card border-border">
+            {(Object.keys(languageLabels) as Language[]).map((lang) => (
+              <DropdownMenuItem
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={`cursor-pointer gap-2 ${language === lang ? "bg-primary/10 text-primary" : ""}`}
+              >
+                <span>{languageFlags[lang]}</span>
+                <span>{languageLabels[lang]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {/* Theme Toggle */}
         <ThemeToggle
           checked={theme === "dark"}
@@ -322,21 +344,21 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0 bg-card border-border">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h4 className="text-sm font-semibold">Notificações</h4>
+              <h4 className="text-sm font-semibold">{t.topbar.notifications}</h4>
               {unreadCount > 0 ? (
                 <button onClick={markAllRead} className="text-xs text-primary hover:underline">
-                  Marcar todas como lidas
+                  {t.topbar.markAllRead}
                 </button>
               ) : (
-                <span className="text-xs text-muted-foreground">Tudo lido</span>
+                <span className="text-xs text-muted-foreground">{t.topbar.allRead}</span>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                   <Inbox className="h-8 w-8 mb-2 opacity-30" />
-                  <p className="text-sm">Nenhuma notificação</p>
-                  <p className="text-xs mt-1">Webhooks processados aparecerão aqui</p>
+                  <p className="text-sm">{t.topbar.noNotifications}</p>
+                  <p className="text-xs mt-1">{t.topbar.webhooksHere}</p>
                 </div>
               ) : (
                 notifications.map((n) => (
@@ -402,20 +424,20 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
-              Configurações
+              {t.topbar.settings}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings?tab=wallet")} className="cursor-pointer">
               <Wallet className="mr-2 h-4 w-4" />
-              Carteira
+              {t.topbar.wallet}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings?tab=pix")} className="cursor-pointer">
               <QrCode className="mr-2 h-4 w-4" />
-              Configurar PIX
+              {t.topbar.configurePix}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              {t.topbar.logout}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

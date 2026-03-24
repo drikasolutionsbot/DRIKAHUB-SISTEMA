@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTenant } from "@/contexts/TenantContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface NavItemDef {
   label: string;
@@ -30,22 +31,56 @@ interface NavGroup {
   reorderable?: boolean;
 }
 
+// Translation key mapping for nav items by path
+const navLabelKeys: Record<string, keyof typeof import("@/i18n/translations/pt-BR").ptBR.nav> = {
+  "/dashboard": "overview",
+  "/ai-assistant": "aiGenerator",
+  "/finance": "finance",
+  "/approvals": "approvals",
+  "/affiliates": "affiliates",
+  "/customization": "server",
+  "/resources": "resources",
+  "/bot-customization": "customization",
+  "/channels": "channels",
+  "/roles": "roles",
+  "/verification": "verification",
+  "/store": "store",
+  "/marketplace": "marketplace",
+  "/protection": "protection",
+  "/welcome": "welcome",
+  "/tickets": "tickets",
+  "/giveaways": "giveaways",
+  "/ecloud": "ecloud",
+  "/embeds": "embeds",
+  "/tutorials": "tutorials",
+  "/support": "support",
+  "/settings": "settings",
+};
+
+// Group key -> translation key mapping
+const groupLabelKeys: Record<string, keyof typeof import("@/i18n/translations/pt-BR").ptBR.nav> = {
+  principal: "principal",
+  gerenciamento: "management",
+  bot: "bot",
+  configuracoes: "settings_group",
+};
+
 const defaultNavGroups: NavGroup[] = [
   {
     label: "PRINCIPAL",
     key: "principal",
     items: [
-      { label: "Visão Geral", icon: LayoutDashboard, path: "/dashboard" },
-      { label: "Gerador IA", icon: Sparkles, path: "/ai-assistant" },
+      { label: "overview", icon: LayoutDashboard, path: "/dashboard" },
+      { label: "aiGenerator", icon: Sparkles, path: "/ai-assistant" },
     ],
   },
   {
     label: "GERENCIAMENTO",
     key: "gerenciamento",
     items: [
-      { label: "Finanças", icon: DollarSign, path: "/finance" },
-      { label: "Aprovações", icon: ClipboardCheck, path: "/approvals" },
-      { label: "Afiliados", icon: Users, path: "/affiliates" },
+      { label: "finance", icon: DollarSign, path: "/finance" },
+      { label: "approvals", icon: ClipboardCheck, path: "/approvals" },
+      { label: "affiliates", icon: Users, path: "/affiliates" },
     ],
     reorderable: true,
   },
@@ -53,9 +88,9 @@ const defaultNavGroups: NavGroup[] = [
     label: "BOT",
     key: "bot",
     items: [
-      { label: "Servidor", icon: Server, path: "/customization" },
-      { label: "Recursos", icon: Box, path: "/resources" },
-      { label: "Personalização", icon: Sparkles, path: "/bot-customization" },
+      { label: "server", icon: Server, path: "/customization" },
+      { label: "resources", icon: Box, path: "/resources" },
+      { label: "customization", icon: Sparkles, path: "/bot-customization" },
     ],
     reorderable: true,
   },
@@ -63,26 +98,26 @@ const defaultNavGroups: NavGroup[] = [
     label: "CONFIGURAÇÕES",
     key: "configuracoes",
     items: [
-      { label: "Canais", icon: Hash, path: "/channels" },
-      { label: "Cargos", icon: ShieldCheck, path: "/roles" },
-      { label: "Verificação", icon: Shield, path: "/verification" },
-      { label: "Loja", icon: Store, path: "/store" },
-      { label: "Marketplace", icon: ShoppingBag, path: "/marketplace" },
-      { label: "Proteção", icon: Shield, path: "/protection" },
-      { label: "Boas-vindas", icon: HandMetal, path: "/welcome" },
-      { label: "Tickets", icon: Ticket, path: "/tickets" },
-      { label: "Sorteios", icon: Gift, path: "/giveaways" },
-      { label: "eCloud", icon: Cloud, path: "/ecloud" },
-      { label: "Embeds", icon: LayoutTemplate, path: "/embeds" },
+      { label: "channels", icon: Hash, path: "/channels" },
+      { label: "roles", icon: ShieldCheck, path: "/roles" },
+      { label: "verification", icon: Shield, path: "/verification" },
+      { label: "store", icon: Store, path: "/store" },
+      { label: "marketplace", icon: ShoppingBag, path: "/marketplace" },
+      { label: "protection", icon: Shield, path: "/protection" },
+      { label: "welcome", icon: HandMetal, path: "/welcome" },
+      { label: "tickets", icon: Ticket, path: "/tickets" },
+      { label: "giveaways", icon: Gift, path: "/giveaways" },
+      { label: "ecloud", icon: Cloud, path: "/ecloud" },
+      { label: "embeds", icon: LayoutTemplate, path: "/embeds" },
     ],
     reorderable: true,
   },
 ];
 
 const bottomItems: NavItemDef[] = [
-  { label: "Tutoriais", icon: BookOpen, path: "/tutorials" },
-  { label: "Suporte", icon: Headset, path: "/support" },
-  { label: "Configurações", icon: Settings, path: "/settings" },
+  { label: "tutorials", icon: BookOpen, path: "/tutorials" },
+  { label: "support", icon: Headset, path: "/support" },
+  { label: "settings", icon: Settings, path: "/settings" },
 ];
 
 // Icon map for restoring from localStorage (icons can't be serialized)
@@ -130,6 +165,7 @@ interface NavItemProps {
   item: NavItemDef;
   isActive: boolean;
   collapsed: boolean;
+  resolvedLabel: string;
   reordering?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -137,7 +173,7 @@ interface NavItemProps {
   canMoveDown?: boolean;
 }
 
-const NavItem = ({ item, isActive, collapsed, reordering, onMoveUp, onMoveDown, canMoveUp, canMoveDown }: NavItemProps) => {
+const NavItem = ({ item, isActive, collapsed, resolvedLabel, reordering, onMoveUp, onMoveDown, canMoveUp, canMoveDown }: NavItemProps) => {
   const content = (
     <div className={cn("relative flex items-center", reordering && !collapsed && "group/reorder")}>
       {reordering && !collapsed && (
@@ -209,7 +245,7 @@ const NavItem = ({ item, isActive, collapsed, reordering, onMoveUp, onMoveDown, 
             "truncate transition-colors duration-300 relative z-10",
             isActive ? "text-primary font-semibold" : "text-white/55 group-hover:text-white/80"
           )}>
-            {item.label}
+            {resolvedLabel}
           </span>
         )}
       </Link>
@@ -225,7 +261,7 @@ const NavItem = ({ item, isActive, collapsed, reordering, onMoveUp, onMoveDown, 
           sideOffset={14}
           className="px-3.5 py-2 text-[12px] font-semibold tracking-wide rounded-xl bg-card text-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35),0_0_0_1px_hsl(330_100%_50%/0.1)] backdrop-blur-xl border border-border/50 animate-in fade-in-0 zoom-in-95 slide-in-from-left-2 duration-200"
         >
-          {item.label}
+          {resolvedLabel}
         </TooltipContent>
       </Tooltip>
     );
@@ -237,6 +273,7 @@ const NavItem = ({ item, isActive, collapsed, reordering, onMoveUp, onMoveDown, 
 export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
   const { tenant, tenantId } = useTenant();
+  const { t } = useLanguage();
   const [reorderingGroup, setReorderingGroup] = useState<string | null>(null);
   const [navGroups, setNavGroups] = useState<NavGroup[]>(defaultNavGroups);
 
@@ -358,6 +395,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                 <NavItem
                   key={item.path}
                   item={item}
+                  resolvedLabel={t.nav[navLabelKeys[item.path] || item.label as keyof typeof t.nav] || item.label}
                   isActive={location.pathname.startsWith(item.path)}
                   collapsed
                 />
@@ -368,7 +406,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
               <div key={group.key}>
                 <div className="flex items-center justify-between px-3 mb-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/40">
-                    {group.label}
+                    {groupLabelKeys[group.key] ? t.nav[groupLabelKeys[group.key]] : group.label}
                   </p>
                   {group.reorderable && (
                     <button
@@ -394,6 +432,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                     <NavItem
                       key={item.path}
                       item={item}
+                      resolvedLabel={t.nav[navLabelKeys[item.path] || item.label as keyof typeof t.nav] || item.label}
                       isActive={location.pathname.startsWith(item.path)}
                       collapsed={false}
                       reordering={reorderingGroup === group.key}
@@ -420,6 +459,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             <NavItem
               key={item.path}
               item={item}
+              resolvedLabel={t.nav[navLabelKeys[item.path] || item.label as keyof typeof t.nav] || item.label}
               isActive={location.pathname.startsWith(item.path)}
               collapsed={collapsed}
             />
