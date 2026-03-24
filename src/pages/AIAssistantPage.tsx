@@ -393,19 +393,29 @@ export default function AIAssistantPage() {
 
   useEffect(() => { scrollToBottom(); }, [messages.length, messages[messages.length - 1]?.content]);
 
-  const consumeCredits = useCallback((amount: number) => {
-    const today = new Date().toISOString().slice(0, 10);
-    setCredits(prev => {
-      const base = prev.date === today ? prev.used : 0;
-      return { used: base + amount, date: today };
-    });
-  }, []);
+  const consumeCredits = useCallback(async (amount: number) => {
+    setCredits(prev => ({ ...prev, remaining: Math.max(0, prev.remaining - amount) }));
+    if (tenantId) {
+      try {
+        const { data } = await supabase
+          .from("tenant_credits")
+          .select("credits_remaining")
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+        const current = (data as any)?.credits_remaining ?? 100;
+        await supabase
+          .from("tenant_credits")
+          .update({ credits_remaining: Math.max(0, current - amount), updated_at: new Date().toISOString() } as any)
+          .eq("tenant_id", tenantId);
+      } catch (e) {
+        console.error("Error updating credits:", e);
+      }
+    }
+  }, [tenantId]);
 
   const canAfford = useCallback((cost: number) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const used = credits.date === today ? credits.used : 0;
-    return (planConfig.daily - used) >= cost;
-  }, [credits, planConfig]);
+    return credits.remaining >= cost;
+  }, [credits]);
 
   const createNewSession = (toolId: string, firstMessage?: string) => {
     const id = crypto.randomUUID();
