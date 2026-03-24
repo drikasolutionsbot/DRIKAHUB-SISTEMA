@@ -4,7 +4,7 @@ import {
   Loader2, Send, ChevronDown, Zap, Brain, Plus, User, Bot, Trash2, Orbit,
   Paperclip, X, RefreshCw, Stars, RotateCcw, Crown, Flame, Clock, ArrowRight,
   History, RotateCw, Bookmark, BookmarkCheck, Lock, TrendingUp, Gauge, Download,
-  ImagePlus
+  ImagePlus, Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import { useTenant } from "@/contexts/TenantContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ═══════════════════════════════════════════════════════════
 // PLAN & CREDITS CONFIGURATION (ready for backend integration)
