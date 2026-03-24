@@ -303,7 +303,7 @@ export const DashboardOverview = () => {
                   numberOfMonths={1}
                   disabled={(date) => date > new Date()}
                   className={cn("p-3 pointer-events-auto")}
-                  locale={ptBR}
+                  locale={ptBRLocale}
                 />
               </PopoverContent>
             </Popover>
