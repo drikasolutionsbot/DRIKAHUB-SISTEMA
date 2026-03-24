@@ -600,7 +600,7 @@ const DashboardPage = () => {
           )}
         </div>
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h2 className="font-display text-lg font-semibold border-l-2 border-primary pl-3">Auditoria</h2>
+          <h2 className="font-display text-lg font-semibold border-l-2 border-primary pl-3">{t.dashboard.auditLog}</h2>
           {auditLoading ? (
             <div className="space-y-2"><Skeleton className="h-8" /><Skeleton className="h-8" /><Skeleton className="h-8" /></div>
           ) : auditLogs.length === 0 ? (
