@@ -882,7 +882,7 @@ const DashboardPage = () => {
                   </div>
                   {switchingGuild === guild.id && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                   {tenant?.discord_guild_id === guild.id && !switchingGuild && (
-                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">Atual</span>
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">{t.dashboard.currentServer}</span>
                   )}
                 </button>
               ))
