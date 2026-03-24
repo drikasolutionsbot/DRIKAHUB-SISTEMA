@@ -396,10 +396,10 @@ export const DashboardOverview = () => {
         <Card className="border-border bg-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold">Top Clientes</CardTitle>
+              <CardTitle className="text-base font-semibold">{t.dashboardOverview.topClients}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
+            <p className="text-xs text-muted-foreground">{t.dashboardOverview.inSelectedPeriod}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {topClients.length === 0 ? (
