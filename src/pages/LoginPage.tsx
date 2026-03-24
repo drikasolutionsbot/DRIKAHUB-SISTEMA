@@ -48,7 +48,7 @@ const LoginPage = () => {
         navigate("/dashboard", { replace: true });
       }
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+      toast({ title: t.login.error, description: e.message, variant: "destructive" });
       setValidating(false);
     }
   };
