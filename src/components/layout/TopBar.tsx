@@ -251,9 +251,9 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
           const log = payload.new;
           const newNotif: Notification = {
             id: log.id,
-            title: log.status === "processed" ? "Pagamento confirmado" : "Webhook recebido",
+            title: log.status === "processed" ? t.topbar.paymentConfirmed : t.topbar.webhookReceived,
             desc: `${providerLabels[log.provider_key] || log.provider_key} — ${log.event_type || "evento"}`,
-            time: "agora",
+            time: t.topbar.now,
             read: false,
             type: log.status === "processed" ? "payment" : "info",
           };
