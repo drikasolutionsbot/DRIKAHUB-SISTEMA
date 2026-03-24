@@ -167,7 +167,7 @@ export const DashboardOverview = () => {
         return format(parseISO(o.created_at), "yyyy-MM-dd") === dayStr;
       });
       return {
-        date: format(day, days.length > 14 ? "dd/MM" : "dd/MM", { locale: ptBR }),
+        date: format(day, days.length > 14 ? "dd/MM" : "dd/MM", { locale: ptBRLocale }),
         revenue: dayOrders.reduce((s, o) => s + o.total_cents, 0) / 100,
         orders: dayOrders.length,
       };
