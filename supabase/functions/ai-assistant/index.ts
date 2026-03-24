@@ -523,13 +523,13 @@ serve(async (req) => {
       ], textModel, 0.95);
 
       console.log("🖼️ Image variation: generating with Replicate...");
-      const imageUrl = await gatewayGenerateImage(apiKey, variationPrompt);
+      const imageUrl = await replicateGenerateImage(replicateToken!, variationPrompt);
 
       return new Response(JSON.stringify({
         image_url: imageUrl,
         text: `🎨 **Nova variação gerada!**\n\n**Prompt da variação (${variationPrompt.split(" ").length} palavras):**\n\`\`\`\n${variationPrompt}\n\`\`\`\n\n> 🔄 *Cada variação usa um estilo, iluminação ou composição diferente para o mesmo conceito.*`,
         enhanced_prompt: variationPrompt,
-        model_used: "gemini-flash + gemini-image",
+        model_used: "gemini-flash + sdxl-lightning",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -600,13 +600,13 @@ REGRAS:
       ], textModel, 0.7);
 
       console.log("🖼️ Step 2: Replicate generating with SDXL Lightning...");
-      const imageUrl = await gatewayGenerateImage(apiKey, enhancedPrompt);
+      const imageUrl = await replicateGenerateImage(replicateToken!, enhancedPrompt);
 
       return new Response(JSON.stringify({
         image_url: imageUrl,
         text: `🎨 **Imagem gerada com sucesso!**\n\n**Seu input:** ${prompt}\n\n**Prompt profissional gerado pela IA (${enhancedPrompt.split(" ").length} palavras):**\n\`\`\`\n${enhancedPrompt}\n\`\`\`\n\n> 💡 *O prompt foi automaticamente enriquecido com detalhes de composição, iluminação, estilo, paleta de cores e especificações técnicas de câmera para garantir resultado de qualidade publicitária.*\n\n> 🔄 *Clique em "Gerar 3 Variações" para criar versões alternativas com estilos diferentes.*`,
         enhanced_prompt: enhancedPrompt,
-        model_used: "gemini-flash + gemini-image",
+        model_used: "gemini-flash + sdxl-lightning",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
