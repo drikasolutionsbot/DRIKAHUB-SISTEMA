@@ -1251,20 +1251,23 @@ export default function AIAssistantPage() {
                       )}
 
                       {msg.enhancedPrompt && (
-                        <div className="mb-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
-                          <div className="flex items-center gap-1.5 mb-1.5">
+                        <details className="mb-3 rounded-xl bg-primary/5 border border-primary/15 overflow-hidden">
+                          <summary className="flex items-center gap-1.5 p-3 cursor-pointer select-none hover:bg-primary/5 transition-colors">
                             <Stars className="h-3 w-3 text-primary" />
                             <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Prompt Otimizado</span>
+                            <span className="text-[9px] text-muted-foreground/50 ml-auto">{msg.enhancedPrompt.split(" ").length} palavras • clique para expandir</span>
+                          </summary>
+                          <div className="px-3 pb-3">
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">{msg.enhancedPrompt}</p>
+                            <button
+                              onClick={() => handleCopy(msg.enhancedPrompt!, msg.id + "-prompt")}
+                              className="mt-1.5 flex items-center gap-1 text-[9px] text-primary/60 hover:text-primary transition-colors"
+                            >
+                              {copied === msg.id + "-prompt" ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
+                              {copied === msg.id + "-prompt" ? "Copiado" : "Copiar prompt"}
+                            </button>
                           </div>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed">{msg.enhancedPrompt}</p>
-                          <button
-                            onClick={() => handleCopy(msg.enhancedPrompt!, msg.id + "-prompt")}
-                            className="mt-1.5 flex items-center gap-1 text-[9px] text-primary/60 hover:text-primary transition-colors"
-                          >
-                            {copied === msg.id + "-prompt" ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
-                            {copied === msg.id + "-prompt" ? "Copiado" : "Copiar prompt"}
-                          </button>
-                        </div>
+                        </details>
                       )}
 
                       {msg.imageUrl && (
