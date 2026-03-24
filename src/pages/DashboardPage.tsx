@@ -527,9 +527,9 @@ const DashboardPage = () => {
 
       {/* Server Section */}
       <div>
-        <h1 className="font-display text-2xl font-bold">Servidor de Operações</h1>
+        <h1 className="font-display text-2xl font-bold">{t.dashboard.operationsServer}</h1>
         <p className="text-muted-foreground">
-          Servidor onde <strong className="text-foreground">{tenant.name}</strong> está operando.
+          {t.dashboard.operationsServerDesc.replace("{name}", tenant.name)}
         </p>
       </div>
 
