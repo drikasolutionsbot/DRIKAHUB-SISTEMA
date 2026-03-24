@@ -141,10 +141,10 @@ const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
                 <p className="text-xs text-destructive font-medium flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Acesso bloqueado
+                  {t.plan.accessBlocked}
                 </p>
                 <p className="text-xs text-destructive/70 mt-1">
-                  Todos os recursos estão suspensos. Assine o plano Pro para liberar o acesso novamente.
+                  {t.plan.allSuspended}
                 </p>
               </div>
             ) : isExpiring ? (
