@@ -820,8 +820,8 @@ const DashboardPage = () => {
       <Dialog open={serverModalOpen} onOpenChange={setServerModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Trocar Servidor</DialogTitle>
-            <DialogDescription>Selecione o servidor onde o bot irá operar.</DialogDescription>
+            <DialogTitle>{t.dashboard.switchServer}</DialogTitle>
+            <DialogDescription>{t.dashboard.switchServerDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1 max-h-[300px] overflow-y-auto py-2">
             {loadingGuilds ? (
