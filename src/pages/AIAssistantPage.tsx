@@ -220,21 +220,6 @@ function saveSessions(sessions: ChatSession[]) {
   } catch { /* full storage */ }
 }
 
-function loadCredits(): CreditsState {
-  try {
-    const raw = localStorage.getItem(CREDITS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const today = new Date().toISOString().slice(0, 10);
-      if (parsed.date === today) return parsed;
-    }
-    return { used: 0, date: new Date().toISOString().slice(0, 10) };
-  } catch { return { used: 0, date: new Date().toISOString().slice(0, 10) }; }
-}
-
-function saveCredits(credits: CreditsState) {
-  try { localStorage.setItem(CREDITS_KEY, JSON.stringify(credits)); } catch { }
-}
 
 function loadSaved(): ChatMessage[] {
   try {
