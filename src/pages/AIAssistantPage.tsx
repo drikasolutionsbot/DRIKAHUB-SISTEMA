@@ -1221,14 +1221,14 @@ export default function AIAssistantPage() {
                   <p className="text-[10px] text-muted-foreground/55">{messages.length} mensagens</p>
                 )}
               </div>
-              {(loading || actionLoading) && (
+              {actionLoading && (
                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 border border-primary/15 animate-fade-in ml-2">
                   <div className="relative h-3.5 w-3.5">
                     <div className="absolute inset-0 rounded-full border-2 border-primary/15" />
                     <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
                   </div>
                   <span className="text-[10px] font-semibold text-primary/80 tracking-wide">
-                    {actionLoading === "improve" ? "Melhorando..." : actionLoading === "variations" ? "Gerando 3 variações..." : actionLoading === "image_variation" ? "Gerando variação da imagem..." : selectedTool.id === "image" ? "Gerando imagem..." : "Processando..."}
+                    {actionLoading === "improve" ? "Melhorando..." : actionLoading === "variations" ? "Gerando 3 variações..." : "Gerando variação..."}
                   </span>
                 </div>
               )}
