@@ -513,7 +513,7 @@ serve(async (req) => {
     // ACTION: generate_image_variation (nova variação de imagem)
     // ═══════════════════════════════════════
     if (action === "generate_image_variation") {
-      
+      if (!replicateToken) throw new Error("REPLICATE_API_TOKEN não configurada.");
 
       const basePrompt = originalContent || prompt;
       console.log("🎨 Image variation: refining prompt with GPT-4o...");
