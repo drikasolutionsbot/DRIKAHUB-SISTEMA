@@ -632,8 +632,8 @@ const DashboardPage = () => {
       {/* Permissões */}
       <div className="space-y-4">
         <div>
-          <h2 className="font-display text-2xl font-bold">Permissões</h2>
-          <p className="text-muted-foreground">Configure as permissões da Aplicação.</p>
+          <h2 className="font-display text-2xl font-bold">{t.dashboard.permissions}</h2>
+          <p className="text-muted-foreground">{t.dashboard.permissionsDesc}</p>
         </div>
 
         <div className="flex gap-4 sm:gap-6 border-b border-border overflow-x-auto scrollbar-none">
