@@ -1011,7 +1011,7 @@ export default function AIAssistantPage() {
           </div>
 
           <div className="rounded-2xl border border-border/20 bg-card/30 backdrop-blur-sm overflow-hidden">
-            <ScrollArea className="h-[280px]">
+            <ScrollArea className="h-[180px]">
               {showDbHistory ? (
                 <>
                   {/* Category filter */}
