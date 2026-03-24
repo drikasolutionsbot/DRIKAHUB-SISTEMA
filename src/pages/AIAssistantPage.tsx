@@ -290,6 +290,8 @@ const NeuralLines = () => (
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function AIAssistantPage() {
+  const { tenantId } = useTenant();
+  const { user } = useAuth();
   const [selectedTool, setSelectedTool] = useState(AI_TOOLS[0]);
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("");
@@ -303,6 +305,10 @@ export default function AIAssistantPage() {
   const [credits, setCredits] = useState<CreditsState>(() => loadCredits());
   const [savedMessages, setSavedMessages] = useState<ChatMessage[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
+  const [dbHistory, setDbHistory] = useState<DbGeneration[]>([]);
+  const [dbHistoryLoading, setDbHistoryLoading] = useState(false);
+  const [showDbHistory, setShowDbHistory] = useState(false);
+  const [dbFilterCategory, setDbFilterCategory] = useState<string>("all");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -319,6 +325,56 @@ export default function AIAssistantPage() {
   useEffect(() => { saveSessions(sessions); }, [sessions]);
   useEffect(() => { saveCredits(credits); }, [credits]);
   useEffect(() => { saveSavedMessages(savedMessages); }, [savedMessages]);
+
+  // ═══ LOAD DB HISTORY ═══
+  const loadDbHistory = useCallback(async () => {
+    if (!tenantId) return;
+    setDbHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("ai_generations")
+        .select("id, category, user_input, enhanced_prompt, result_text, result_image_url, credits_used, created_at")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      setDbHistory((data as DbGeneration[]) || []);
+    } catch (e: any) {
+      console.error("Error loading AI history:", e);
+    } finally {
+      setDbHistoryLoading(false);
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (showDbHistory && tenantId) loadDbHistory();
+  }, [showDbHistory, tenantId, loadDbHistory]);
+
+  // ═══ SAVE TO DB ═══
+  const saveGenerationToDb = useCallback(async (params: {
+    category: string;
+    userInput: string;
+    enhancedPrompt?: string;
+    resultText?: string;
+    resultImageUrl?: string;
+    creditsUsed: number;
+  }) => {
+    if (!tenantId || !user?.id) return;
+    try {
+      await supabase.from("ai_generations").insert({
+        tenant_id: tenantId,
+        user_id: user.id,
+        category: params.category,
+        user_input: params.userInput,
+        enhanced_prompt: params.enhancedPrompt || null,
+        result_text: params.resultText || null,
+        result_image_url: params.resultImageUrl || null,
+        credits_used: params.creditsUsed,
+      } as any);
+    } catch (e) {
+      console.error("Error saving generation:", e);
+    }
+  }, [tenantId, user?.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
