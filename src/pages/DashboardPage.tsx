@@ -576,8 +576,8 @@ const DashboardPage = () => {
                 <Shield className="h-6 w-6 text-amber-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Nenhum servidor conectado</p>
-                <p className="text-xs text-muted-foreground mt-1">Adicione o bot ao seu servidor Discord</p>
+                <p className="text-sm font-medium text-foreground">{t.dashboard.noServerConnected}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t.dashboard.noServerDesc}</p>
               </div>
               {waitingForBot ? (
                 <div className="w-full max-w-sm space-y-2">
