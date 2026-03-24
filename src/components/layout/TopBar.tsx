@@ -46,8 +46,9 @@ function timeAgo(dateStr: string, t: any): string {
 }
 
 const PlanBadge = ({ tenant }: { tenant: { plan: string; plan_expires_at: string | null; plan_started_at: string | null } }) => {
+  const { t } = useLanguage();
   const isPro = tenant.plan === "pro";
-  const planLabel = isPro ? "Pro" : "Free (Teste)";
+  const planLabel = isPro ? t.plan.pro : t.plan.free;
   
   let timeLeft = "";
   let expiresLabel = "";
