@@ -668,7 +668,7 @@ const DashboardPage = () => {
               ) : permissions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <UserPlus className="h-10 w-10 text-muted-foreground/40 mb-2" />
-                  <p className="text-xs text-muted-foreground">Nenhum membro na lista</p>
+                  <p className="text-xs text-muted-foreground">{t.dashboard.noMembersInList}</p>
                 </div>
               ) : (
                 <div className="space-y-0.5">
