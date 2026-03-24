@@ -180,8 +180,9 @@ interface ChatSession {
 }
 
 interface CreditsState {
-  used: number;
-  date: string;
+  remaining: number;
+  daily: number;
+  loaded: boolean;
 }
 
 interface DbGeneration {
@@ -196,7 +197,6 @@ interface DbGeneration {
 }
 
 const STORAGE_KEY = "drika-ai-sessions";
-const CREDITS_KEY = "drika-ai-credits";
 const SAVED_KEY = "drika-ai-saved";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
@@ -220,21 +220,6 @@ function saveSessions(sessions: ChatSession[]) {
   } catch { /* full storage */ }
 }
 
-function loadCredits(): CreditsState {
-  try {
-    const raw = localStorage.getItem(CREDITS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const today = new Date().toISOString().slice(0, 10);
-      if (parsed.date === today) return parsed;
-    }
-    return { used: 0, date: new Date().toISOString().slice(0, 10) };
-  } catch { return { used: 0, date: new Date().toISOString().slice(0, 10) }; }
-}
-
-function saveCredits(credits: CreditsState) {
-  try { localStorage.setItem(CREDITS_KEY, JSON.stringify(credits)); } catch { }
-}
 
 function loadSaved(): ChatMessage[] {
   try {
@@ -303,7 +288,7 @@ export default function AIAssistantPage() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => loadSessions());
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [credits, setCredits] = useState<CreditsState>(() => loadCredits());
+  const [credits, setCredits] = useState<CreditsState>({ remaining: 100, daily: 100, loaded: false });
   const [savedMessages, setSavedMessages] = useState<ChatMessage[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
   const [dbHistory, setDbHistory] = useState<DbGeneration[]>([]);
@@ -316,15 +301,40 @@ export default function AIAssistantPage() {
   // TODO: Replace with real plan from tenant context
   const currentPlan = "pro";
   const planConfig = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.free;
-  const creditsRemaining = Math.max(0, planConfig.daily - credits.used);
-  const creditsPercent = (credits.used / planConfig.daily) * 100;
+  const creditsRemaining = Math.max(0, credits.remaining);
+  const creditsPercent = ((credits.daily - credits.remaining) / credits.daily) * 100;
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   const messages = activeSession?.messages || [];
 
   // ═══ PERSIST ═══
   useEffect(() => { saveSessions(sessions); }, [sessions]);
-  useEffect(() => { saveCredits(credits); }, [credits]);
+  useEffect(() => { saveSavedMessages(savedMessages); }, [savedMessages]);
+
+  // ═══ LOAD CREDITS FROM DB ═══
+  const loadCreditsFromDb = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const { data, error } = await supabase
+        .from("tenant_credits")
+        .select("credits_remaining, daily_limit")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setCredits({ remaining: (data as any).credits_remaining, daily: (data as any).daily_limit, loaded: true });
+      } else {
+        // Create initial credits row
+        await supabase.from("tenant_credits").insert({ tenant_id: tenantId, credits_remaining: 100, daily_limit: 100 } as any);
+        setCredits({ remaining: 100, daily: 100, loaded: true });
+      }
+    } catch (e) {
+      console.error("Error loading credits:", e);
+      setCredits({ remaining: 100, daily: 100, loaded: true });
+    }
+  }, [tenantId]);
+
+  useEffect(() => { loadCreditsFromDb(); }, [loadCreditsFromDb]);
   useEffect(() => { saveSavedMessages(savedMessages); }, [savedMessages]);
 
   // ═══ LOAD DB HISTORY ═══
@@ -383,19 +393,29 @@ export default function AIAssistantPage() {
 
   useEffect(() => { scrollToBottom(); }, [messages.length, messages[messages.length - 1]?.content]);
 
-  const consumeCredits = useCallback((amount: number) => {
-    const today = new Date().toISOString().slice(0, 10);
-    setCredits(prev => {
-      const base = prev.date === today ? prev.used : 0;
-      return { used: base + amount, date: today };
-    });
-  }, []);
+  const consumeCredits = useCallback(async (amount: number) => {
+    setCredits(prev => ({ ...prev, remaining: Math.max(0, prev.remaining - amount) }));
+    if (tenantId) {
+      try {
+        const { data } = await supabase
+          .from("tenant_credits")
+          .select("credits_remaining")
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+        const current = (data as any)?.credits_remaining ?? 100;
+        await supabase
+          .from("tenant_credits")
+          .update({ credits_remaining: Math.max(0, current - amount), updated_at: new Date().toISOString() } as any)
+          .eq("tenant_id", tenantId);
+      } catch (e) {
+        console.error("Error updating credits:", e);
+      }
+    }
+  }, [tenantId]);
 
   const canAfford = useCallback((cost: number) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const used = credits.date === today ? credits.used : 0;
-    return (planConfig.daily - used) >= cost;
-  }, [credits, planConfig]);
+    return credits.remaining >= cost;
+  }, [credits]);
 
   const createNewSession = (toolId: string, firstMessage?: string) => {
     const id = crypto.randomUUID();
@@ -614,7 +634,7 @@ export default function AIAssistantPage() {
 
     const cost = CREDIT_COSTS[selectedTool.id] || 1;
     if (!canAfford(cost)) {
-      toast({ title: "🔒 Limite atingido", description: `Você usou todos os ${planConfig.daily} créditos diários do plano ${planConfig.label}. Faça upgrade para mais gerações!`, variant: "destructive" });
+      toast({ title: "🔒 Limite atingido", description: `Você usou todos os ${credits.daily} créditos diários. Seus créditos renovam automaticamente à meia-noite!`, variant: "destructive" });
       return;
     }
 
@@ -861,7 +881,7 @@ export default function AIAssistantPage() {
                 <span className={cn("text-2xl font-extrabold tabular-nums", creditsRemaining <= 5 ? "text-red-400" : "text-foreground")}>
                   {creditsRemaining}
                 </span>
-                <span className="text-[10px] text-muted-foreground/60">/ {planConfig.daily} hoje</span>
+                <span className="text-[10px] text-muted-foreground/60">/ {credits.daily} hoje</span>
               </div>
               <Progress value={Math.min(creditsPercent, 100)} className="h-1.5" />
               {creditsPercent >= 80 && (
