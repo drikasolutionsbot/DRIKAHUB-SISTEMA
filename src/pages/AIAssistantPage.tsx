@@ -1471,7 +1471,7 @@ export default function AIAssistantPage() {
                             className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium text-destructive/70 hover:text-destructive bg-destructive/5 hover:bg-destructive/10 border border-destructive/10 hover:border-destructive/20 transition-all"
                           >
                             <Square className="h-3 w-3 fill-current" />
-                            Cancelar
+                            {t.ai.cancelGeneration}
                           </button>
                         </div>
                       )}
