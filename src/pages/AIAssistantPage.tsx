@@ -1318,7 +1318,7 @@ export default function AIAssistantPage() {
                                 onClick={() => handleDownloadImage(msg.imageUrl!)}
                               >
                                 <Download className="h-3.5 w-3.5 mr-1" />
-                                Baixar
+                                {t.ai.download}
                               </Button>
                               {msg.enhancedPrompt && activeSessionId && (
                                 <Button
