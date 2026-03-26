@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useTenant } from "@/contexts/TenantContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // ═══════════════════════════════════════════════════════════
 // PLAN & CREDITS CONFIGURATION (ready for backend integration)
