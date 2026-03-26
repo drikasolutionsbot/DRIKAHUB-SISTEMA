@@ -621,7 +621,7 @@ export default function AIAssistantPage() {
 
     const cost = CREDIT_COSTS[selectedTool.id] || 1;
     if (!canAfford(cost)) {
-      toast({ title: "🔒 Limite atingido", description: `Você usou todos os ${credits.daily} créditos diários. Seus créditos renovam automaticamente à meia-noite!`, variant: "destructive" });
+      toast({ title: t.ai.limitReached, description: t.ai.limitReachedDesc.replace("{n}", String(credits.daily)), variant: "destructive" });
       return;
     }
 
