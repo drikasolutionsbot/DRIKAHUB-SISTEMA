@@ -852,21 +852,21 @@ export default function AIAssistantPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-primary/90 to-[#C44AFF] tracking-tight">
-                Gerador IA
+                {t.ai.title}
               </h1>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
                 <div className="relative h-2 w-2">
                   <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
                   <div className="relative h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">Neural Ativa</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">{t.ai.neuralActive}</span>
               </div>
               <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] rounded-full bg-gradient-to-r from-primary/15 to-[#C44AFF]/15 text-primary border border-primary/20 backdrop-blur-sm">
                 v4.0 Orchestrator
               </span>
             </div>
             <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
-              Escreva pouco, receba muito — textos, imagens e estratégias de nível premium com orquestração inteligente.
+              {t.ai.heroDesc}
             </p>
           </div>
 
