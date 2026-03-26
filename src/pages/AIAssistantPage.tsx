@@ -1541,10 +1541,10 @@ export default function AIAssistantPage() {
 
                 <Textarea
                   placeholder={
-                    attachments.length > 0 ? "Descreva o que deseja saber sobre a imagem..."
-                      : selectedTool.id === "image" ? "Descreva a imagem que deseja gerar..."
-                      : selectedTool.id === "prompt_enhancer" ? "Digite uma ideia simples para transformar em prompt profissional..."
-                      : "Escreva seu prompt para o Gerador IA..."
+                    attachments.length > 0 ? t.ai.promptPlaceholderAttachment
+                      : selectedTool.id === "image" ? t.ai.promptPlaceholderImage
+                      : selectedTool.id === "prompt_enhancer" ? t.ai.promptPlaceholderEnhancer
+                      : t.ai.promptPlaceholderDefault
                   }
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
