@@ -1167,7 +1167,7 @@ export default function AIAssistantPage() {
             <div className="rounded-2xl border border-primary/10 p-4 bg-gradient-to-b from-card/50 to-card/30 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary/70" />
-                <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-[0.2em]">Sugestões Rápidas</p>
+                <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-[0.2em]">{t.ai.quickSuggestions}</p>
               </div>
               <div className="space-y-1.5">
                 {selectedTool.prompts.map((p, i) => (
