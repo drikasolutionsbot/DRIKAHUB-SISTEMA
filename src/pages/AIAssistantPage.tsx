@@ -977,7 +977,7 @@ export default function AIAssistantPage() {
         <div className="space-y-3">
           <Button onClick={handleNewChat} className={cn("w-full gap-2 rounded-xl text-white font-bold shadow-lg hover:scale-[1.02] transition-all duration-300 h-11", "bg-gradient-to-r", selectedTool.gradient)}>
             <Plus className="h-4 w-4" />
-            Novo Chat
+            {t.ai.newChat}
           </Button>
 
           {/* Sidebar Tabs: Histórico | Salvos | Banco */}
