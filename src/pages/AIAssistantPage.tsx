@@ -1578,7 +1578,7 @@ export default function AIAssistantPage() {
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground/40 mt-2 text-center tracking-wide">
-              ✨ Melhorar (varinha) • 📎 Imagens • 🔄 3 Variações • ⭐ Salvar • ♻️ Reutilizar • Enter para enviar
+              {t.ai.footerHints}
             </p>
           </div>
         </div>
