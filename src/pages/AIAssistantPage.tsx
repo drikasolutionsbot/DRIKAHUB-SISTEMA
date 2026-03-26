@@ -558,7 +558,7 @@ export default function AIAssistantPage() {
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: "🎨 Gerar nova variação da imagem",
+      content: t.ai.generateImageVariationUser,
       toolId: "image",
       timestamp: new Date().toISOString(),
     };
