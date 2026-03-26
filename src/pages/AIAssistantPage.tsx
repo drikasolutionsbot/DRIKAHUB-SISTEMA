@@ -1419,7 +1419,7 @@ export default function AIAssistantPage() {
                               className="flex items-center gap-1.5 text-[10px] font-bold text-[#8B5CF6] transition-all px-3 py-1.5 rounded-lg bg-[#8B5CF6]/8 border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/15 hover:scale-[1.02] ml-auto"
                             >
                               <RefreshCw className="h-3 w-3" />
-                              Gerar 3 Variações
+                              {t.ai.generate3Variations}
                               <span className="text-[8px] px-1 py-0.5 rounded bg-[#8B5CF6]/15 border border-[#8B5CF6]/20">2cr</span>
                             </button>
                           )}
