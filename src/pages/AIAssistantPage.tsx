@@ -15,14 +15,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useTenant } from "@/contexts/TenantContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // ═══════════════════════════════════════════════════════════
 // PLAN & CREDITS CONFIGURATION (ready for backend integration)
 // ═══════════════════════════════════════════════════════════
 
 const PLAN_LIMITS: Record<string, { daily: number; label: string; badge: string; color: string }> = {
-  free: { daily: 5, label: "Free", badge: "Gratuito", color: "text-muted-foreground" },
-  trial: { daily: 15, label: "Trial", badge: "Teste", color: "text-yellow-400" },
+  free: { daily: 5, label: "Free", badge: "Free", color: "text-muted-foreground" },
+  trial: { daily: 15, label: "Trial", badge: "Trial", color: "text-yellow-400" },
   pro: { daily: 100, label: "Pro", badge: "Pro", color: "text-primary" },
   business: { daily: 500, label: "Business", badge: "Business", color: "text-emerald-400" },
 };
@@ -40,114 +41,84 @@ const CREDIT_COSTS: Record<string, number> = {
 
 // ═══════════════════════════════════════════════════════════
 
-const AI_TOOLS = [
+const AI_TOOL_DEFS = [
   {
     id: "copy",
-    label: "Copywriting",
+    labelKey: "toolCopywriting" as const,
     icon: Wand2,
     gradient: "from-[#FF6B9D] via-[#C44AFF] to-[#FF6B9D]",
     glow: "shadow-[0_0_60px_rgba(196,74,255,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#FF6B9D]/10 to-[#C44AFF]/10",
     ring: "ring-[#C44AFF]/30",
-    description: "Textos persuasivos para vendas",
+    descKey: "toolCopywritingDesc" as const,
     emoji: "✍️",
     credits: 1,
-    prompts: [
-      "Crie uma copy de venda para meu produto digital no Discord",
-      "Escreva um texto de urgência para promoção relâmpago",
-      "Crie um anúncio para atrair novos membros ao servidor",
-      "Escreva uma mensagem de boas-vindas que converte",
-    ],
+    promptKeys: ["copyPrompt1", "copyPrompt2", "copyPrompt3", "copyPrompt4"] as const,
   },
   {
     id: "description",
-    label: "Descrições",
+    labelKey: "toolDescriptions" as const,
     icon: FileText,
     gradient: "from-[#A855F7] via-[#7C3AED] to-[#A855F7]",
     glow: "shadow-[0_0_60px_rgba(124,58,237,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#A855F7]/10 to-[#7C3AED]/10",
     ring: "ring-[#7C3AED]/30",
-    description: "Descrições atraentes para produtos",
+    descKey: "toolDescriptionsDesc" as const,
     emoji: "📝",
     credits: 1,
-    prompts: [
-      "Crie uma descrição para meu produto de contas digitais",
-      "Escreva uma descrição para serviço de boost Discord",
-      "Crie descrição para pack de créditos de jogo",
-      "Descreva meu serviço VIP com benefícios exclusivos",
-    ],
+    promptKeys: ["descPrompt1", "descPrompt2", "descPrompt3", "descPrompt4"] as const,
   },
   {
     id: "image",
-    label: "Gerar Imagem",
+    labelKey: "toolImage" as const,
     icon: Image,
     gradient: "from-[#F59E0B] via-[#EF4444] to-[#F59E0B]",
     glow: "shadow-[0_0_60px_rgba(245,158,11,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#F59E0B]/10 to-[#EF4444]/10",
     ring: "ring-[#F59E0B]/30",
-    description: "Banners, logos e thumbnails",
+    descKey: "toolImageDesc" as const,
     emoji: "🎨",
     credits: 3,
-    prompts: [
-      "Banner para loja de produtos digitais, estilo gaming neon",
-      "Logo minimalista para servidor de vendas Discord",
-      "Thumbnail promocional com desconto de 50%",
-      "Banner de boas-vindas para servidor Discord premium",
-    ],
+    promptKeys: ["imagePrompt1", "imagePrompt2", "imagePrompt3", "imagePrompt4"] as const,
   },
   {
     id: "embed",
-    label: "Embeds Discord",
+    labelKey: "toolEmbed" as const,
     icon: MessageSquare,
     gradient: "from-[#3B82F6] via-[#06B6D4] to-[#3B82F6]",
     glow: "shadow-[0_0_60px_rgba(59,130,246,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#3B82F6]/10 to-[#06B6D4]/10",
     ring: "ring-[#3B82F6]/30",
-    description: "Textos formatados para embeds",
+    descKey: "toolEmbedDesc" as const,
     emoji: "💬",
     credits: 1,
-    prompts: [
-      "Crie um embed de regras para meu servidor de vendas",
-      "Escreva um embed de anúncio de novo produto",
-      "Crie um embed para sistema de tickets",
-      "Escreva embed de boas-vindas com informações do servidor",
-    ],
+    promptKeys: ["embedPrompt1", "embedPrompt2", "embedPrompt3", "embedPrompt4"] as const,
   },
   {
     id: "strategy",
-    label: "Estratégia",
+    labelKey: "toolStrategy" as const,
     icon: Lightbulb,
     gradient: "from-[#10B981] via-[#059669] to-[#10B981]",
     glow: "shadow-[0_0_60px_rgba(16,185,129,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#10B981]/10 to-[#059669]/10",
     ring: "ring-[#10B981]/30",
-    description: "Dicas e estratégias de vendas",
+    descKey: "toolStrategyDesc" as const,
     emoji: "💡",
     credits: 2,
-    prompts: [
-      "Como aumentar as vendas no meu servidor Discord?",
-      "Estratégias para reter membros VIP",
-      "Como criar promoções que funcionam no Discord?",
-      "Dicas para melhorar o engajamento do servidor",
-    ],
+    promptKeys: ["strategyPrompt1", "strategyPrompt2", "strategyPrompt3", "strategyPrompt4"] as const,
   },
   {
     id: "prompt_enhancer",
-    label: "Prompt Enhancer",
+    labelKey: "toolEnhancer" as const,
     icon: Stars,
     gradient: "from-[#EC4899] via-[#8B5CF6] to-[#EC4899]",
     glow: "shadow-[0_0_60px_rgba(139,92,246,0.4)]",
     bgAccent: "bg-gradient-to-br from-[#EC4899]/10 to-[#8B5CF6]/10",
     ring: "ring-[#8B5CF6]/30",
-    description: "Transforme ideias em prompts profissionais",
+    descKey: "toolEnhancerDesc" as const,
     emoji: "🚀",
     credits: 1,
-    prompts: [
-      "banner para barbearia premium",
-      "logo para loja de games",
-      "descrição para venda de nitro discord",
-      "anúncio de promoção black friday",
-    ],
+    promptKeys: ["enhancerPrompt1", "enhancerPrompt2", "enhancerPrompt3", "enhancerPrompt4"] as const,
   },
 ];
 
@@ -277,7 +248,22 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 export default function AIAssistantPage() {
   const { tenantId } = useTenant();
   const { user } = useAuth();
+  const { t } = useLanguage();
+
+  // Build translated tools
+  const AI_TOOLS = AI_TOOL_DEFS.map(def => ({
+    ...def,
+    label: t.ai[def.labelKey],
+    description: t.ai[def.descKey],
+    prompts: def.promptKeys.map(k => t.ai[k]),
+  }));
+
   const [selectedTool, setSelectedTool] = useState(AI_TOOLS[0]);
+
+  // Keep selectedTool in sync with language changes
+  useEffect(() => {
+    setSelectedTool(prev => AI_TOOLS.find(t2 => t2.id === prev.id) || AI_TOOLS[0]);
+  }, [t]);
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("");
   const [loading, setLoading] = useState(false);
@@ -422,7 +408,7 @@ export default function AIAssistantPage() {
     const id = crypto.randomUUID();
     const session: ChatSession = {
       id,
-      title: firstMessage?.slice(0, 50) || "Novo chat",
+      title: firstMessage?.slice(0, 50) || t.ai.newChat,
       messages: [],
       toolId,
       createdAt: new Date().toISOString(),
@@ -443,11 +429,11 @@ export default function AIAssistantPage() {
     if (!files) return;
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE) {
-        toast({ title: "Arquivo muito grande", description: `${file.name} excede 10MB.`, variant: "destructive" });
+        toast({ title: t.ai.fileTooLarge, description: t.ai.fileTooLargeDesc.replace("{name}", file.name), variant: "destructive" });
         continue;
       }
       if (!file.type.startsWith("image/")) {
-        toast({ title: "Formato não suportado", description: "Envie apenas imagens.", variant: "destructive" });
+        toast({ title: t.ai.unsupportedFormat, description: t.ai.sendImagesOnly, variant: "destructive" });
         continue;
       }
       const reader = new FileReader();
@@ -473,9 +459,9 @@ export default function AIAssistantPage() {
     const userMsg = activeSession.messages[idx - 1];
     if (userMsg?.role === "user") {
       setPrompt(userMsg.content);
-      const tool = AI_TOOLS.find(t => t.id === msg.toolId);
+      const tool = AI_TOOLS.find(t2 => t2.id === msg.toolId);
       if (tool) setSelectedTool(tool);
-      toast({ title: "♻️ Prompt restaurado", description: "Edite e gere novamente!" });
+      toast({ title: t.ai.promptRestored });
     }
   };
 
@@ -484,21 +470,21 @@ export default function AIAssistantPage() {
     const isSaved = savedMessages.some(m => m.id === msg.id);
     if (isSaved) {
       setSavedMessages(prev => prev.filter(m => m.id !== msg.id));
-      toast({ title: "Removido dos salvos" });
+      toast({ title: t.ai.removedFromSaved });
     } else {
       setSavedMessages(prev => [{ ...msg, saved: true }, ...prev]);
-      toast({ title: "⭐ Salvo!", description: "Acesse seus favoritos no histórico." });
+      toast({ title: t.ai.savedSuccess, description: t.ai.savedDesc });
     }
   };
 
   // ═══ IMPROVE PROMPT ═══
   const handleImprovePrompt = async () => {
     if (!prompt.trim()) {
-      toast({ title: "Digite algo", description: "Escreva uma ideia para melhorar.", variant: "destructive" });
+      toast({ title: t.ai.typeSomething, description: t.ai.writeIdeaToImprove, variant: "destructive" });
       return;
     }
     if (!canAfford(CREDIT_COSTS.improve)) {
-      toast({ title: "Créditos insuficientes", description: "Você atingiu o limite diário do seu plano.", variant: "destructive" });
+      toast({ title: t.ai.insufficientCredits, description: t.ai.dailyLimitReached, variant: "destructive" });
       return;
     }
     setActionLoading("improve");
@@ -510,9 +496,9 @@ export default function AIAssistantPage() {
       if (data?.error) throw new Error(data.error);
       setPrompt(data.improved_prompt || prompt);
       consumeCredits(CREDIT_COSTS.improve);
-      toast({ title: "✨ Prompt melhorado!", description: "Seu prompt foi otimizado pela IA." });
+      toast({ title: t.ai.promptImproved, description: t.ai.promptImprovedDesc });
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message || "Erro ao melhorar prompt", variant: "destructive" });
+      toast({ title: t.ai.error, description: e.message || t.ai.errorImproving, variant: "destructive" });
     } finally {
       setActionLoading(null);
     }
@@ -521,14 +507,14 @@ export default function AIAssistantPage() {
   // ═══ GENERATE VARIATIONS ═══
   const handleGenerateVariations = async (originalContent: string, sessionId: string) => {
     if (!canAfford(CREDIT_COSTS.variations)) {
-      toast({ title: "Créditos insuficientes", description: "Limite diário atingido.", variant: "destructive" });
+      toast({ title: t.ai.insufficientCredits, description: t.ai.dailyLimitReached, variant: "destructive" });
       return;
     }
     setActionLoading("variations");
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: "🔄 Gerar 3 variações profissionais",
+      content: t.ai.generateVariationsUser,
       toolId: selectedTool.id,
       timestamp: new Date().toISOString(),
     };
@@ -546,7 +532,7 @@ export default function AIAssistantPage() {
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.variations || "Não foi possível gerar variações.",
+        content: data.variations || t.ai.couldNotGenerate,
         toolId: selectedTool.id,
         timestamp: new Date().toISOString(),
       };
@@ -555,7 +541,7 @@ export default function AIAssistantPage() {
       ));
       consumeCredits(CREDIT_COSTS.variations);
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message || "Erro ao gerar variações", variant: "destructive" });
+      toast({ title: t.ai.error, description: e.message || t.ai.errorGeneratingVariations, variant: "destructive" });
     } finally {
       setActionLoading(null);
     }
@@ -565,14 +551,14 @@ export default function AIAssistantPage() {
   const handleImageVariation = async (enhancedPrompt: string, sessionId: string) => {
     const cost = CREDIT_COSTS.image;
     if (!canAfford(cost)) {
-      toast({ title: "Créditos insuficientes", description: "Limite diário atingido.", variant: "destructive" });
+      toast({ title: t.ai.insufficientCredits, description: t.ai.dailyLimitReached, variant: "destructive" });
       return;
     }
     setActionLoading("image_variation");
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: "🎨 Gerar nova variação da imagem",
+      content: t.ai.generateImageVariationUser,
       toolId: "image",
       timestamp: new Date().toISOString(),
     };
@@ -601,7 +587,7 @@ export default function AIAssistantPage() {
       ));
       consumeCredits(cost);
     } catch (e: any) {
-      toast({ title: "Erro ao gerar variação", description: e.message || "Tente novamente", variant: "destructive" });
+      toast({ title: t.ai.errorGeneratingVariation, description: e.message || t.ai.tryAgain, variant: "destructive" });
     } finally {
       setActionLoading(null);
     }
@@ -620,7 +606,7 @@ export default function AIAssistantPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-      toast({ title: "📥 Download iniciado!" });
+      toast({ title: t.ai.downloadStarted });
     } catch {
       window.open(url, "_blank");
     }
@@ -629,36 +615,36 @@ export default function AIAssistantPage() {
   // ═══ MAIN GENERATE ═══
   const handleGenerate = async () => {
     if (!prompt.trim() && attachments.length === 0) {
-      toast({ title: "Digite algo", description: "Escreva o que deseja gerar.", variant: "destructive" });
+      toast({ title: t.ai.typeSomething, description: t.ai.writeWhatToGenerate, variant: "destructive" });
       return;
     }
 
     const cost = CREDIT_COSTS[selectedTool.id] || 1;
     if (!canAfford(cost)) {
-      toast({ title: "🔒 Limite atingido", description: `Você usou todos os ${credits.daily} créditos diários. Seus créditos renovam automaticamente à meia-noite!`, variant: "destructive" });
+      toast({ title: t.ai.limitReached, description: t.ai.limitReachedDesc.replace("{n}", String(credits.daily)), variant: "destructive" });
       return;
     }
 
     let sessionId = activeSessionId;
     if (!sessionId) {
-      sessionId = createNewSession(selectedTool.id, prompt || "Análise de imagem");
+      sessionId = createNewSession(selectedTool.id, prompt || t.ai.imageAnalysis);
     }
 
     const currentAttachments = [...attachments];
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: prompt || (currentAttachments.length > 0 ? "Analise esta imagem" : ""),
+      content: prompt || (currentAttachments.length > 0 ? t.ai.analyzeImage : ""),
       attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
       toolId: selectedTool.id,
       timestamp: new Date().toISOString(),
     };
 
     setSessions(prev => prev.map(s =>
-      s.id === sessionId ? { ...s, messages: [...s.messages, userMsg], title: s.messages.length === 0 ? (prompt || "Análise de imagem").slice(0, 50) : s.title } : s
+      s.id === sessionId ? { ...s, messages: [...s.messages, userMsg], title: s.messages.length === 0 ? (prompt || t.ai.imageAnalysis).slice(0, 50) : s.title } : s
     ));
 
-    const currentPrompt = prompt || (currentAttachments.length > 0 ? "Analise detalhadamente esta imagem." : "");
+    const currentPrompt = prompt || (currentAttachments.length > 0 ? t.ai.analyzeDetailed : "");
     setPrompt("");
     setAttachments([]);
     setLoading(true);
@@ -678,7 +664,7 @@ export default function AIAssistantPage() {
             attachments: apiAttachments.length > 0 ? apiAttachments : undefined,
           },
         });
-        if (abortController.signal.aborted) throw new Error("Geração cancelada");
+        if (abortController.signal.aborted) throw new Error(t.ai.generationCancelled);
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
@@ -732,10 +718,10 @@ export default function AIAssistantPage() {
         });
         if (!resp.ok) {
           const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData?.error || "Erro ao gerar conteúdo");
+          throw new Error(errData?.error || t.ai.errorGenerating);
         }
         const reader = resp.body?.getReader();
-        if (!reader) throw new Error("Stream não disponível");
+        if (!reader) throw new Error(t.ai.streamNotAvailable);
         const decoder = new TextDecoder();
         let buffer = "";
         let accumulated = "";
@@ -792,10 +778,10 @@ export default function AIAssistantPage() {
         }, 100);
       }
     } catch (e: any) {
-      if (e.name === "AbortError" || e.message === "Geração cancelada") {
-        toast({ title: "Cancelado", description: "Geração interrompida." });
+      if (e.name === "AbortError" || e.message === t.ai.generationCancelled) {
+        toast({ title: t.ai.cancelled, description: t.ai.generationStopped });
       } else {
-        toast({ title: "Erro", description: e.message || "Erro ao gerar conteúdo", variant: "destructive" });
+        toast({ title: t.ai.error, description: e.message || t.ai.errorGenerating, variant: "destructive" });
       }
       setSessions(prev => prev.map(s =>
         s.id === sessionId ? { ...s, messages: s.messages.filter(m => m.id !== assistantMsgId || m.content) } : s
@@ -815,7 +801,7 @@ export default function AIAssistantPage() {
   const handleCopy = (text: string, msgId: string) => {
     navigator.clipboard.writeText(text);
     setCopied(msgId);
-    toast({ title: "Copiado!" });
+    toast({ title: t.ai.copied });
     setTimeout(() => setCopied(null), 2000);
   };
 
@@ -866,21 +852,21 @@ export default function AIAssistantPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-primary/90 to-[#C44AFF] tracking-tight">
-                Gerador IA
+                {t.ai.title}
               </h1>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
                 <div className="relative h-2 w-2">
                   <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
                   <div className="relative h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">Neural Ativa</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">{t.ai.neuralActive}</span>
               </div>
               <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] rounded-full bg-gradient-to-r from-primary/15 to-[#C44AFF]/15 text-primary border border-primary/20 backdrop-blur-sm">
                 v4.0 Orchestrator
               </span>
             </div>
             <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
-              Escreva pouco, receba muito — textos, imagens e estratégias de nível premium com orquestração inteligente.
+              {t.ai.heroDesc}
             </p>
           </div>
 
@@ -890,7 +876,7 @@ export default function AIAssistantPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <Flame className={cn("h-4 w-4", creditsPercent > 80 ? "text-red-400" : "text-primary")} />
-                  <span className="text-[11px] font-bold text-foreground/80">Créditos Diários</span>
+                  <span className="text-[11px] font-bold text-foreground/80">{t.ai.dailyCredits}</span>
                 </div>
                 <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", planConfig.color,
                   currentPlan === "pro" ? "bg-primary/10 border-primary/20" :
@@ -904,19 +890,19 @@ export default function AIAssistantPage() {
                 <span className={cn("text-2xl font-extrabold tabular-nums", creditsRemaining <= 5 ? "text-red-400" : "text-foreground")}>
                   {creditsRemaining}
                 </span>
-                <span className="text-[10px] text-muted-foreground/60">/ {credits.daily} hoje</span>
+                <span className="text-[10px] text-muted-foreground/60">/ {credits.daily} {t.ai.todaySuffix}</span>
               </div>
               <Progress value={Math.min(creditsPercent, 100)} className="h-1.5" />
               {creditsPercent >= 80 && (
                 <p className="text-[9px] text-red-400/70 mt-1.5 flex items-center gap-1">
                   <TrendingUp className="h-2.5 w-2.5" />
-                  Créditos baixos — faça upgrade!
+                  {t.ai.creditsLow}
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50">
               <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-              <span className="font-medium">Custo: {CREDIT_COSTS[selectedTool.id] || 1} crédito(s) por geração</span>
+              <span className="font-medium">{t.ai.creditsCost.replace("{cost}", String(CREDIT_COSTS[selectedTool.id] || 1))}</span>
             </div>
           </div>
         </div>
@@ -928,7 +914,7 @@ export default function AIAssistantPage() {
         <Flame className={cn("h-4 w-4 shrink-0", creditsPercent > 80 ? "text-red-400" : "text-primary")} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold">{creditsRemaining} créditos restantes</span>
+            <span className="text-[11px] font-bold">{t.ai.creditsRemaining.replace("{n}", String(creditsRemaining))}</span>
             <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full", planConfig.color, "bg-primary/10 border border-primary/20")}>
               {planConfig.badge}
             </span>
@@ -991,7 +977,7 @@ export default function AIAssistantPage() {
         <div className="space-y-3">
           <Button onClick={handleNewChat} className={cn("w-full gap-2 rounded-xl text-white font-bold shadow-lg hover:scale-[1.02] transition-all duration-300 h-11", "bg-gradient-to-r", selectedTool.gradient)}>
             <Plus className="h-4 w-4" />
-            Novo Chat
+            {t.ai.newChat}
           </Button>
 
           {/* Sidebar Tabs: Histórico | Salvos | Banco */}
@@ -1002,7 +988,7 @@ export default function AIAssistantPage() {
                 !showSaved && !showDbHistory ? "bg-primary/15 text-primary border border-primary/20" : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
-              <History className="h-3 w-3" /> Chats
+              <History className="h-3 w-3" /> {t.ai.chats}
             </button>
             <button
               onClick={() => { setShowSaved(true); setShowDbHistory(false); }}
@@ -1010,7 +996,7 @@ export default function AIAssistantPage() {
                 showSaved ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
-              <Bookmark className="h-3 w-3" /> Salvos
+              <Bookmark className="h-3 w-3" /> {t.ai.saved}
               {savedMessages.length > 0 && (
                 <span className="text-[8px] bg-amber-400/20 px-1 rounded">{savedMessages.length}</span>
               )}
@@ -1021,7 +1007,7 @@ export default function AIAssistantPage() {
                 showDbHistory ? "bg-emerald-400/15 text-emerald-400 border border-emerald-400/20" : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
-              <Database className="h-3 w-3" /> Banco
+              <Database className="h-3 w-3" /> {t.ai.database}
               {dbHistory.length > 0 && (
                 <span className="text-[8px] bg-emerald-400/20 px-1 rounded">{dbHistory.length}</span>
               )}
@@ -1034,7 +1020,7 @@ export default function AIAssistantPage() {
                 <>
                   {/* Category filter */}
                   <div className="sticky top-0 z-10 flex gap-1 p-2 bg-card/80 backdrop-blur-md border-b border-border/10">
-                    {[{ id: "all", label: "Todos" }, ...AI_TOOLS.map(t => ({ id: t.id, label: t.emoji }))].map(cat => (
+                    {[{ id: "all", label: t.ai.all }, ...AI_TOOLS.map(t2 => ({ id: t2.id, label: t2.emoji }))].map(cat => (
                       <button
                         key={cat.id}
                         onClick={() => setDbFilterCategory(cat.id)}
@@ -1053,8 +1039,8 @@ export default function AIAssistantPage() {
                   ) : dbHistory.filter(g => dbFilterCategory === "all" || g.category === dbFilterCategory).length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
                       <Database className="h-8 w-8 text-muted-foreground/15 mb-3" />
-                      <p className="text-xs text-muted-foreground/50">Nenhuma geração encontrada</p>
-                      <p className="text-[10px] text-muted-foreground/40 mt-1">Suas gerações serão salvas aqui</p>
+                       <p className="text-xs text-muted-foreground/50">{t.ai.noGenerationsFound}</p>
+                       <p className="text-[10px] text-muted-foreground/40 mt-1">{t.ai.generationsSavedHere}</p>
                     </div>
                   ) : (
                     <div className="p-2 space-y-1">
@@ -1069,9 +1055,9 @@ export default function AIAssistantPage() {
                             >
                               <span className="text-sm shrink-0 mt-0.5">{tool?.emoji || "🤖"}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[11px] text-foreground/70 line-clamp-1 font-medium">{gen.user_input || "Sem input"}</p>
+                                <p className="text-[11px] text-foreground/70 line-clamp-1 font-medium">{gen.user_input || t.ai.noInput}</p>
                                 <p className="text-[10px] text-muted-foreground/50 line-clamp-1 mt-0.5">
-                                  {gen.result_image_url ? "🖼️ Imagem gerada" : (gen.result_text?.slice(0, 60) || "...")}
+                                  {gen.result_image_url ? t.ai.imageGenerated : (gen.result_text?.slice(0, 60) || "...")}
                                 </p>
                                 <p className="text-[9px] text-muted-foreground/40 mt-1">
                                   {tool?.label} • {gen.credits_used}cr • {new Date(gen.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -1079,16 +1065,16 @@ export default function AIAssistantPage() {
                               </div>
                               <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  onClick={() => { setPrompt(gen.user_input); if (tool) setSelectedTool(tool); setShowDbHistory(false); toast({ title: "♻️ Prompt restaurado!" }); }}
+                                  onClick={() => { setPrompt(gen.user_input); if (tool) setSelectedTool(tool); setShowDbHistory(false); toast({ title: t.ai.promptRestored }); }}
                                   className="p-1 rounded hover:bg-emerald-400/10"
-                                  title="Reutilizar"
+                                  title={t.ai.reuse}
                                 >
                                   <RotateCw className="h-3 w-3 text-emerald-400" />
                                 </button>
                                 <button
                                   onClick={() => handleCopy(gen.result_text || gen.enhanced_prompt || gen.user_input, gen.id)}
                                   className="p-1 rounded hover:bg-primary/10"
-                                  title="Copiar"
+                                  title={t.ai.copy}
                                 >
                                   {copied === gen.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-muted-foreground/50" />}
                                 </button>
@@ -1103,8 +1089,8 @@ export default function AIAssistantPage() {
                 savedMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
                     <Bookmark className="h-8 w-8 text-muted-foreground/15 mb-3" />
-                    <p className="text-xs text-muted-foreground/50">Nenhuma geração salva</p>
-                    <p className="text-[10px] text-muted-foreground/40 mt-1">Clique ⭐ em qualquer resultado</p>
+                    <p className="text-xs text-muted-foreground/50">{t.ai.noSavedGenerations}</p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-1">{t.ai.clickStarToSave}</p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-1">
@@ -1120,7 +1106,7 @@ export default function AIAssistantPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] text-foreground/70 line-clamp-2">{msg.content.slice(0, 100)}...</p>
                           <p className="text-[9px] text-muted-foreground/40 mt-1">
-                            {AI_TOOLS.find(t => t.id === msg.toolId)?.emoji} {AI_TOOLS.find(t => t.id === msg.toolId)?.label}
+                            {AI_TOOLS.find(t2 => t2.id === msg.toolId)?.emoji} {AI_TOOLS.find(t2 => t2.id === msg.toolId)?.label}
                           </p>
                         </div>
                         <button
@@ -1139,8 +1125,8 @@ export default function AIAssistantPage() {
                     <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center mb-3">
                       <MessageSquare className="h-5 w-5 text-muted-foreground/15" />
                     </div>
-                    <p className="text-xs text-muted-foreground/50">Nenhum chat ainda</p>
-                    <p className="text-[10px] text-muted-foreground/40 mt-1">Comece uma conversa!</p>
+                    <p className="text-xs text-muted-foreground/50">{t.ai.noChatYet}</p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-1">{t.ai.startConversation}</p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-1">
@@ -1156,7 +1142,7 @@ export default function AIAssistantPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteSession(session.id); }}
                           className="shrink-0 p-1 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
-                          title="Excluir chat"
+                          title={t.ai.deleteChat}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1166,7 +1152,7 @@ export default function AIAssistantPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground/80 truncate">{session.title}</p>
                           <p className="text-[10px] text-muted-foreground/55">
-                            {session.messages.length} msg • {new Date(session.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            {session.messages.length} {t.ai.msg} • {new Date(session.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
                           </p>
                         </div>
                       </div>
@@ -1181,7 +1167,7 @@ export default function AIAssistantPage() {
             <div className="rounded-2xl border border-primary/10 p-4 bg-gradient-to-b from-card/50 to-card/30 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-primary/70" />
-                <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-[0.2em]">Sugestões Rápidas</p>
+                <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-[0.2em]">{t.ai.quickSuggestions}</p>
               </div>
               <div className="space-y-1.5">
                 {selectedTool.prompts.map((p, i) => (
@@ -1218,7 +1204,7 @@ export default function AIAssistantPage() {
                   {activeSession ? activeSession.title.slice(0, 30) : selectedTool.label}
                 </p>
                 {!loading && messages.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground/55">{messages.length} mensagens</p>
+                  <p className="text-[10px] text-muted-foreground/55">{messages.length} {t.ai.messages}</p>
                 )}
               </div>
               {actionLoading && (
@@ -1228,7 +1214,7 @@ export default function AIAssistantPage() {
                     <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
                   </div>
                   <span className="text-[10px] font-semibold text-primary/80 tracking-wide">
-                    {actionLoading === "improve" ? "Melhorando..." : actionLoading === "variations" ? "Gerando 3 variações..." : "Gerando variação..."}
+                    {actionLoading === "improve" ? t.ai.improving : actionLoading === "variations" ? t.ai.generating3Variations : t.ai.generatingVariation}
                   </span>
                 </div>
               )}
@@ -1247,23 +1233,23 @@ export default function AIAssistantPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-base font-bold text-foreground/80 mb-1">Escreva pouco, receba muito</p>
+                    <p className="text-base font-bold text-foreground/80 mb-1">{t.ai.writeReceive}</p>
                     <p className="text-xs text-muted-foreground/60 max-w-[320px] leading-relaxed">
-                      Digite uma ideia simples e o Gerador IA entrega resultados de agência premium automaticamente
+                      {t.ai.writeReceiveDesc}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-muted-foreground/45">
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/10 border border-border/10">
-                      <Wand2 className="h-3 w-3" /> Melhorar prompt
+                      <Wand2 className="h-3 w-3" /> {t.ai.improvePrompt}
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/10 border border-border/10">
-                      <RefreshCw className="h-3 w-3" /> 3 variações
+                      <RefreshCw className="h-3 w-3" /> {t.ai.variations3}
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/10 border border-border/10">
-                      <RotateCw className="h-3 w-3" /> Reutilizar
+                      <RotateCw className="h-3 w-3" /> {t.ai.reuse}
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/10 border border-border/10">
-                      <Bookmark className="h-3 w-3" /> Favoritos
+                      <Bookmark className="h-3 w-3" /> {t.ai.favorites}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground/45">
@@ -1302,8 +1288,8 @@ export default function AIAssistantPage() {
                         <details className="mb-3 rounded-xl bg-primary/5 border border-primary/15 overflow-hidden">
                           <summary className="flex items-center gap-1.5 p-3 cursor-pointer select-none hover:bg-primary/5 transition-colors">
                             <Stars className="h-3 w-3 text-primary" />
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Prompt Otimizado</span>
-                            <span className="text-[9px] text-muted-foreground/50 ml-auto">{msg.enhancedPrompt.split(" ").length} palavras • clique para expandir</span>
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{t.ai.optimizedPrompt}</span>
+                            <span className="text-[9px] text-muted-foreground/50 ml-auto">{msg.enhancedPrompt.split(" ").length} {t.ai.wordsClickExpand}</span>
                           </summary>
                           <div className="px-3 pb-3">
                             <p className="text-[11px] text-muted-foreground leading-relaxed">{msg.enhancedPrompt}</p>
@@ -1312,7 +1298,7 @@ export default function AIAssistantPage() {
                               className="mt-1.5 flex items-center gap-1 text-[9px] text-primary/60 hover:text-primary transition-colors"
                             >
                               {copied === msg.id + "-prompt" ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
-                              {copied === msg.id + "-prompt" ? "Copiado" : "Copiar prompt"}
+                              {copied === msg.id + "-prompt" ? t.ai.copiedPrompt : t.ai.copyPrompt}
                             </button>
                           </div>
                         </details>
@@ -1332,7 +1318,7 @@ export default function AIAssistantPage() {
                                 onClick={() => handleDownloadImage(msg.imageUrl!)}
                               >
                                 <Download className="h-3.5 w-3.5 mr-1" />
-                                Baixar
+                                {t.ai.download}
                               </Button>
                               {msg.enhancedPrompt && activeSessionId && (
                                 <Button
@@ -1343,7 +1329,7 @@ export default function AIAssistantPage() {
                                   disabled={!!actionLoading}
                                 >
                                   {actionLoading === "image_variation" ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5 mr-1" />}
-                                  Nova Variação
+                                  {t.ai.newVariation}
                                 </Button>
                               )}
                             </div>
@@ -1356,7 +1342,7 @@ export default function AIAssistantPage() {
                               onClick={() => handleDownloadImage(msg.imageUrl!)}
                             >
                               <Download className="h-3 w-3 mr-1" />
-                              Baixar Imagem
+                              {t.ai.downloadImage}
                             </Button>
                             {msg.enhancedPrompt && (
                               <Button
@@ -1366,7 +1352,7 @@ export default function AIAssistantPage() {
                                 onClick={() => handleCopy(msg.enhancedPrompt!, msg.id + "-prompt-btn")}
                               >
                                 {copied === msg.id + "-prompt-btn" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                                Copiar Prompt
+                                {t.ai.copyPrompt}
                               </Button>
                             )}
                             {msg.enhancedPrompt && activeSessionId && (
@@ -1378,7 +1364,7 @@ export default function AIAssistantPage() {
                                 disabled={!!actionLoading}
                               >
                                 {actionLoading === "image_variation" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                                Gerar Nova Variação (3cr)
+                                {t.ai.generateNewVariation}
                               </Button>
                             )}
                           </div>
@@ -1388,7 +1374,7 @@ export default function AIAssistantPage() {
                         msg.imageUrl && msg.content.length > 200 ? (
                           <details className="rounded-xl bg-muted/10 border border-border/10 overflow-hidden">
                             <summary className="px-3 py-2 cursor-pointer select-none text-[11px] text-muted-foreground/70 hover:text-muted-foreground transition-colors">
-                              📝 Ver detalhes da geração
+                              {t.ai.viewGenerationDetails}
                             </summary>
                             <div className="px-3 pb-3 whitespace-pre-wrap leading-relaxed text-[12px]">{msg.content}</div>
                           </details>
@@ -1402,16 +1388,16 @@ export default function AIAssistantPage() {
                         <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-border/15">
                           <button onClick={() => handleCopy(msg.content, msg.id)} className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-primary transition-all px-3 py-2 rounded-xl border border-border/20 hover:border-primary/30 hover:bg-primary/10 bg-card/40 backdrop-blur-sm">
                             {copied === msg.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            {copied === msg.id ? "Copiado" : "Copiar"}
+                            {copied === msg.id ? t.ai.copied : t.ai.copy}
                           </button>
 
                           <button
                             onClick={() => handleReuse(msg)}
                             className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-emerald-400 transition-all px-3 py-2 rounded-xl border border-border/20 hover:border-emerald-400/30 hover:bg-emerald-400/10 bg-card/40 backdrop-blur-sm"
-                            title="Reutilizar este prompt"
+                            title={t.ai.reuse}
                           >
                             <RotateCw className="h-3.5 w-3.5" />
-                            Reutilizar
+                            {t.ai.reuse}
                           </button>
 
                           <button
@@ -1423,7 +1409,7 @@ export default function AIAssistantPage() {
                             )}
                           >
                             {savedMessages.some(m => m.id === msg.id) ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                            {savedMessages.some(m => m.id === msg.id) ? "Salvo" : "Salvar"}
+                            {savedMessages.some(m => m.id === msg.id) ? t.ai.savedLabel : t.ai.save}
                           </button>
 
                           {/* ★ Generate 3 Variations (prominent) */}
@@ -1433,7 +1419,7 @@ export default function AIAssistantPage() {
                               className="flex items-center gap-1.5 text-[10px] font-bold text-[#8B5CF6] transition-all px-3 py-1.5 rounded-lg bg-[#8B5CF6]/8 border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/15 hover:scale-[1.02] ml-auto"
                             >
                               <RefreshCw className="h-3 w-3" />
-                              Gerar 3 Variações
+                              {t.ai.generate3Variations}
                               <span className="text-[8px] px-1 py-0.5 rounded bg-[#8B5CF6]/15 border border-[#8B5CF6]/20">2cr</span>
                             </button>
                           )}
@@ -1452,12 +1438,12 @@ export default function AIAssistantPage() {
                             </div>
                             <div>
                               <p className="text-sm font-bold text-foreground/80">
-                                {selectedTool.id === "image" ? "Gerando imagem..." : "Processando..."}
+                                {selectedTool.id === "image" ? t.ai.generatingImage : t.ai.processing}
                               </p>
                               {selectedTool.id === "image" && (
                                 <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground/50">
-                                  <p>① Refinando prompt com GPT-4o...</p>
-                                  <p>② Gerando imagem com SDXL Lightning...</p>
+                                  <p>{t.ai.refiningPrompt}</p>
+                                  <p>{t.ai.generatingWithSDXL}</p>
                                 </div>
                               )}
                             </div>
@@ -1485,7 +1471,7 @@ export default function AIAssistantPage() {
                             className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium text-destructive/70 hover:text-destructive bg-destructive/5 hover:bg-destructive/10 border border-destructive/10 hover:border-destructive/20 transition-all"
                           >
                             <Square className="h-3 w-3 fill-current" />
-                            Cancelar
+                            {t.ai.cancelGeneration}
                           </button>
                         </div>
                       )}
@@ -1513,18 +1499,18 @@ export default function AIAssistantPage() {
               </div>
               <button onClick={() => setShowContext(!showContext)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-primary/80 transition-colors font-medium">
                 <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", showContext && "rotate-180")} />
-                Contexto (opcional)
+                {t.ai.contextOptional}
               </button>
 
               {/* Credit cost indicator */}
               <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
                 <Gauge className="h-3 w-3" />
-                <span>Esta geração: <strong className="text-foreground/70">{CREDIT_COSTS[selectedTool.id] || 1} crédito(s)</strong></span>
+                <span>{t.ai.thisGeneration.replace("{cost}", String(CREDIT_COSTS[selectedTool.id] || 1))}</span>
               </div>
             </div>
             {showContext && (
               <Textarea
-                placeholder="Ex: Minha loja vende contas de jogos..."
+                placeholder={t.ai.contextPlaceholder}
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 className="mb-2 min-h-[50px] bg-muted/10 border-border/15 text-xs resize-none"
@@ -1548,17 +1534,17 @@ export default function AIAssistantPage() {
             <div className="relative group/input">
               <div className={cn("absolute -inset-px rounded-xl transition-opacity duration-500 opacity-0 group-focus-within/input:opacity-100", `bg-gradient-to-r ${selectedTool.gradient} blur-sm`)} />
               <div className="relative flex items-end gap-2 rounded-xl border border-primary/10 bg-card/80 p-2 backdrop-blur-sm">
-                <Button variant="ghost" size="icon" type="button" onClick={() => fileInputRef.current?.click()} disabled={loading || !!actionLoading} className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all" title="Enviar imagem">
+                <Button variant="ghost" size="icon" type="button" onClick={() => fileInputRef.current?.click()} disabled={loading || !!actionLoading} className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all" title={t.ai.sendImage}>
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
 
                 <Textarea
                   placeholder={
-                    attachments.length > 0 ? "Descreva o que deseja saber sobre a imagem..."
-                      : selectedTool.id === "image" ? "Descreva a imagem que deseja gerar..."
-                      : selectedTool.id === "prompt_enhancer" ? "Digite uma ideia simples para transformar em prompt profissional..."
-                      : "Escreva seu prompt para o Gerador IA..."
+                    attachments.length > 0 ? t.ai.promptPlaceholderAttachment
+                      : selectedTool.id === "image" ? t.ai.promptPlaceholderImage
+                      : selectedTool.id === "prompt_enhancer" ? t.ai.promptPlaceholderEnhancer
+                      : t.ai.promptPlaceholderDefault
                   }
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -1573,7 +1559,7 @@ export default function AIAssistantPage() {
                   onClick={handleImprovePrompt}
                   disabled={loading || !!actionLoading || !prompt.trim()}
                   className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10 transition-all"
-                  title="Melhorar prompt com IA (1cr)"
+                  title={t.ai.improveWithAI}
                 >
                   {actionLoading === "improve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 </Button>
@@ -1592,7 +1578,7 @@ export default function AIAssistantPage() {
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground/40 mt-2 text-center tracking-wide">
-              ✨ Melhorar (varinha) • 📎 Imagens • 🔄 3 Variações • ⭐ Salvar • ♻️ Reutilizar • Enter para enviar
+              {t.ai.footerHints}
             </p>
           </div>
         </div>
