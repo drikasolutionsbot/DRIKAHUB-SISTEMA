@@ -1142,7 +1142,7 @@ export default function AIAssistantPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteSession(session.id); }}
                           className="shrink-0 p-1 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
-                          title="Excluir chat"
+                          title={t.ai.deleteChat}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
