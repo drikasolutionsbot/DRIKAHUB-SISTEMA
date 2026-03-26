@@ -1074,7 +1074,7 @@ export default function AIAssistantPage() {
                                 <button
                                   onClick={() => handleCopy(gen.result_text || gen.enhanced_prompt || gen.user_input, gen.id)}
                                   className="p-1 rounded hover:bg-primary/10"
-                                  title="Copiar"
+                                  title={t.ai.copy}
                                 >
                                   {copied === gen.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-muted-foreground/50" />}
                                 </button>
