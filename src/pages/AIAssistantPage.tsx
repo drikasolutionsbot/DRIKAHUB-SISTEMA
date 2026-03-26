@@ -778,10 +778,10 @@ export default function AIAssistantPage() {
         }, 100);
       }
     } catch (e: any) {
-      if (e.name === "AbortError" || e.message === "Geração cancelada") {
-        toast({ title: "Cancelado", description: "Geração interrompida." });
+      if (e.name === "AbortError" || e.message === t.ai.generationCancelled) {
+        toast({ title: t.ai.cancelled, description: t.ai.generationStopped });
       } else {
-        toast({ title: "Erro", description: e.message || "Erro ao gerar conteúdo", variant: "destructive" });
+        toast({ title: t.ai.error, description: e.message || t.ai.errorGenerating, variant: "destructive" });
       }
       setSessions(prev => prev.map(s =>
         s.id === sessionId ? { ...s, messages: s.messages.filter(m => m.id !== assistantMsgId || m.content) } : s
