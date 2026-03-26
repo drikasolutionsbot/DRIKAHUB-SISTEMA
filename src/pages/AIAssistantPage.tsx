@@ -1214,7 +1214,7 @@ export default function AIAssistantPage() {
                     <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
                   </div>
                   <span className="text-[10px] font-semibold text-primary/80 tracking-wide">
-                    {actionLoading === "improve" ? "Melhorando..." : actionLoading === "variations" ? "Gerando 3 variações..." : "Gerando variação..."}
+                    {actionLoading === "improve" ? t.ai.improving : actionLoading === "variations" ? t.ai.generating3Variations : t.ai.generatingVariation}
                   </span>
                 </div>
               )}
