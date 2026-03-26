@@ -1534,7 +1534,7 @@ export default function AIAssistantPage() {
             <div className="relative group/input">
               <div className={cn("absolute -inset-px rounded-xl transition-opacity duration-500 opacity-0 group-focus-within/input:opacity-100", `bg-gradient-to-r ${selectedTool.gradient} blur-sm`)} />
               <div className="relative flex items-end gap-2 rounded-xl border border-primary/10 bg-card/80 p-2 backdrop-blur-sm">
-                <Button variant="ghost" size="icon" type="button" onClick={() => fileInputRef.current?.click()} disabled={loading || !!actionLoading} className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all" title="Enviar imagem">
+                <Button variant="ghost" size="icon" type="button" onClick={() => fileInputRef.current?.click()} disabled={loading || !!actionLoading} className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all" title={t.ai.sendImage}>
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
