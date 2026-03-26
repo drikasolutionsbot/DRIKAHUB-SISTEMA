@@ -1409,7 +1409,7 @@ export default function AIAssistantPage() {
                             )}
                           >
                             {savedMessages.some(m => m.id === msg.id) ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                            {savedMessages.some(m => m.id === msg.id) ? "Salvo" : "Salvar"}
+                            {savedMessages.some(m => m.id === msg.id) ? t.ai.savedLabel : t.ai.save}
                           </button>
 
                           {/* ★ Generate 3 Variations (prominent) */}
