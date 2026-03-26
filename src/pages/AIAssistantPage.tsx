@@ -996,7 +996,7 @@ export default function AIAssistantPage() {
                 showSaved ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
-              <Bookmark className="h-3 w-3" /> Salvos
+              <Bookmark className="h-3 w-3" /> {t.ai.saved}
               {savedMessages.length > 0 && (
                 <span className="text-[8px] bg-amber-400/20 px-1 rounded">{savedMessages.length}</span>
               )}
