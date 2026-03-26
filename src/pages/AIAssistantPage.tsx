@@ -1364,7 +1364,7 @@ export default function AIAssistantPage() {
                                 disabled={!!actionLoading}
                               >
                                 {actionLoading === "image_variation" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                                Gerar Nova Variação (3cr)
+                                {t.ai.generateNewVariation}
                               </Button>
                             )}
                           </div>
