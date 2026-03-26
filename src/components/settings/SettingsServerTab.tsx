@@ -45,6 +45,19 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const pollCountRef = useRef(0);
 
   const isConnected = !!tenant?.discord_guild_id;
+  const disconnectedGuildStorageKey = tenantId ? `last_disconnected_guild:${tenantId}` : null;
+
+  const getPreferredReconnectGuildId = useCallback(() => {
+    if (!disconnectedGuildStorageKey) return null;
+    const value = localStorage.getItem(disconnectedGuildStorageKey);
+    if (!value || !/^\d{17,20}$/.test(value)) return null;
+    return value;
+  }, [disconnectedGuildStorageKey]);
+
+  const clearPreferredReconnectGuildId = useCallback(() => {
+    if (!disconnectedGuildStorageKey) return;
+    localStorage.removeItem(disconnectedGuildStorageKey);
+  }, [disconnectedGuildStorageKey]);
 
   const getRequestBody = () => {
     const body: any = { tenant_id: tenantId };
@@ -120,8 +133,49 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
     pollCountRef.current = 0;
   }, []);
 
+  const autoLinkGuild = useCallback(async (guild: Guild) => {
+    if (!tenantId) return false;
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-tenant", {
+        body: { tenant_id: tenantId, updates: { discord_guild_id: guild.id } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      clearPreferredReconnectGuildId();
+      await refetchTenant();
+      toast({ title: `Conectado ao servidor ${guild.name}! 🎉` });
+      return true;
+    } catch (err: any) {
+      toast({ title: "Erro ao conectar", description: err.message, variant: "destructive" });
+      return false;
+    } finally {
+      setConnecting(false);
+    }
+  }, [tenantId, clearPreferredReconnectGuildId, refetchTenant]);
+
   const tryAutoLink = useCallback(async () => {
     try {
+      const preferredGuildId = getPreferredReconnectGuildId();
+      if (preferredGuildId) {
+        const { data: verifyData, error: verifyError } = await supabase.functions.invoke("discord-bot-guilds", {
+          body: { ...getRequestBody(), action: "verify_guild", guild_id: preferredGuildId },
+        });
+
+        if (!verifyError && verifyData?.guild) {
+          const linked = await autoLinkGuild(verifyData.guild);
+          if (linked) {
+            stopPolling();
+            setWaitingForBot(false);
+            return true;
+          }
+        }
+
+        if (verifyData?.error) {
+          clearPreferredReconnectGuildId();
+        }
+      }
+
       const baselineIds = Array.from(guildsBeforeInviteRef.current);
       const { data: autoData, error: autoError } = await supabase.functions.invoke("discord-bot-guilds", {
         body: { ...getRequestBody(), baseline_guild_ids: baselineIds },
@@ -130,6 +184,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       if (!autoError && autoData && !Array.isArray(autoData) && autoData.auto_linked) {
         stopPolling();
         setWaitingForBot(false);
+        clearPreferredReconnectGuildId();
         await refetchTenant();
         toast({ title: "Servidor conectado automaticamente! 🎉" });
         return true;
@@ -138,7 +193,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       // silently ignore
     }
     return false;
-  }, [stopPolling, refetchTenant, tenantId]);
+  }, [getPreferredReconnectGuildId, autoLinkGuild, stopPolling, clearPreferredReconnectGuildId, refetchTenant, tenantId]);
 
   // Listen for tab focus / visibility to trigger immediate check
   useEffect(() => {
@@ -215,28 +270,11 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
         // silently retry next interval
       }
     }, 5000);
-  }, [fetchAllBotGuilds, stopPolling, tryAutoLink]);
-
-  const autoLinkGuild = async (guild: Guild) => {
-    if (!tenantId) return;
-    setConnecting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("update-tenant", {
-        body: { tenant_id: tenantId, updates: { discord_guild_id: guild.id } },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      await refetchTenant();
-      toast({ title: `Conectado ao servidor ${guild.name}! 🎉` });
-    } catch (err: any) {
-      toast({ title: "Erro ao conectar", description: err.message, variant: "destructive" });
-    } finally {
-      setConnecting(false);
-    }
-  };
+  }, [fetchAllBotGuilds, stopPolling, autoLinkGuild, tryAutoLink]);
 
   const handleDisconnect = async () => {
     if (!tenantId) return;
+    const previousGuildId = tenant?.discord_guild_id;
     setDisconnecting(true);
     try {
       const { data, error } = await supabase.functions.invoke("update-tenant", {
@@ -244,6 +282,9 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (previousGuildId && disconnectedGuildStorageKey) {
+        localStorage.setItem(disconnectedGuildStorageKey, previousGuildId);
+      }
       await refetchTenant();
       toast({ title: "Servidor desconectado com sucesso!" });
     } catch (err: any) {
