@@ -1559,7 +1559,7 @@ export default function AIAssistantPage() {
                   onClick={handleImprovePrompt}
                   disabled={loading || !!actionLoading || !prompt.trim()}
                   className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground/60 hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10 transition-all"
-                  title="Melhorar prompt com IA (1cr)"
+                  title={t.ai.improveWithAI}
                 >
                   {actionLoading === "improve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 </Button>
