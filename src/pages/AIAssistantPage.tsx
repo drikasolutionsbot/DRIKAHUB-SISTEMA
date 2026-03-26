@@ -801,7 +801,7 @@ export default function AIAssistantPage() {
   const handleCopy = (text: string, msgId: string) => {
     navigator.clipboard.writeText(text);
     setCopied(msgId);
-    toast({ title: "Copiado!" });
+    toast({ title: t.ai.copied });
     setTimeout(() => setCopied(null), 2000);
   };
 
