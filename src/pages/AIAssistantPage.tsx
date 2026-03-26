@@ -1065,9 +1065,9 @@ export default function AIAssistantPage() {
                               </div>
                               <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  onClick={() => { setPrompt(gen.user_input); if (tool) setSelectedTool(tool); setShowDbHistory(false); toast({ title: "♻️ Prompt restaurado!" }); }}
+                                  onClick={() => { setPrompt(gen.user_input); if (tool) setSelectedTool(tool); setShowDbHistory(false); toast({ title: t.ai.promptRestored }); }}
                                   className="p-1 rounded hover:bg-emerald-400/10"
-                                  title="Reutilizar"
+                                  title={t.ai.reuse}
                                 >
                                   <RotateCw className="h-3 w-3 text-emerald-400" />
                                 </button>
