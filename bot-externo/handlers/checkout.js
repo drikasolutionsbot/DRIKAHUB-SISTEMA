@@ -306,6 +306,30 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
           checkoutThread.setArchived?.(true).catch(() => {});
           checkoutThread.setLocked?.(true).catch(() => {});
         }, 5000);
+
+        // ── Send "Pagamento expirado" log ──
+        try {
+          const expStoreConfig = await getStoreConfig(tenant.id);
+          if (expStoreConfig?.logs_channel_id) {
+            const expStoreName = expStoreConfig?.store_title || tenant.name || "Loja";
+            const expStoreLogo = expStoreConfig?.store_logo_url || tenant.logo_url;
+            const { date: expDate, time: expTime } = formatDateTime();
+
+            const logsChannel = await interaction.guild.channels.fetch(expStoreConfig.logs_channel_id);
+            const expiredEmbed = new EmbedBuilder()
+              .setTitle("🍃 Pagamento expirado")
+              .setDescription(`Usuário <@${current.discord_user_id}> deixou o pagamento expirar.`)
+              .setColor(0xED4245)
+              .addFields(
+                { name: "**ID do Pedido**", value: `\`${current.id}\``, inline: false },
+              )
+              .setFooter({ text: `${expStoreName} | ${expDate}, ${expTime}`, iconURL: expStoreLogo || undefined });
+
+            await sendWithIdentity(logsChannel, tenant, { embeds: [expiredEmbed] });
+          }
+        } catch (logErr) {
+          console.error("Failed to send expired log:", logErr);
+        }
       }
     } catch {}
   }, timeout);
@@ -356,6 +380,38 @@ async function goToPayment(interaction, tenant, orderId) {
     }
 
     await updateOrderStatus(order.id, "pending_payment", { payment_id: paymentId, payment_provider: providerKey });
+
+    // ── Send "Pedido solicitado" log ──
+    const reqStoreConfig = await getStoreConfig(tenant.id);
+    if (reqStoreConfig?.logs_channel_id) {
+      try {
+        const reqStoreName = reqStoreConfig?.store_title || tenant.name || "Loja";
+        const reqStoreLogo = reqStoreConfig?.store_logo_url || tenant.logo_url;
+        const reqEmbedColor = parseInt((reqStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+        const provLabel = providerKey === "pushinpay" ? "Pix – PushinPay"
+          : providerKey === "efi" ? "Pix – Efi Bank"
+          : providerKey === "mercadopago" ? "Pix – Mercado Pago"
+          : providerKey === "misticpay" ? "Pix – Mistic Pay"
+          : `Pix – ${providerKey}`;
+        const { date: reqDate, time: reqTime } = formatDateTime();
+
+        const logsChannel = await interaction.guild.channels.fetch(reqStoreConfig.logs_channel_id);
+        const reqLogEmbed = new EmbedBuilder()
+          .setTitle("🆕 Pedido solicitado")
+          .setDescription(`Usuário <@${order.discord_user_id}> solicitou um pedido.`)
+          .setColor(reqEmbedColor)
+          .addFields(
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(priceCents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Forma de Pagamento**", value: `\`💎 ${provLabel}\``, inline: false },
+          )
+          .setFooter({ text: `${reqStoreName} | ${reqDate}, ${reqTime}`, iconURL: reqStoreLogo || undefined });
+
+        await sendWithIdentity(logsChannel, tenant, { embeds: [reqLogEmbed] });
+      } catch (logErr) {
+        console.error("Failed to send order requested log:", logErr);
+      }
+    }
   } else {
     // Static PIX
     if (!tenant.pix_key) {
@@ -369,17 +425,21 @@ async function goToPayment(interaction, tenant, orderId) {
     if (storeConfig?.logs_channel_id) {
       try {
         const logsChannel = await interaction.guild.channels.fetch(storeConfig.logs_channel_id);
+        const reqStoreName = storeConfig?.store_title || tenant.name || "Loja";
+        const reqStoreLogo = storeConfig?.store_logo_url || tenant.logo_url;
+        const reqEmbedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+        const { date: reqDate, time: reqTime } = formatDateTime();
+
         const logEmbed = new EmbedBuilder()
-          .setTitle("🔔 Novo Pedido — PIX Estático")
-          .setDescription("Aguardando confirmação manual do pagamento.")
-          .setColor(0xFEE75C)
+          .setTitle("🆕 Pedido solicitado")
+          .setDescription(`Usuário <@${order.discord_user_id}> solicitou um pedido.`)
+          .setColor(reqEmbedColor)
           .addFields(
-            { name: "📦 Produto", value: order.product_name, inline: true },
-            { name: "💰 Valor", value: formatBRL(priceCents), inline: true },
-            { name: "🔢 Pedido", value: `#${order.order_number}`, inline: true },
-            { name: "👤 Comprador", value: `<@${order.discord_user_id}> (${order.discord_username})`, inline: false },
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(priceCents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Forma de Pagamento**", value: `\`💎 Pix – Estático\``, inline: false },
           )
-          .setTimestamp();
+          .setFooter({ text: `${reqStoreName} | ${reqDate}, ${reqTime}`, iconURL: reqStoreLogo || undefined });
 
         const approvalRow = new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId(`approve_order:${order.id}`).setLabel("Aprovar Pagamento").setEmoji("✅").setStyle(ButtonStyle.Success),
