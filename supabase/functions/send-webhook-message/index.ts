@@ -101,13 +101,231 @@ async function getOrCreateWebhook(channelId: string, botToken: string, botUserId
   }
 }
 
+// ── Build product embed payload (shared between post & sync) ──
+async function buildProductPayload(
+  supabase: any,
+  tenant_id: string,
+  product_id: string,
+  botToken: string,
+  tenant: any,
+  storeConfig: any,
+) {
+  const { data: product } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", product_id)
+    .eq("tenant_id", tenant_id)
+    .single();
+
+  if (!product) throw new Error("Produto não encontrado");
+
+  const embedConfig = product.embed_config && typeof product.embed_config === "object" ? product.embed_config : {};
+  const productColor = embedConfig.color;
+  const storeColor = storeConfig?.embed_color;
+  const finalColor = productColor || storeColor || "#2B2D31";
+  const isDefaultColor = !finalColor || finalColor === "#2B2D31";
+
+  const autoDeliveryLine = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
+  const embed: Record<string, any> = {
+    title: product.name,
+    description: `${autoDeliveryLine}${product.description || ""}`,
+    fields: [
+      {
+        name: "**Valor à vista**",
+        value: `\`R$ ${(product.price_cents / 100).toFixed(2).replace(".", ",")}\``,
+        inline: true,
+      },
+    ],
+    footer: {
+      text: `Servidor de ${tenant?.name} • ${new Date().toLocaleString("pt-BR")}`,
+    },
+  };
+
+  if (!isDefaultColor) {
+    embed.color = parseInt(finalColor.replace("#", ""), 16);
+  }
+  if (product.banner_url) embed.image = { url: product.banner_url };
+  if (product.icon_url) embed.thumbnail = { url: product.icon_url };
+
+  // Stock count
+  const { count: realStockCount } = await supabase
+    .from("product_stock_items")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", product_id)
+    .eq("tenant_id", tenant_id)
+    .eq("delivered", false);
+
+  embed.fields.push({
+    name: "Restam",
+    value: `\`${realStockCount ?? 0}\``,
+    inline: true,
+  });
+
+  // Button
+  const styleMap: Record<string, number> = {
+    primary: 1, secondary: 2, success: 3, danger: 4, link: 2, glass: 2,
+  };
+  const discordBuyStyle = styleMap[product.button_style || "success"] || 3;
+  const rawBuyLabel = embedConfig.buy_button_label || "";
+  const normalizedBuyLabel = rawBuyLabel.trim();
+  const finalBuyLabel = !normalizedBuyLabel || normalizedBuyLabel.toLowerCase() === "comprar" ? "🛒 Comprar" : rawBuyLabel;
+  const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(finalBuyLabel);
+
+  const buyButton: any = {
+    type: 2,
+    style: discordBuyStyle,
+    label: btnLabel || "Comprar",
+    custom_id: `buy_product:${product_id}`,
+  };
+
+  if (btnEmoji) {
+    if (isCustom && customId) {
+      buyButton.emoji = { id: customId, name: customName, animated: !!animated };
+    } else {
+      buyButton.emoji = { name: btnEmoji };
+    }
+  }
+
+  // Fields (variations) check
+  const { data: fields } = await supabase
+    .from("product_fields")
+    .select("id")
+    .eq("product_id", product_id)
+    .eq("tenant_id", tenant_id);
+
+  const payload: Record<string, any> = {
+    embeds: [embed],
+    components: [{ type: 1, components: [buyButton] }],
+  };
+
+  return payload;
+}
+
+// ── Sync all posted messages for a product ──
+async function syncProductMessages(
+  supabase: any,
+  tenant_id: string,
+  product_id: string,
+  botToken: string,
+) {
+  // Fetch tenant
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("bot_name, bot_avatar_url, banner_url, name")
+    .eq("id", tenant_id)
+    .single();
+
+  // Fetch store config
+  const { data: storeConfig } = await supabase
+    .from("store_configs")
+    .select("embed_color")
+    .eq("tenant_id", tenant_id)
+    .single();
+
+  const payload = await buildProductPayload(supabase, tenant_id, product_id, botToken, tenant, storeConfig);
+
+  // Fetch all tracked messages for this product
+  const { data: messages, error: msgError } = await supabase
+    .from("product_messages")
+    .select("*")
+    .eq("tenant_id", tenant_id)
+    .eq("product_id", product_id);
+
+  if (msgError) throw new Error("Erro ao buscar mensagens: " + msgError.message);
+  if (!messages || messages.length === 0) {
+    return { synced: 0, total: 0, message: "Nenhuma mensagem encontrada para sincronizar." };
+  }
+
+  const botUserId = await getBotUserId(botToken);
+  const customBotName = tenant?.bot_name || tenant?.name || undefined;
+  const customAvatarUrl = tenant?.bot_avatar_url || undefined;
+
+  let synced = 0;
+  let failed = 0;
+  const toDelete: string[] = [];
+
+  for (const msg of messages) {
+    try {
+      let editUrl: string;
+      let headers: Record<string, string>;
+      let body: Record<string, any>;
+
+      if (msg.webhook_id && msg.webhook_token) {
+        // Edit via webhook
+        editUrl = `${DISCORD_API}/webhooks/${msg.webhook_id}/${msg.webhook_token}/messages/${msg.message_id}`;
+        headers = { "Content-Type": "application/json" };
+        body = { ...payload };
+        if (customBotName) body.username = customBotName;
+        if (customAvatarUrl) body.avatar_url = customAvatarUrl;
+      } else {
+        // Edit via Bot API
+        editUrl = `${DISCORD_API}/channels/${msg.channel_id}/messages/${msg.message_id}`;
+        headers = {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        };
+        body = payload;
+      }
+
+      const res = await fetch(editUrl, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        synced++;
+      } else {
+        const status = res.status;
+        console.error(`Failed to edit message ${msg.message_id}: ${status}`);
+        // If message not found (deleted), remove from tracking
+        if (status === 404 || status === 10008) {
+          toDelete.push(msg.id);
+        }
+        failed++;
+      }
+    } catch (err) {
+      console.error(`Error syncing message ${msg.message_id}:`, err);
+      failed++;
+    }
+  }
+
+  // Clean up deleted messages
+  if (toDelete.length > 0) {
+    await supabase.from("product_messages").delete().in("id", toDelete);
+  }
+
+  return { synced, failed, total: messages.length };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { tenant_id, channel_id, content, embeds, product_id, components, buttons } = await req.json();
+    const body = await req.json();
+    const { action } = body;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
+    if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
+
+    // ── SYNC ACTION ──
+    if (action === "sync") {
+      const { tenant_id, product_id } = body;
+      if (!tenant_id || !product_id) throw new Error("Missing tenant_id or product_id");
+
+      const result = await syncProductMessages(supabase, tenant_id, product_id, botToken);
+      return new Response(JSON.stringify({ success: true, ...result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── POST ACTION (default) ──
+    const { tenant_id, channel_id, content, embeds, product_id, components, buttons } = body;
 
     if (!tenant_id) throw new Error("Missing tenant_id");
     if (!channel_id) throw new Error("Missing channel_id");
@@ -115,19 +333,13 @@ serve(async (req) => {
       throw new Error("Missing content or embeds");
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    // Fetch tenant customization (identidade visual) e usa token único do bot externo
+    // Fetch tenant customization
     const { data: tenant } = await supabase
       .from("tenants")
       .select("bot_name, bot_avatar_url, banner_url, name")
       .eq("id", tenant_id)
       .single();
 
-    const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
-    if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
     const botUserId = await getBotUserId(botToken);
 
     const customBotName = tenant?.bot_name || tenant?.name || undefined;
@@ -224,7 +436,6 @@ serve(async (req) => {
 
       payload.components = [{ type: 1, components: [buyButton] }];
     } else if (buttons && Array.isArray(buttons) && buttons.length > 0) {
-      // Custom buttons from embed builder
       const styleMap: Record<string, number> = {
         primary: 1, secondary: 2, success: 3, danger: 4, link: 5, glass: 2,
       };
@@ -257,11 +468,15 @@ serve(async (req) => {
     }
 
     let messageId: string;
+    let usedWebhookId: string | null = null;
+    let usedWebhookToken: string | null = null;
 
-    // Try webhook first for custom branding (application-owned webhooks support interactive components)
+    // Try webhook first for custom branding
     if (customBotName || customAvatarUrl) {
       const webhook = await getOrCreateWebhook(channel_id, botToken, botUserId);
       if (webhook) {
+        usedWebhookId = webhook.id;
+        usedWebhookToken = webhook.token;
         const webhookPayload: Record<string, any> = { ...payload };
         if (customBotName) webhookPayload.username = customBotName;
         if (customAvatarUrl) webhookPayload.avatar_url = customAvatarUrl;
@@ -278,7 +493,8 @@ serve(async (req) => {
         } else {
           const errText = await sendRes.text();
           console.error("Webhook send failed, falling back to Bot API:", sendRes.status, errText);
-          // Fallback to Bot API
+          usedWebhookId = null;
+          usedWebhookToken = null;
           const fallbackRes = await fetch(`${DISCORD_API}/channels/${channel_id}/messages`, {
             method: "POST",
             headers: {
@@ -295,7 +511,6 @@ serve(async (req) => {
           messageId = message.id;
         }
       } else {
-        // No webhook available, use Bot API
         const sendRes = await fetch(`${DISCORD_API}/channels/${channel_id}/messages`, {
           method: "POST",
           headers: {
@@ -312,7 +527,6 @@ serve(async (req) => {
         messageId = message.id;
       }
     } else {
-      // No custom branding, use Bot API directly
       const sendRes = await fetch(`${DISCORD_API}/channels/${channel_id}/messages`, {
         method: "POST",
         headers: {
@@ -327,6 +541,20 @@ serve(async (req) => {
       }
       const message = await sendRes.json();
       messageId = message.id;
+    }
+
+    // Track the posted message for sync functionality
+    if (product_id && messageId) {
+      await supabase.from("product_messages").insert({
+        tenant_id,
+        product_id,
+        channel_id,
+        message_id: messageId,
+        webhook_id: usedWebhookId,
+        webhook_token: usedWebhookToken,
+      }).then(({ error: insertErr }: any) => {
+        if (insertErr) console.error("Failed to track message:", insertErr.message);
+      });
     }
 
     return new Response(JSON.stringify({ success: true, message_id: messageId }), {
