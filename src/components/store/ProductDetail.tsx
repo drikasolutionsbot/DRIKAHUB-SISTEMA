@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type DiscordButtonStyle } from "@/components/discord/DiscordButtonStylePicker";
-import { ArrowLeft, RefreshCw, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Send, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductDetailGeneral } from "./ProductDetailGeneral";
