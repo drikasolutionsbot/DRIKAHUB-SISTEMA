@@ -171,8 +171,33 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="outline" size="sm" className="text-xs">
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={syncing}
+            onClick={async () => {
+              if (!tenantId) return;
+              setSyncing(true);
+              try {
+                const { data, error } = await supabase.functions.invoke("send-webhook-message", {
+                  body: { action: "sync", tenant_id: tenantId, product_id: product.id },
+                });
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+                if (data?.synced === 0 && data?.total === 0) {
+                  toast({ title: "Nenhuma mensagem encontrada", description: "Poste uma mensagem primeiro para poder sincronizar.", variant: "destructive" });
+                } else {
+                  toast({ title: `Mensagens sincronizadas! ✅`, description: `${data.synced}/${data.total} mensagens atualizadas.` });
+                }
+              } catch (err: any) {
+                toast({ title: "Erro ao sincronizar", description: err.message, variant: "destructive" });
+              } finally {
+                setSyncing(false);
+              }
+            }}
+          >
+            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
             Sincronizar Mensagens
           </Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => setPostModalOpen(true)}>
