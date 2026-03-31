@@ -12,6 +12,7 @@ export interface EmbedConfig {
   title?: string;
   description?: string;
   footer?: string;
+  footer_text?: string;
   color?: string;
   bg_style?: EmbedBgStyle;
   price_label?: string;
