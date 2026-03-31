@@ -144,9 +144,15 @@ async function openTicket(interaction, tenant, targetChannelId = null) {
     new ButtonBuilder().setCustomId(`ticket_delete_${ticket.id}`).setLabel("Deletar").setStyle(ButtonStyle.Danger),
   );
 
+  const row2 = new ActionRowBuilder().addComponents(
+    new UserSelectMenuBuilder()
+      .setCustomId(`ticket_assign_${ticket.id}`)
+      .setPlaceholder("Selecione algum membro")
+  );
+
   const welcomeMsg = await sendWithIdentity(ticketThread, tenant, {
     content: contentMention, allowedMentions: { users: [userId], roles: staffRoleIds },
-    embeds: [welcomeEmbed], components: [row1],
+    embeds: [welcomeEmbed], components: [row1, row2],
   });
 
   try { await welcomeMsg.pin(); } catch {}
@@ -293,6 +299,12 @@ async function handleRemindTicket(interaction, tenant, ticketId) {
 async function handleAssignTicket(interaction, tenant, ticketId) {
   const selectedUserId = interaction.values?.[0];
   if (!selectedUserId) return;
+
+  // Only staff can add members
+  const isStaff = await checkStaffPermission(tenant, interaction);
+  if (!isStaff) {
+    return interaction.reply({ content: "❌ Apenas membros da equipe podem adicionar pessoas ao ticket.", ephemeral: true });
+  }
 
   await interaction.deferReply({ ephemeral: true });
 
