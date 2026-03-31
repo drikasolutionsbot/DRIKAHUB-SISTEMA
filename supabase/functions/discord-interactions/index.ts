@@ -38,6 +38,20 @@ function hexToUint8Array(hex: string): Uint8Array {
   return arr;
 }
 
+function applyPurchaseFooterTemplate(template: string | null | undefined, context: Record<string, string | number | null | undefined>) {
+  if (!template || !String(template).trim()) return "";
+  return String(template)
+    .replace(/\{store\}/gi, String(context.storeName ?? ""))
+    .replace(/\{loja\}/gi, String(context.storeName ?? ""))
+    .replace(/\{product\}/gi, String(context.productName ?? ""))
+    .replace(/\{order\}/gi, context.orderNumber ? `#${context.orderNumber}` : "")
+    .replace(/\{expires\}/gi, context.timeoutMin ? `${context.timeoutMin} minutos` : "")
+    .replace(/\{date\}/gi, String(context.date ?? ""))
+    .replace(/\{data\}/gi, [context.date, context.time].filter(Boolean).join(" "))
+    .replace(/\{time\}/gi, String(context.time ?? ""))
+    .replace(/\{user\}/gi, String(context.username ?? ""));
+}
+
 // ─── PIX generation helpers (same as generate-pix) ──────────
 function tlv(id: string, value: string): string {
   return `${id}${value.length.toString().padStart(2, "0")}${value}`;
