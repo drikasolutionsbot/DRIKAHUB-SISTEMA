@@ -17,6 +17,31 @@ const formatDateTime = (dateObj = new Date()) => ({
   time: dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
 });
 
+// ── Log helper ──
+async function sendLog(guild, tenant, { title, description, color, fields: extraFields, storeConfig: sc }) {
+  try {
+    const storeConfig = sc || await getStoreConfig(tenant.id);
+    if (!storeConfig?.logs_channel_id) return;
+    const logsChannel = await guild.channels.fetch(storeConfig.logs_channel_id);
+    const storeName = storeConfig?.store_title || tenant.name || "Loja";
+    const storeLogo = storeConfig?.store_logo_url || tenant.logo_url;
+    const embedColor = color || parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+    const { date, time } = formatDateTime();
+
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(description)
+      .setColor(embedColor)
+      .setFooter({ text: `${storeName} | ${date}, ${time}`, iconURL: storeLogo || undefined });
+
+    if (extraFields?.length) embed.addFields(extraFields);
+
+    await sendWithIdentity(logsChannel, tenant, { embeds: [embed] });
+  } catch (err) {
+    console.error(`Failed to send log [${title}]:`, err.message);
+  }
+}
+
 function applyFooterTemplate(template, context = {}) {
   if (!template || !String(template).trim()) return "";
   return String(template)
