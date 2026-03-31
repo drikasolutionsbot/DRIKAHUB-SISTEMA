@@ -848,6 +848,18 @@ async function markDelivered(interaction, tenant, orderId) {
     embeds: [new EmbedBuilder().setTitle("✅ Pedido Entregue").setDescription(`Pedido **#${order.order_number}** (${order.product_name}) entregue.`).setColor(0x57F287)],
     components: [],
   });
+
+  // Log: Entrega manual confirmada
+  await sendLog(interaction.guild, tenant, {
+    title: "📦 Entrega manual confirmada",
+    description: `Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`,
+    color: 0x57F287,
+    fields: [
+      { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+      { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+    ],
+  });
 }
 
 // ── Cancel Manual ──
