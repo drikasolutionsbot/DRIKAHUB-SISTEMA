@@ -708,6 +708,18 @@ async function cancelOrder(interaction, tenant, orderId) {
   const cancelEmbedColor = parseInt((cancelStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
   await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor)] });
 
+  // Log: Pedido cancelado pelo cliente
+  await sendLog(interaction.guild, tenant, {
+    title: "🗑️ Pedido cancelado",
+    description: `Usuário <@${order.discord_user_id}> cancelou o pedido.`,
+    color: 0xED4245,
+    fields: [
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+    ],
+    storeConfig: cancelStoreConfig,
+  });
+
   setTimeout(() => {
     channel.setArchived?.(true).catch(() => {});
     channel.setLocked?.(true).catch(() => {});
