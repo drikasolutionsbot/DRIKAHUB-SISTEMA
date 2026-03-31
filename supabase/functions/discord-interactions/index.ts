@@ -38,6 +38,20 @@ function hexToUint8Array(hex: string): Uint8Array {
   return arr;
 }
 
+function applyPurchaseFooterTemplate(template: string | null | undefined, context: Record<string, string | number | null | undefined>) {
+  if (!template || !String(template).trim()) return "";
+  return String(template)
+    .replace(/\{store\}/gi, String(context.storeName ?? ""))
+    .replace(/\{loja\}/gi, String(context.storeName ?? ""))
+    .replace(/\{product\}/gi, String(context.productName ?? ""))
+    .replace(/\{order\}/gi, context.orderNumber ? `#${context.orderNumber}` : "")
+    .replace(/\{expires\}/gi, context.timeoutMin ? `${context.timeoutMin} minutos` : "")
+    .replace(/\{date\}/gi, String(context.date ?? ""))
+    .replace(/\{data\}/gi, [context.date, context.time].filter(Boolean).join(" "))
+    .replace(/\{time\}/gi, String(context.time ?? ""))
+    .replace(/\{user\}/gi, String(context.username ?? ""));
+}
+
 // ─── PIX generation helpers (same as generate-pix) ──────────
 function tlv(id: string, value: string): string {
   return `${id}${value.length.toString().padStart(2, "0")}${value}`;
@@ -2381,6 +2395,18 @@ async function processPurchase(
     descLines.unshift("⚡ **Entrega Automática!**");
   }
 
+  const checkoutDate = new Date().toLocaleDateString("pt-BR");
+  const checkoutTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const reviewFooterText = applyPurchaseFooterTemplate(storeConfigForCheckout?.purchase_embed_footer, {
+    storeName,
+    productName: orderName,
+    orderNumber: order.order_number,
+    timeoutMin: storeConfigForCheckout?.payment_timeout_minutes || 30,
+    date: checkoutDate,
+    time: checkoutTime,
+    username,
+  }) || `${storeName} • ${checkoutDate} ${checkoutTime}`;
+
   // Send order review embed with buttons
   const reviewEmbed: any = {
     author: { name: username || userId, icon_url: `https://cdn.discordapp.com/embed/avatars/${(parseInt(userId) >> 22) % 6}.png` },
@@ -2391,8 +2417,8 @@ async function processPurchase(
       { name: "Valor à vista", value: formatBRL(priceCents), inline: true },
       { name: "📦 Em estoque", value: stockCount, inline: true },
     ],
-    footer: { 
-      text: storeConfigForCheckout?.purchase_embed_footer || `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+    footer: {
+      text: reviewFooterText,
       icon_url: storeLogo || undefined,
     },
   };
@@ -2609,6 +2635,18 @@ async function generatePixInThread(
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brcode)}`;
 
+  const paymentDate = new Date().toLocaleDateString("pt-BR");
+  const paymentTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const pixFooterText = applyPurchaseFooterTemplate(scBrand?.purchase_embed_footer, {
+    storeName,
+    productName: order.product_name,
+    orderNumber: order.order_number,
+    timeoutMin,
+    date: paymentDate,
+    time: paymentTime,
+    username: order.discord_username || userId,
+  }) || `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${paymentTime}`;
+
   // Send PIX embed in the thread
   const pixEmbed: any = {
     author: { name: order.discord_username || userId },
@@ -2624,7 +2662,7 @@ async function generatePixInThread(
     color: embedColor,
     image: { url: qrImageUrl },
     footer: {
-      text: scBrand?.purchase_embed_footer || `${storeName} – Pagamento expira em ${timeoutMin} minutos.\n• Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      text: pixFooterText,
       icon_url: storeLogo || undefined,
     },
   };
