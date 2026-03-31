@@ -117,6 +117,49 @@ async function generatePushinPayPix(apiKey: string, amountCents: number, webhook
 const formatBRL = (cents: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
+// ─── Store Log Helper ───────────────────────────────────────
+async function sendStoreLog(
+  supabase: any,
+  botToken: string,
+  tenantId: string,
+  opts: { title: string; description: string; color?: number; fields?: any[] }
+) {
+  try {
+    const { data: sc } = await supabase
+      .from("store_configs")
+      .select("logs_channel_id, store_title, store_logo_url, embed_color")
+      .eq("tenant_id", tenantId)
+      .single();
+    if (!sc?.logs_channel_id) return;
+
+    const { data: t } = await supabase.from("tenants").select("name, logo_url").eq("id", tenantId).single();
+    const storeName = sc.store_title || t?.name || "Loja";
+    const storeLogo = sc.store_logo_url || t?.logo_url;
+    const embedColor = opts.color ?? (sc.embed_color ? parseInt(sc.embed_color.replace("#", ""), 16) : 0x2B2D31);
+    const d = new Date().toLocaleDateString("pt-BR");
+    const tm = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    const embed: any = {
+      title: opts.title,
+      description: opts.description,
+      color: embedColor,
+      footer: { text: `${storeName} | ${d}, ${tm}`, icon_url: storeLogo || undefined },
+      timestamp: new Date().toISOString(),
+    };
+    if (opts.fields?.length) embed.fields = opts.fields;
+
+    const res = await fetch(`${DISCORD_API}/channels/${sc.logs_channel_id}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+    if (!res.ok) console.error(`sendStoreLog failed [${opts.title}]:`, res.status, await res.text());
+    else console.log(`[LOG] ${opts.title} sent for tenant ${tenantId}`);
+  } catch (err: any) {
+    console.error(`sendStoreLog error [${opts.title}]:`, err.message);
+  }
+}
+
 function extractProductIdCandidates(rawProductId: string): string[] {
   if (!rawProductId) return [];
 
@@ -920,6 +963,19 @@ serve(async (req) => {
             timestamp: new Date().toISOString(),
           }],
         });
+
+        // Log: Pedido aprovado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "✅ Pedido aprovado",
+          description: `Pedido **#${order.order_number}** aprovado por <@${userId}>.`,
+          color: 0x57F287,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -973,6 +1029,19 @@ serve(async (req) => {
             timestamp: new Date().toISOString(),
           }],
         });
+
+        // Log: Pedido recusado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🚫 Pedido recusado",
+          description: `Pedido **#${order.order_number}** recusado por <@${userId}>.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -1062,6 +1131,17 @@ serve(async (req) => {
             });
           } catch {}
         }, 3000);
+
+        // Log: Pedido cancelado pelo cliente
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🗑️ Pedido cancelado",
+          description: `Usuário <@${order.discord_user_id}> cancelou o pedido.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
 
         return ok();
       }
@@ -1794,6 +1874,19 @@ serve(async (req) => {
           }],
           components: [],
         });
+
+        // Log: Entrega manual confirmada
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "📦 Entrega manual confirmada",
+          description: `Pedido **#${order.order_number}** marcado como entregue por <@${userId}>.`,
+          color: 0x57F287,
+          fields: [
+            { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -1842,6 +1935,19 @@ serve(async (req) => {
           }],
           components: [],
         });
+
+        // Log: Cancelamento manual pelo admin
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "⛔ Cancelamento manual",
+          description: `Pedido **#${order.order_number}** cancelado manualmente por <@${userId}>.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -2176,6 +2282,19 @@ serve(async (req) => {
         });
 
         await editFollowup(interaction, botToken, `✅ Cupom aplicado!`);
+
+        // Log: Cupom aplicado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🏷️ Cupom aplicado",
+          description: `Usuário <@${userId}> aplicou um cupom.`,
+          fields: [
+            { name: "**Cupom**", value: `\`${couponCode}\``, inline: true },
+            { name: "**Desconto**", value: `\`-${formatBRL(discount)}\``, inline: true },
+            { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -2224,6 +2343,19 @@ serve(async (req) => {
         });
 
         await editFollowup(interaction, botToken, `✅ Quantidade atualizada para ${qty}x!`);
+
+        // Log: Quantidade editada
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "✏️ Quantidade editada",
+          description: `Usuário <@${userId}> alterou a quantidade do pedido.`,
+          fields: [
+            { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
+            { name: "**Quantidade**", value: `\`${qty}x\``, inline: true },
+            { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
+
         return ok();
       }
     } catch (err) {
@@ -2608,6 +2740,9 @@ async function generatePixInThread(
     }
 
     await supabase.from("orders").update({ payment_id: paymentId, payment_provider: providerKey }).eq("id", order.id);
+
+    // Log: Pedido solicitado (gateway)
+    await sendPixGeneratedLog(supabase, botToken, order, providerKey);
   } else {
     // Static PIX fallback
     const { data: tenant } = await supabase.from("tenants").select("name, pix_key, pix_key_type").eq("id", tenantId).single();
@@ -2730,6 +2865,36 @@ async function generatePixInThread(
       body: JSON.stringify({ name: `🛒 • ${order.discord_username || userId} • ${order.order_number}` }),
     });
   } catch {}
+
+  // Log: Pedido solicitado (static pix) — only if no gateway log was sent above
+  if (!activeProvider || amountBRL <= 0) {
+    await sendPixGeneratedLog(supabase, botToken, order, "static_pix");
+  }
+}
+
+// ─── Send "Pedido solicitado" log when PIX is generated ─────
+async function sendPixGeneratedLog(
+  supabase: any,
+  botToken: string,
+  order: any,
+  providerKey: string,
+) {
+  const provLabel = providerKey === "pushinpay" ? "Pix – PushinPay"
+    : providerKey === "efi" ? "Pix – Efi Bank"
+    : providerKey === "mercadopago" ? "Pix – Mercado Pago"
+    : providerKey === "misticpay" ? "Pix – Mistic Pay"
+    : providerKey === "static_pix" ? "Pix – Estático"
+    : `Pix – ${providerKey}`;
+
+  await sendStoreLog(supabase, botToken, order.tenant_id, {
+    title: "🆕 Pedido solicitado",
+    description: `Usuário <@${order.discord_user_id}> solicitou um pedido.`,
+    fields: [
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+      { name: "**Forma de Pagamento**", value: `\`💎 ${provLabel}\``, inline: false },
+    ],
+  });
 }
 
 // Immediate ephemeral response
