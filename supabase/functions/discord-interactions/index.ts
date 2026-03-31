@@ -2395,6 +2395,18 @@ async function processPurchase(
     descLines.unshift("⚡ **Entrega Automática!**");
   }
 
+  const checkoutDate = new Date().toLocaleDateString("pt-BR");
+  const checkoutTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const reviewFooterText = applyPurchaseFooterTemplate(storeConfigForCheckout?.purchase_embed_footer, {
+    storeName,
+    productName: orderName,
+    orderNumber: order.order_number,
+    timeoutMin: storeConfigForCheckout?.payment_timeout_minutes || 30,
+    date: checkoutDate,
+    time: checkoutTime,
+    username,
+  }) || `${storeName} • ${checkoutDate} ${checkoutTime}`;
+
   // Send order review embed with buttons
   const reviewEmbed: any = {
     author: { name: username || userId, icon_url: `https://cdn.discordapp.com/embed/avatars/${(parseInt(userId) >> 22) % 6}.png` },
@@ -2405,8 +2417,8 @@ async function processPurchase(
       { name: "Valor à vista", value: formatBRL(priceCents), inline: true },
       { name: "📦 Em estoque", value: stockCount, inline: true },
     ],
-    footer: { 
-      text: storeConfigForCheckout?.purchase_embed_footer || `${storeName} • ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+    footer: {
+      text: reviewFooterText,
       icon_url: storeLogo || undefined,
     },
   };
