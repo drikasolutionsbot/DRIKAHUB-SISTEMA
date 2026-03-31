@@ -4,7 +4,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ProductImageUpload } from "./ProductImageUpload";
 import { useTenant } from "@/contexts/TenantContext";
-import { List, Zap } from "lucide-react";
+import { List, Zap, Shield } from "lucide-react";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Category {
   id: string;
@@ -28,6 +30,7 @@ interface Product {
   show_stock?: boolean;
   show_sold?: boolean;
   enable_instructions?: boolean;
+  role_id?: string | null;
   button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
 }
 
@@ -39,6 +42,7 @@ interface ProductDetailGeneralProps {
 
 export const ProductDetailGeneral = ({ product, onChange, categories = [] }: ProductDetailGeneralProps) => {
   const { tenantId } = useTenant();
+  const { roles, loading: rolesLoading } = useDiscordRoles();
   const nameMaxLen = 256;
   const descMaxLen = 4096;
 
@@ -152,6 +156,39 @@ export const ProductDetailGeneral = ({ product, onChange, categories = [] }: Pro
             <span className="text-xs font-semibold text-foreground">Automática</span>
           </button>
         </div>
+      </section>
+
+      {/* Section: Cargo ao Comprar */}
+      <section className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-foreground" />
+            <p className="text-sm font-bold">Cargo ao Comprar</p>
+          </div>
+          <p className="text-xs text-muted-foreground">Cargo do Discord que o cliente recebe automaticamente ao comprar este produto</p>
+        </div>
+        <Select
+          value={product.role_id || "none"}
+          onValueChange={(val) => onChange({ role_id: val === "none" ? null : val })}
+        >
+          <SelectTrigger className="bg-muted border-border w-full max-w-sm">
+            <SelectValue placeholder="Nenhum cargo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhum cargo</SelectItem>
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: typeof role.color === "string" ? role.color : `#${role.color.toString(16).padStart(6, "0")}` }}
+                  />
+                  {role.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </section>
 
       {/* Section: Imagens */}
