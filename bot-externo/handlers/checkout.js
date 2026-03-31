@@ -36,7 +36,8 @@ async function sendLog(guild, tenant, { title, description, color, fields: extra
 
     if (extraFields?.length) embed.addFields(extraFields);
 
-    await sendWithIdentity(logsChannel, tenant, { embeds: [embed] });
+    // Send directly via channel.send to avoid webhook permission issues on log channels
+    await logsChannel.send({ embeds: [embed] });
   } catch (err) {
     console.error(`Failed to send log [${title}]:`, err.message);
   }
