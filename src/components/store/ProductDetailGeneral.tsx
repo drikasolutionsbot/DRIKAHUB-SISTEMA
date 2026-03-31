@@ -158,6 +158,39 @@ export const ProductDetailGeneral = ({ product, onChange, categories = [] }: Pro
         </div>
       </section>
 
+      {/* Section: Cargo ao Comprar */}
+      <section className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-foreground" />
+            <p className="text-sm font-bold">Cargo ao Comprar</p>
+          </div>
+          <p className="text-xs text-muted-foreground">Cargo do Discord que o cliente recebe automaticamente ao comprar este produto</p>
+        </div>
+        <Select
+          value={product.role_id || "none"}
+          onValueChange={(val) => onChange({ role_id: val === "none" ? null : val })}
+        >
+          <SelectTrigger className="bg-muted border-border w-full max-w-sm">
+            <SelectValue placeholder="Nenhum cargo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhum cargo</SelectItem>
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: typeof role.color === "string" ? role.color : `#${role.color.toString(16).padStart(6, "0")}` }}
+                  />
+                  {role.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </section>
+
       {/* Section: Imagens */}
       <section className="space-y-5">
         <h3 className="text-base font-bold text-foreground">Imagens</h3>
