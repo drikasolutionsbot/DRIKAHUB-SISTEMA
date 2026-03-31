@@ -963,6 +963,19 @@ serve(async (req) => {
             timestamp: new Date().toISOString(),
           }],
         });
+
+        // Log: Pedido aprovado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "✅ Pedido aprovado",
+          description: `Pedido **#${order.order_number}** aprovado por <@${userId}>.`,
+          color: 0x57F287,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -1016,6 +1029,19 @@ serve(async (req) => {
             timestamp: new Date().toISOString(),
           }],
         });
+
+        // Log: Pedido recusado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🚫 Pedido recusado",
+          description: `Pedido **#${order.order_number}** recusado por <@${userId}>.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -1105,6 +1131,17 @@ serve(async (req) => {
             });
           } catch {}
         }, 3000);
+
+        // Log: Pedido cancelado pelo cliente
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🗑️ Pedido cancelado",
+          description: `Usuário <@${order.discord_user_id}> cancelou o pedido.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
 
         return ok();
       }
@@ -1837,6 +1874,19 @@ serve(async (req) => {
           }],
           components: [],
         });
+
+        // Log: Entrega manual confirmada
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "📦 Entrega manual confirmada",
+          description: `Pedido **#${order.order_number}** marcado como entregue por <@${userId}>.`,
+          color: 0x57F287,
+          fields: [
+            { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -1885,6 +1935,19 @@ serve(async (req) => {
           }],
           components: [],
         });
+
+        // Log: Cancelamento manual pelo admin
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "⛔ Cancelamento manual",
+          description: `Pedido **#${order.order_number}** cancelado manualmente por <@${userId}>.`,
+          color: 0xED4245,
+          fields: [
+            { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -2219,6 +2282,19 @@ serve(async (req) => {
         });
 
         await editFollowup(interaction, botToken, `✅ Cupom aplicado!`);
+
+        // Log: Cupom aplicado
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "🏷️ Cupom aplicado",
+          description: `Usuário <@${userId}> aplicou um cupom.`,
+          fields: [
+            { name: "**Cupom**", value: `\`${couponCode}\``, inline: true },
+            { name: "**Desconto**", value: `\`-${formatBRL(discount)}\``, inline: true },
+            { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
+
         return ok();
       }
 
@@ -2267,6 +2343,19 @@ serve(async (req) => {
         });
 
         await editFollowup(interaction, botToken, `✅ Quantidade atualizada para ${qty}x!`);
+
+        // Log: Quantidade editada
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "✏️ Quantidade editada",
+          description: `Usuário <@${userId}> alterou a quantidade do pedido.`,
+          fields: [
+            { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
+            { name: "**Quantidade**", value: `\`${qty}x\``, inline: true },
+            { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          ],
+        });
+
         return ok();
       }
     } catch (err) {
@@ -2773,6 +2862,31 @@ async function generatePixInThread(
       body: JSON.stringify({ name: `🛒 • ${order.discord_username || userId} • ${order.order_number}` }),
     });
   } catch {}
+}
+
+// ─── Send "Pedido solicitado" log when PIX is generated ─────
+async function sendPixGeneratedLog(
+  supabase: any,
+  botToken: string,
+  order: any,
+  providerKey: string,
+) {
+  const provLabel = providerKey === "pushinpay" ? "Pix – PushinPay"
+    : providerKey === "efi" ? "Pix – Efi Bank"
+    : providerKey === "mercadopago" ? "Pix – Mercado Pago"
+    : providerKey === "misticpay" ? "Pix – Mistic Pay"
+    : providerKey === "static_pix" ? "Pix – Estático"
+    : `Pix – ${providerKey}`;
+
+  await sendStoreLog(supabase, botToken, order.tenant_id, {
+    title: "🆕 Pedido solicitado",
+    description: `Usuário <@${order.discord_user_id}> solicitou um pedido.`,
+    fields: [
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+      { name: "**Forma de Pagamento**", value: `\`💎 ${provLabel}\``, inline: false },
+    ],
+  });
 }
 
 // Immediate ephemeral response
