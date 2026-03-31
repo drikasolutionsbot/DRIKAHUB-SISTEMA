@@ -453,9 +453,12 @@ async function goToPayment(interaction, tenant, orderId) {
           .setFooter({ text: `${reqStoreName} | ${reqDate}, ${reqTime}`, iconURL: reqStoreLogo || undefined });
 
         await sendWithIdentity(logsChannel, tenant, { embeds: [reqLogEmbed] });
+        console.log(`[LOG] Pedido solicitado (${providerKey}) sent for order ${order.id} to channel ${reqStoreConfig.logs_channel_id}`);
       } catch (logErr) {
-        console.error("Failed to send order requested log:", logErr);
+        console.error("Failed to send order requested log:", logErr.message, logErr.stack);
       }
+    } else {
+      console.warn(`[LOG] No logs_channel_id configured for tenant ${tenant.id}, skipping order log`);
     }
   } else {
     // Static PIX
