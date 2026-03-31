@@ -770,6 +770,18 @@ async function handleCouponModal(interaction, tenant, orderId) {
   });
 
   await interaction.editReply({ content: "✅ Cupom aplicado!" });
+
+  // Log: Cupom aplicado
+  await sendLog(interaction.guild, tenant, {
+    title: "🏷️ Cupom aplicado",
+    description: `Usuário <@${interaction.user.id}> aplicou um cupom.`,
+    fields: [
+      { name: "**Cupom**", value: `\`${couponCode}\``, inline: true },
+      { name: "**Desconto**", value: `\`-${formatBRL(discount)}\``, inline: true },
+      { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+      { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+    ],
+  });
 }
 
 // ── Quantity Modal ──
