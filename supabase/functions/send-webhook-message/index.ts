@@ -136,19 +136,18 @@ async function buildProductPayload(
         inline: true,
       },
     ],
-    footer: {
-      text: (() => {
-        const footerTemplate = embedConfig.footer_text;
-        const dateStr = new Date().toLocaleString("pt-BR");
-        if (footerTemplate) {
-          return footerTemplate
-            .replace(/\{loja\}/gi, tenant?.name || "Loja")
-            .replace(/\{data\}/gi, dateStr);
-        }
-        return `Servidor de ${tenant?.name} • ${dateStr}`;
-      })(),
-    },
   };
+
+  // Footer - only add if not explicitly hidden
+  if (embedConfig.show_footer !== false) {
+    const footerTemplate = embedConfig.footer_text;
+    const dateStr = new Date().toLocaleString("pt-BR");
+    embed.footer = {
+      text: footerTemplate
+        ? footerTemplate.replace(/\{loja\}/gi, tenant?.name || "Loja").replace(/\{data\}/gi, dateStr)
+        : `Servidor de ${tenant?.name} • ${dateStr}`,
+    };
+  }
 
   if (!isDefaultColor) {
     embed.color = parseInt(finalColor.replace("#", ""), 16);
