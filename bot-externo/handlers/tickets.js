@@ -101,7 +101,7 @@ async function openTicket(interaction, tenant, targetChannelId = null) {
     discord_channel_id: ticketThread.id, status: "open",
   });
 
-  const embedColor = parseInt((storeConfig?.ticket_embed_color || "#2B2D31").replace("#", ""), 16);
+  const embedColor = parseInt((storeConfig?.ticket_embed_color || storeConfig?.embed_color || "#5865F2").replace("#", ""), 16);
   let staffRoleIds = (storeConfig?.ticket_staff_role_id || "").split(",").map((s) => s.trim()).filter(Boolean);
 
   // Fallback: if no explicit staff roles, use tenant_roles with management permissions
@@ -209,7 +209,7 @@ async function handleCloseTicket(interaction, tenant, ticketId) {
     }
 
     await interaction.channel.send({
-      embeds: [new EmbedBuilder().setTitle("📁 Ticket Arquivado").setDescription(`Ticket arquivado por <@${interaction.user.id}>.`).setColor(0x2B2D31)],
+      embeds: [new EmbedBuilder().setTitle("📁 Ticket Arquivado").setDescription(`Ticket arquivado por <@${interaction.user.id}>.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
     });
 
     try {
@@ -255,7 +255,7 @@ async function handleDeleteTicket(interaction, tenant, ticketId) {
     }
 
     await interaction.channel.send({
-      embeds: [new EmbedBuilder().setTitle("🗑️ Ticket Deletado").setDescription(`Ticket deletado por <@${interaction.user.id}>.\nO tópico será excluído em 5 segundos.`).setColor(0x2B2D31)],
+      embeds: [new EmbedBuilder().setTitle("🗑️ Ticket Deletado").setDescription(`Ticket deletado por <@${interaction.user.id}>.\nO tópico será excluído em 5 segundos.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
     });
 
     setTimeout(() => { interaction.channel.delete().catch(() => {}); }, 5000);
@@ -286,7 +286,7 @@ async function handleRemindTicket(interaction, tenant, ticketId) {
     const user = await interaction.client.users.fetch(ticket.discord_user_id);
     const ticketUrl = `https://discord.com/channels/${interaction.guild.id}/${ticket.discord_channel_id}`;
     await user.send({
-      embeds: [new EmbedBuilder().setDescription(`${greeting} <@${ticket.discord_user_id}>, você possui um ticket pendente de resposta; se não for respondido, poderá ser fechado.`).setColor(0x2B2D31)],
+      embeds: [new EmbedBuilder().setDescription(`${greeting} <@${ticket.discord_user_id}>, você possui um ticket pendente de resposta; se não for respondido, poderá ser fechado.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
       components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Ir para o ticket").setStyle(ButtonStyle.Link).setURL(ticketUrl))],
     });
   } catch {}
@@ -793,7 +793,7 @@ async function sendTicketLog(client, ticket, closedByUserId, closedByUsername, a
       const dmEmbed = new EmbedBuilder()
         .setTitle("📜 Transcript do Ticket")
         .setDescription(`Seu ticket foi **${statusLabel.toLowerCase()}** por **@${closedByUsername}**.\nClique no botão abaixo para visualizar o histórico completo.`)
-        .setColor(0x2B2D31)
+        .setColor(embedColor)
         .addFields(
           { name: "Produto", value: ticket.product_name || "Suporte Geral", inline: true },
           { name: "Duração", value: durationStr, inline: true },
