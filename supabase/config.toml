@@ -181,3 +181,6 @@ verify_jwt = false
 
 [functions.manage-saved-embeds]
 verify_jwt = false
+
+[functions.clone-tenant]
+verify_jwt = false
