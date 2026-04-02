@@ -706,12 +706,12 @@ async function approveOrder(interaction, tenant, orderId) {
   try {
     const user = await interaction.client.users.fetch(order.discord_user_id);
     const dmStoreConfig = await getStoreConfig(tenant.id);
-    const dmEmbedColor = parseInt((dmStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+    const dmEmbedColor = await resolveOrderColor(order, dmStoreConfig);
     await user.send({ embeds: [new EmbedBuilder().setTitle("✅ Pagamento Confirmado!").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi aprovado!\nSeu produto será entregue em instantes.`).setColor(dmEmbedColor).setTimestamp()] });
   } catch {}
 
   const approveStoreConfig = await getStoreConfig(tenant.id);
-  const approveEmbedColor = parseInt((approveStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const approveEmbedColor = await resolveOrderColor(order, approveStoreConfig);
   const approvedEmbed = new EmbedBuilder()
     .setTitle("✅ Pedido Aprovado")
     .setDescription(`Pedido **#${order.order_number}** aprovado por <@${interaction.user.id}>`)
