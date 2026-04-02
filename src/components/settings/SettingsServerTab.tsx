@@ -62,6 +62,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [cloneGuildId, setCloneGuildId] = useState("");
   const [cloning, setCloning] = useState(false);
+  const [cloneResult, setCloneResult] = useState<{ token: string; stats: any } | null>(null);
 
   const isConnected = !!tenant?.discord_guild_id;
   const disconnectedGuildStorageKey = tenantId ? `last_disconnected_guild:${tenantId}` : null;
@@ -383,17 +384,29 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast({
-        title: "Loja clonada com sucesso! 🎉",
-        description: `${data?.cloned_products || 0} produtos copiados para o novo servidor.`,
+      setCloneResult({
+        token: data?.access_token || "",
+        stats: data?.stats || {},
       });
-      setCloneDialogOpen(false);
-      setCloneGuildId("");
+      toast({ title: "Loja clonada com sucesso! 🎉" });
     } catch (err: any) {
       toast({ title: "Erro ao clonar", description: err.message, variant: "destructive" });
     } finally {
       setCloning(false);
     }
+  };
+
+  const copyCloneToken = () => {
+    if (cloneResult?.token) {
+      navigator.clipboard.writeText(cloneResult.token);
+      toast({ title: "Token copiado!" });
+    }
+  };
+
+  const handleCloseCloneDialog = () => {
+    setCloneDialogOpen(false);
+    setCloneGuildId("");
+    setCloneResult(null);
   };
 
   return (
@@ -469,7 +482,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               </AlertDialog>
 
               {/* Clone to new server */}
-              <Dialog open={cloneDialogOpen} onOpenChange={setCloneDialogOpen}>
+              <Dialog open={cloneDialogOpen} onOpenChange={(open) => { if (!open) handleCloseCloneDialog(); else setCloneDialogOpen(true); }}>
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
@@ -483,42 +496,97 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Copy className="h-5 w-5 text-primary" />
-                      Clonar loja para outro servidor
+                      {cloneResult ? "Loja clonada!" : "Clonar loja para outro servidor"}
                     </DialogTitle>
                     <DialogDescription>
-                      Isso criará uma nova loja com todos os produtos, estoque, cupons e configurações
-                      copiados do servidor atual. Será gerado um novo plano gratuito para o clone.
+                      {cloneResult
+                        ? "A nova loja foi criada com todas as configurações copiadas."
+                        : "Isso criará uma nova loja com todos os produtos, estoque, cupons e configurações copiados do servidor atual. Será gerado um novo plano gratuito para o clone."
+                      }
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-3 py-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        ID do novo servidor Discord
-                      </Label>
-                      <Input
-                        placeholder="Ex: 123456789012345678"
-                        value={cloneGuildId}
-                        onChange={(e) => setCloneGuildId(e.target.value)}
-                        className="font-mono"
-                        maxLength={20}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Certifique-se de que o bot já foi adicionado ao novo servidor antes de clonar.
-                      </p>
+
+                  {cloneResult ? (
+                    <div className="space-y-4 py-2">
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-lg bg-muted/50 border border-border p-3 text-center">
+                          <p className="text-lg font-bold text-foreground">{cloneResult.stats?.products || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Produtos</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 border border-border p-3 text-center">
+                          <p className="text-lg font-bold text-foreground">{cloneResult.stats?.stock || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Estoque</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 border border-border p-3 text-center">
+                          <p className="text-lg font-bold text-foreground">{cloneResult.stats?.coupons || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Cupons</p>
+                        </div>
+                      </div>
+
+                      {/* Access token */}
+                      {cloneResult.token && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                            Token de acesso da nova loja
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={cloneResult.token}
+                              readOnly
+                              className="font-mono text-xs"
+                            />
+                            <Button size="icon" variant="outline" onClick={copyCloneToken} className="shrink-0">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Use este token para acessar o painel da loja clonada. Guarde-o em segurança!
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-3 py-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                          ID do novo servidor Discord
+                        </Label>
+                        <Input
+                          placeholder="Ex: 123456789012345678"
+                          value={cloneGuildId}
+                          onChange={(e) => setCloneGuildId(e.target.value)}
+                          className="font-mono"
+                          maxLength={20}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Certifique-se de que o bot já foi adicionado ao novo servidor antes de clonar.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setCloneDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleClone}
-                      disabled={cloning || !cloneGuildId.trim()}
-                      className="gradient-pink text-primary-foreground"
-                    >
-                      {cloning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                      {cloning ? "Clonando..." : "Clonar loja"}
-                    </Button>
+                    {cloneResult ? (
+                      <Button onClick={handleCloseCloneDialog} className="gradient-pink text-primary-foreground">
+                        <Check className="h-4 w-4 mr-2" />
+                        Fechar
+                      </Button>
+                    ) : (
+                      <>
+                        <Button variant="outline" onClick={handleCloseCloneDialog}>
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={handleClone}
+                          disabled={cloning || !cloneGuildId.trim()}
+                          className="gradient-pink text-primary-foreground"
+                        >
+                          {cloning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                          {cloning ? "Clonando..." : "Clonar loja"}
+                        </Button>
+                      </>
+                    )}
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
