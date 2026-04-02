@@ -705,6 +705,29 @@ serve(async (req) => {
       return parseInt(sc.embed_color.replace("#", ""), 16);
     };
 
+    // Helper to resolve product-specific embed color: product color > store color > fallback
+    const resolveProductEmbedColor = async (product: any, tid: string): Promise<number | undefined> => {
+      const embedConfig = parseProductEmbedConfig(product?.embed_config);
+      const { data: sc } = await supabase
+        .from("store_configs")
+        .select("embed_color")
+        .eq("tenant_id", tid)
+        .single();
+      const storeColor = sc?.embed_color || "#5865F2";
+      const hex = resolveHexColor(embedConfig.color, resolveHexColor(storeColor));
+      if (hex === "#2B2D31") return undefined;
+      return parseInt(hex.replace("#", ""), 16);
+    };
+
+    // Helper to resolve embed color from an order (fetches product if available)
+    const resolveOrderEmbedColor = async (order: any): Promise<number | undefined> => {
+      if (order?.product_id) {
+        const { data: product } = await supabase.from("products").select("embed_config").eq("id", order.product_id).single();
+        if (product) return resolveProductEmbedColor(product, order.tenant_id);
+      }
+      return getStoreEmbedColor(order.tenant_id);
+    };
+
     try {
       // ─── BUY PRODUCT ─────────────────────────────────────
       if (customId.startsWith("buy_product:")) {
@@ -765,7 +788,7 @@ serve(async (req) => {
             };
           });
 
-          const embedColorVal = await getStoreEmbedColor(tenantId);
+          const embedColorVal = await resolveProductEmbedColor(product, tenantId);
           const autoDelivery = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
           await editFollowup(interaction, botToken, {
             content: "",
@@ -847,7 +870,7 @@ serve(async (req) => {
           return `${emoji} **${f.name}** — ${priceStr}${desc}`;
         });
 
-        const varEmbedColor = await getStoreEmbedColor(product.tenant_id);
+        const varEmbedColor = await resolveProductEmbedColor(fullProduct || product, product.tenant_id);
         const embed = {
           title: `📋 Variações de ${product.name}`,
           description: fieldLines.join("\n"),
@@ -870,7 +893,7 @@ serve(async (req) => {
           .eq("product_id", productId)
           .eq("tenant_id", product.tenant_id);
 
-        const detailEmbedColor = await getStoreEmbedColor(product.tenant_id);
+        const detailEmbedColor = await resolveProductEmbedColor(product, product.tenant_id);
         const autoDeliveryText = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
         const embed: any = {
           title: `ℹ️ ${product.name}`,
@@ -1103,13 +1126,14 @@ serve(async (req) => {
           return ok();
         }
 
-        // Send loading message
+        // Send loading message with product color
         const channelId = interaction.channel_id;
+        const loadingColor = await resolveOrderEmbedColor(order) || 0x2B2D31;
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [{ description: "⏳ | Gerando QR Code...\nQuase lá, só mais um instante!", color: 0x2B2D31 }],
+            embeds: [{ description: "⏳ | Gerando QR Code...\nQuase lá, só mais um instante!", color: loadingColor }],
           }),
         });
 
@@ -1132,11 +1156,12 @@ serve(async (req) => {
 
         // Send cancel message then archive thread
         const channelId = interaction.channel_id;
+        const cancelColor = await resolveOrderEmbedColor(order) || 0x2B2D31;
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [{ title: "❌ Compra Cancelada", description: `Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`, color: 0x2B2D31 }],
+            embeds: [{ title: "❌ Compra Cancelada", description: `Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`, color: cancelColor }],
           }),
         });
 
@@ -2287,6 +2312,7 @@ serve(async (req) => {
         await supabase.from("coupons").update({ used_count: coupon.used_count + 1 }).eq("id", coupon.id);
 
         const channelId = interaction.channel_id;
+        const couponColor = await resolveOrderEmbedColor(order) || 0x57F287;
         // Send updated review in the thread
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
@@ -2295,7 +2321,7 @@ serve(async (req) => {
             embeds: [{
               title: "🏷️ Cupom Aplicado!",
               description: `Cupom **${couponCode}** aplicado com sucesso!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`,
-              color: 0x57F287,
+              color: couponColor,
             }],
           }),
         });
@@ -2349,6 +2375,7 @@ serve(async (req) => {
         await supabase.from("orders").update({ total_cents: newTotal }).eq("id", orderId);
 
         const channelId = interaction.channel_id;
+        const qtyColor = await resolveOrderEmbedColor(order) || 0x2B2D31;
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
@@ -2356,7 +2383,7 @@ serve(async (req) => {
             embeds: [{
               title: "✏️ Quantidade Atualizada",
               description: `Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`,
-              color: 0x2B2D31,
+              color: qtyColor,
             }],
           }),
         });
@@ -2794,7 +2821,16 @@ async function generatePixInThread(
   const storeName = scBrand?.store_title || tInfo?.name || "Loja";
   const storeLogo = scBrand?.store_logo_url || tInfo?.logo_url;
   const timeoutMin = scBrand?.payment_timeout_minutes || 30;
-  const embedColor = scBrand?.embed_color ? parseInt(scBrand.embed_color.replace("#", ""), 16) : 0x2B2D31;
+  // Resolve product-specific color for PIX embed
+  let embedColor = scBrand?.embed_color ? parseInt(scBrand.embed_color.replace("#", ""), 16) : 0x2B2D31;
+  if (order.product_id) {
+    const { data: pixProduct } = await supabase.from("products").select("embed_config").eq("id", order.product_id).single();
+    if (pixProduct) {
+      const pixEmbedConfig = parseProductEmbedConfig(pixProduct.embed_config);
+      const pixHex = resolveHexColor(pixEmbedConfig.color, resolveHexColor(scBrand?.embed_color || "#5865F2"));
+      embedColor = parseInt(pixHex.replace("#", ""), 16);
+    }
+  }
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brcode)}`;
 
