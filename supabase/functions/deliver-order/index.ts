@@ -502,7 +502,7 @@ serve(async (req) => {
             icon_url: tenant?.logo_url || undefined,
           },
           description: [
-            `**${order.discord_username || order.discord_user_id}**`,
+            `<@${order.discord_user_id}>`,
             "",
             "🛒 **Compra Realizada!**",
             "",
