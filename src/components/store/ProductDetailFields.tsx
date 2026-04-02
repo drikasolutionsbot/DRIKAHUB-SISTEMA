@@ -745,6 +745,29 @@ export const ProductDetailFields = ({ productId, onFieldsChange }: ProductDetail
     }
   };
 
+  const moveField = async (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= fields.length) return;
+    const reordered = [...fields];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+    const updated = reordered.map((f, i) => ({ ...f, sort_order: i }));
+    setFields(updated);
+
+    // Persist both changed sort_orders
+    try {
+      await Promise.all([
+        supabase.functions.invoke("manage-product-fields", {
+          body: { action: "update", tenant_id: tenantId, field_id: updated[index].id, field: { sort_order: index } },
+        }),
+        supabase.functions.invoke("manage-product-fields", {
+          body: { action: "update", tenant_id: tenantId, field_id: updated[newIndex].id, field: { sort_order: newIndex } },
+        }),
+      ]);
+    } catch (e) {
+      console.error("Erro ao reordenar", e);
+    }
+  };
+
   const duplicateField = async (field: ProductField) => {
     if (!tenantId) return;
     try {
