@@ -109,6 +109,22 @@ function getProductEmbedConfig(product) {
   return typeof rawConfig === "object" ? rawConfig : {};
 }
 
+// Resolve embed color for a product: product color > store color > fallback
+function resolveProductColor(product, storeConfig) {
+  const embedConfig = getProductEmbedConfig(product);
+  const hex = resolveHexColor(embedConfig.color, resolveHexColor(storeConfig?.embed_color || "#5865F2"));
+  return parseInt(hex.replace("#", ""), 16);
+}
+
+// Resolve embed color from an order (fetches product if available)
+async function resolveOrderColor(order, storeConfig) {
+  if (order?.product_id) {
+    const { data: product } = await supabase.from("products").select("embed_config").eq("id", order.product_id).single();
+    if (product) return resolveProductColor(product, storeConfig);
+  }
+  return parseInt(resolveHexColor(storeConfig?.embed_color || "#5865F2").replace("#", ""), 16);
+}
+
 function resolveCheckoutFooter(storeConfig, product, stockCount, context) {
   const embedConfig = getProductEmbedConfig(product);
 
@@ -466,7 +482,7 @@ async function goToPayment(interaction, tenant, orderId) {
 
   const channel = interaction.channel;
   const preStoreConfig = await getStoreConfig(tenant.id);
-  const preEmbedColor = parseInt((preStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const preEmbedColor = await resolveOrderColor(order, preStoreConfig);
   await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setDescription("⏳ | Gerando QR Code...\nQuase lá, só mais um instante!").setColor(preEmbedColor)] });
 
   const priceCents = order.total_cents;
@@ -549,7 +565,7 @@ async function goToPayment(interaction, tenant, orderId) {
   const storeName = storeConfig?.store_title || tenant.name || "Loja";
   const storeLogo = storeConfig?.store_logo_url || tenant.logo_url;
   const timeoutMin = storeConfig?.payment_timeout_minutes || 30;
-  const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const embedColor = await resolveOrderColor(order, storeConfig);
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brcode)}`;
   const { date: paymentDate, time: paymentTime } = formatDateTime();
   const pixFooterText = resolvePixFooter(storeConfig, {
@@ -690,12 +706,12 @@ async function approveOrder(interaction, tenant, orderId) {
   try {
     const user = await interaction.client.users.fetch(order.discord_user_id);
     const dmStoreConfig = await getStoreConfig(tenant.id);
-    const dmEmbedColor = parseInt((dmStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+    const dmEmbedColor = await resolveOrderColor(order, dmStoreConfig);
     await user.send({ embeds: [new EmbedBuilder().setTitle("✅ Pagamento Confirmado!").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi aprovado!\nSeu produto será entregue em instantes.`).setColor(dmEmbedColor).setTimestamp()] });
   } catch {}
 
   const approveStoreConfig = await getStoreConfig(tenant.id);
-  const approveEmbedColor = parseInt((approveStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const approveEmbedColor = await resolveOrderColor(order, approveStoreConfig);
   const approvedEmbed = new EmbedBuilder()
     .setTitle("✅ Pedido Aprovado")
     .setDescription(`Pedido **#${order.order_number}** aprovado por <@${interaction.user.id}>`)
@@ -766,7 +782,7 @@ async function cancelOrder(interaction, tenant, orderId) {
 
   const channel = interaction.channel;
   const cancelStoreConfig = await getStoreConfig(tenant.id);
-  const cancelEmbedColor = parseInt((cancelStoreConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const cancelEmbedColor = await resolveOrderColor(order, cancelStoreConfig);
   await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor)] });
 
   // Log: Pedido cancelado pelo cliente
@@ -875,7 +891,7 @@ async function handleQuantityModal(interaction, tenant, orderId) {
   await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal });
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(parseInt(((await getStoreConfig(tenant.id))?.embed_color || "#2B2D31").replace("#", ""), 16))],
+    embeds: [new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id)))],
   });
 
   await interaction.editReply({ content: `✅ Quantidade atualizada para ${qty}x!` });
@@ -902,7 +918,7 @@ async function markDelivered(interaction, tenant, orderId) {
   await updateOrderStatus(orderId, "delivered");
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("✅ Entrega Confirmada").setDescription(`Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`).setColor(parseInt(((await getStoreConfig(tenant.id))?.embed_color || "#2B2D31").replace("#", ""), 16))],
+    embeds: [new EmbedBuilder().setTitle("✅ Entrega Confirmada").setDescription(`Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id)))],
   });
 
   await interaction.editReply({
@@ -978,7 +994,8 @@ async function viewVariations(interaction, tenant, productId) {
   if (!fields.length) return interaction.reply({ content: "Este produto não tem variações.", ephemeral: true });
 
   const storeConfig = await getStoreConfig(product.tenant_id);
-  const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const { data: fullProduct } = await supabase.from("products").select("*").eq("id", productId).single();
+  const embedColor = fullProduct ? resolveProductColor(fullProduct, storeConfig) : parseInt(resolveHexColor(storeConfig?.embed_color || "#5865F2").replace("#", ""), 16);
 
   const fieldLines = fields.map((f) => {
     const emoji = f.emoji || "•";
@@ -1000,7 +1017,7 @@ async function viewDetails(interaction, tenant, productId) {
 
   const fields = await getProductFields(productId, tenant.id);
   const storeConfig = await getStoreConfig(tenant.id);
-  const embedColor = parseInt((storeConfig?.embed_color || "#2B2D31").replace("#", ""), 16);
+  const embedColor = resolveProductColor(product, storeConfig);
 
   const autoDeliveryText = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
   const embed = new EmbedBuilder()
