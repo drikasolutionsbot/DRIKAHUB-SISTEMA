@@ -788,7 +788,7 @@ serve(async (req) => {
             };
           });
 
-          const embedColorVal = await getStoreEmbedColor(tenantId);
+          const embedColorVal = await resolveProductEmbedColor(product, tenantId);
           const autoDelivery = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
           await editFollowup(interaction, botToken, {
             content: "",
