@@ -37,6 +37,7 @@ interface BotInviteData {
 
 const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [waitingForBot, setWaitingForBot] = useState(false);
   const [availableGuilds, setAvailableGuilds] = useState<Guild[]>([]);
@@ -210,6 +211,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
 
   const handleDisconnect = async () => {
     if (!tenantId) return;
+    setDisconnectDialogOpen(false);
     setDisconnecting(true);
     try {
       const { data, error } = await supabase.functions.invoke("update-tenant", {
@@ -291,7 +293,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
             </div>
 
             {/* Disconnect only */}
-            <AlertDialog>
+            <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -316,7 +318,10 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={handleDisconnect}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void handleDisconnect();
+                    }}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Sim, desconectar
