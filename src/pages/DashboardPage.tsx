@@ -475,6 +475,29 @@ const DashboardPage = () => {
     setWaitingForBot(false);
   };
 
+  const handleDisconnectServer = async () => {
+    if (!tenantId || !tenant?.discord_guild_id) return;
+    if (!confirm(t.dashboard.disconnectServerConfirm)) return;
+    try {
+      if (disconnectedGuildStorageKey) {
+        localStorage.setItem(disconnectedGuildStorageKey, tenant.discord_guild_id);
+      }
+      const { data, error } = await supabase.functions.invoke("update-tenant", {
+        body: { tenant_id: tenantId, updates: { discord_guild_id: null } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(t.dashboard.serverDisconnected);
+      if (tenantId) {
+        await logTenantAudit(tenantId, "disconnect_server", "servidor", guildInfo?.name || tenant.name, tenant.discord_guild_id);
+        loadAuditLogs();
+      }
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao desconectar servidor.");
+    }
+  };
+
   const openServerModal = async () => {
     if (!tenantId) {
       toast.error("Tenant não encontrado.");
