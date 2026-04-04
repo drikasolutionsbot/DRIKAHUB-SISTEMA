@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Outlet, Navigate, Link, useLocation } from "react-router-dom";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LayoutDashboard, CreditCard, Users, LogOut, Headphones, Globe, Bell, Crown, UserPlus, Inbox, CheckCircle, BarChart3, ClipboardList, Shield, Menu, BookOpen, Store, GripVertical, Settings2, RotateCcw, Bot } from "lucide-react";
@@ -293,34 +292,6 @@ export const AdminLayout = () => {
   }, [isSuperAdmin, fetchNotifications]);
 
   useEffect(() => {
-    setMobileOpen(false);
-    document.body.style.pointerEvents = "";
-    document.body.style.overflow = "";
-    document.body.removeAttribute("data-scroll-locked");
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const hasOpenDialog = document.querySelector("[role='dialog'][data-state='open']");
-      if (!hasOpenDialog) {
-        if (document.body.style.pointerEvents === "none") {
-          document.body.style.pointerEvents = "";
-        }
-        if (document.body.hasAttribute("data-scroll-locked")) {
-          document.body.style.overflow = "";
-          document.body.removeAttribute("data-scroll-locked");
-        }
-      }
-    }, 2000);
-    return () => {
-      clearInterval(interval);
-      document.body.style.pointerEvents = "";
-      document.body.style.overflow = "";
-      document.body.removeAttribute("data-scroll-locked");
-    };
-  }, []);
-
-  useEffect(() => {
     if (!isSuperAdmin) return;
 
     const channel = supabase
@@ -459,9 +430,7 @@ export const AdminLayout = () => {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
+          <Outlet />
         </main>
       </div>
     </div>

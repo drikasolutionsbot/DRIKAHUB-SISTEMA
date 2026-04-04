@@ -15,7 +15,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { openAsyncExternalUrl } from "@/lib/openAsyncExternalUrl";
 
 const BOT_PERMISSIONS = "536870920";
 
@@ -38,11 +37,9 @@ interface BotInviteData {
 
 const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const [disconnecting, setDisconnecting] = useState(false);
-  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [waitingForBot, setWaitingForBot] = useState(false);
   const [availableGuilds, setAvailableGuilds] = useState<Guild[]>([]);
-  const [inviteRequested, setInviteRequested] = useState(false);
   const guildsBeforeInviteRef = useRef<Set<string>>(new Set());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
@@ -87,7 +84,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       if (data?.error) throw new Error(data.error);
       return (data ?? null) as BotInviteData | null;
     },
-    enabled: !!tenantId && !isConnected && inviteRequested,
+    enabled: !!tenantId && !isConnected,
     staleTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -112,15 +109,8 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      document.body.style.pointerEvents = "";
     };
   }, []);
-
-  useEffect(() => {
-    if (!disconnectDialogOpen) {
-      document.body.style.pointerEvents = "";
-    }
-  }, [disconnectDialogOpen]);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -208,24 +198,18 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void handleFocus();
-      }
-    };
-
     window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") handleFocus();
+    });
 
     return () => {
       window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [waitingForBot, fetchAllBotGuilds, stopPolling]);
 
   const handleDisconnect = async () => {
     if (!tenantId) return;
-    setDisconnectDialogOpen(false);
     setDisconnecting(true);
     try {
       const { data, error } = await supabase.functions.invoke("update-tenant", {
@@ -233,11 +217,6 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      // Reset invite state so we don't auto-fetch on disconnect
-      setInviteRequested(false);
-      setWaitingForBot(false);
-      setAvailableGuilds([]);
-      stopPolling();
       await refetchTenant();
       toast({ title: "Servidor desconectado com sucesso!" });
     } catch (err: any) {
@@ -248,40 +227,25 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   };
 
   const handleAddBot = async () => {
-    try {
-      await openAsyncExternalUrl(async () => {
-        setInviteRequested(true);
-
-        let inviteUrl = botInviteData?.invite_url;
-        if (!inviteUrl) {
-          const refreshed = await refetchInvite();
-          inviteUrl = refreshed.data?.invite_url;
-        }
-
-        if (!inviteUrl) {
-          throw new Error("Não foi possível gerar o link do bot. Tente novamente.");
-        }
-
-        try {
-          const currentGuilds = await fetchAllBotGuilds();
-          guildsBeforeInviteRef.current = new Set(currentGuilds.map((g) => g.id));
-        } catch {
-          guildsBeforeInviteRef.current = new Set();
-        }
-
-        return inviteUrl;
-      }, {
-        loadingTitle: "Abrindo convite do Discord...",
-      });
-
-      startPollingForNewGuild();
-    } catch (err: any) {
-      toast({
-        title: "Não foi possível gerar o link do bot",
-        description: err?.message || "Tente novamente.",
-        variant: "destructive",
-      });
+    let inviteUrl = botInviteData?.invite_url;
+    if (!inviteUrl) {
+      const refreshed = await refetchInvite();
+      inviteUrl = refreshed.data?.invite_url;
     }
+    if (!inviteUrl) {
+      toast({ title: "Não foi possível gerar o link do bot", description: "Tente novamente.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const currentGuilds = await fetchAllBotGuilds();
+      guildsBeforeInviteRef.current = new Set(currentGuilds.map((g) => g.id));
+    } catch {
+      guildsBeforeInviteRef.current = new Set();
+    }
+
+    window.open(inviteUrl, "_blank", "noopener,noreferrer");
+    startPollingForNewGuild();
   };
 
   const handleCancelPolling = () => {
@@ -326,15 +290,40 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-              disabled={disconnecting}
-              onClick={() => setDisconnectDialogOpen(true)}
-            >
-              {disconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
-              Desconectar servidor
-            </Button>
+            {/* Disconnect only */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                  disabled={disconnecting}
+                >
+                  {disconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
+                  Desconectar servidor
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Desconectar servidor?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O bot deixará de operar neste servidor. Todas as configurações ficarão salvas,
+                    mas só funcionarão quando um servidor for reconectado.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDisconnect}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Sim, desconectar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <div className="space-y-5">
@@ -421,30 +410,6 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
             )}
           </div>
         )}
-
-        <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Desconectar servidor?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                O bot deixará de operar neste servidor. Todas as configurações ficarão salvas,
-                mas só funcionarão quando um servidor for reconectado.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => void handleDisconnect()}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Sim, desconectar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
 
       {/* Clear local cache */}

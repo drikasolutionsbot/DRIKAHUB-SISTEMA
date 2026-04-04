@@ -188,12 +188,7 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const tokenSession = sessionStorage.getItem("token_session");
-  let tokenData: any = null;
-  try {
-    tokenData = tokenSession ? JSON.parse(tokenSession) : null;
-  } catch {
-    // ignore corrupt session data
-  }
+  const tokenData = tokenSession ? JSON.parse(tokenSession) : null;
   const avatar = user?.user_metadata?.avatar_url;
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || tokenData?.tenant_name || t.topbar.user;
   const email = user?.email || "token@acesso";
