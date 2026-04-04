@@ -104,38 +104,6 @@ serve(async (req) => {
       }
     }
 
-    // When discord_guild_id changes, sanitize all Discord-specific IDs
-    // (channels, roles) that belong to the old server
-    if (safeUpdates.discord_guild_id && safeUpdates.discord_guild_id !== "null") {
-      // Clear verification IDs from tenants table
-      safeUpdates.verify_role_id = null as any;
-      safeUpdates.verify_channel_id = null as any;
-      safeUpdates.verify_logs_channel_id = null as any;
-
-      // Clear Discord-specific IDs from store_configs
-      await supabase
-        .from("store_configs")
-        .update({
-          logs_channel_id: null,
-          sales_channel_id: null,
-          customer_role_id: null,
-          ticket_channel_id: null,
-          ticket_logs_channel_id: null,
-          ticket_staff_role_id: null,
-          ticket_message_id: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("tenant_id", tenant_id);
-
-      // Clear channel_configs for old server
-      await supabase
-        .from("channel_configs")
-        .delete()
-        .eq("tenant_id", tenant_id);
-
-      console.log(`Sanitized Discord-specific IDs for tenant ${tenant_id} due to guild change`);
-    }
-
     const { data, error } = await supabase
       .from("tenants")
       .update({ ...safeUpdates, updated_at: new Date().toISOString() })
