@@ -7,6 +7,7 @@ import PlanExpiredPage from "@/pages/PlanExpiredPage";
 import ProUpgradeModal from "@/components/ProUpgradeModal";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const DashboardLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -86,7 +87,9 @@ export const DashboardLayout = () => {
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopBar onToggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </main>
         </div>
       </div>
