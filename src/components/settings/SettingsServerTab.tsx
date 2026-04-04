@@ -41,6 +41,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   const [connecting, setConnecting] = useState(false);
   const [waitingForBot, setWaitingForBot] = useState(false);
   const [availableGuilds, setAvailableGuilds] = useState<Guild[]>([]);
+  const [inviteRequested, setInviteRequested] = useState(false);
   const guildsBeforeInviteRef = useRef<Set<string>>(new Set());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
@@ -85,7 +86,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       if (data?.error) throw new Error(data.error);
       return (data ?? null) as BotInviteData | null;
     },
-    enabled: !!tenantId && !isConnected,
+    enabled: !!tenantId && !isConnected && inviteRequested,
     staleTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -219,6 +220,11 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      // Reset invite state so we don't auto-fetch on disconnect
+      setInviteRequested(false);
+      setWaitingForBot(false);
+      setAvailableGuilds([]);
+      stopPolling();
       await refetchTenant();
       toast({ title: "Servidor desconectado com sucesso!" });
     } catch (err: any) {
@@ -229,6 +235,7 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   };
 
   const handleAddBot = async () => {
+    setInviteRequested(true);
     let inviteUrl = botInviteData?.invite_url;
     if (!inviteUrl) {
       const refreshed = await refetchInvite();
