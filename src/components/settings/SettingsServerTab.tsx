@@ -111,8 +111,15 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      document.body.style.pointerEvents = "";
     };
   }, []);
+
+  useEffect(() => {
+    if (!disconnectDialogOpen) {
+      document.body.style.pointerEvents = "";
+    }
+  }, [disconnectDialogOpen]);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -299,43 +306,15 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               </div>
             </div>
 
-            {/* Disconnect only */}
-            <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-                  disabled={disconnecting}
-                >
-                  {disconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
-                  Desconectar servidor
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    Desconectar servidor?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    O bot deixará de operar neste servidor. Todas as configurações ficarão salvas,
-                    mas só funcionarão quando um servidor for reconectado.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(event) => {
-                      event.preventDefault();
-                      void handleDisconnect();
-                    }}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Sim, desconectar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+              disabled={disconnecting}
+              onClick={() => setDisconnectDialogOpen(true)}
+            >
+              {disconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
+              Desconectar servidor
+            </Button>
           </div>
         ) : (
           <div className="space-y-5">
@@ -422,6 +401,30 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
             )}
           </div>
         )}
+
+        <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Desconectar servidor?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                O bot deixará de operar neste servidor. Todas as configurações ficarão salvas,
+                mas só funcionarão quando um servidor for reconectado.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => void handleDisconnect()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Sim, desconectar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Clear local cache */}
