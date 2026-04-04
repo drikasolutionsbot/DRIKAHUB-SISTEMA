@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   ExternalLink, Users, UserCheck, Settings2, Plus, UserPlus, Loader2, Shield,
-  BarChart3, Eye,
+  BarChart3, Eye, Unplug,
 } from "lucide-react";
 import TrashIcon from "@/components/ui/trash-icon";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -475,6 +475,29 @@ const DashboardPage = () => {
     setWaitingForBot(false);
   };
 
+  const handleDisconnectServer = async () => {
+    if (!tenantId || !tenant?.discord_guild_id) return;
+    if (!confirm(t.dashboard.disconnectServerConfirm)) return;
+    try {
+      if (disconnectedGuildStorageKey) {
+        localStorage.setItem(disconnectedGuildStorageKey, tenant.discord_guild_id);
+      }
+      const { data, error } = await supabase.functions.invoke("update-tenant", {
+        body: { tenant_id: tenantId, updates: { discord_guild_id: null } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(t.dashboard.serverDisconnected);
+      if (tenantId) {
+        await logTenantAudit(tenantId, "disconnect_server", "servidor", guildInfo?.name || tenant.name, tenant.discord_guild_id);
+        loadAuditLogs();
+      }
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao desconectar servidor.");
+    }
+  };
+
   const openServerModal = async () => {
     if (!tenantId) {
       toast.error("Tenant não encontrado.");
@@ -595,9 +618,14 @@ const DashboardPage = () => {
                   <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[10px] sm:text-xs font-medium text-muted-foreground"><UserCheck className="h-3 w-3" /> {guildInfo?.presence_count ?? 0} {t.dashboard.online}</span>
                 </div>
               </div>
-              <Button variant="outline" className="gap-2 text-sm" onClick={handleAddBot}>
-                <ExternalLink className="h-3.5 w-3.5" /> {t.dashboard.addDrikaBot}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" className="gap-2 text-sm" onClick={handleAddBot}>
+                  <ExternalLink className="h-3.5 w-3.5" /> {t.dashboard.addDrikaBot}
+                </Button>
+                <Button variant="outline" className="gap-2 text-sm text-destructive hover:text-destructive" onClick={handleDisconnectServer}>
+                  <Unplug className="h-3.5 w-3.5" /> {t.dashboard.disconnectServer}
+                </Button>
+              </div>
             </>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
