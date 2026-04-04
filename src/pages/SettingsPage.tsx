@@ -427,10 +427,6 @@ const SettingsPage = () => {
           <SettingsPlanTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
         </TabsContent>
 
-        {/* Server Tab */}
-        <TabsContent value="server">
-          <SettingsServerTab tenant={tenant} tenantId={tenantId} refetchTenant={refetchTenant} />
-        </TabsContent>
 
 
 
