@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Server, Unplug, Loader2, Check, AlertTriangle, Bot, Trash2 } from "lucide-react";
+import { Server, Unplug, Loader2, Check, AlertTriangle, Bot, Trash2, Database, Cookie, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
