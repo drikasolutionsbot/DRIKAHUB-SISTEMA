@@ -638,26 +638,13 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
               </div>
             )}
 
-            {!waitingForBot && !detectedGuild ? (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Clique no botão abaixo para adicionar o bot ao seu servidor Discord. A conexão será feita automaticamente.
-                </p>
-                <Button
-                  onClick={handleAddBot}
-                  disabled={inviteLoading}
-                  className="w-full gap-2 gradient-pink text-primary-foreground"
-                  size="lg"
-                >
-                  {inviteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-                  Conectar Bot ao Servidor
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Você será redirecionado ao Discord para autorizar o bot. Ao voltar, o servidor será vinculado automaticamente.
-                </p>
+            {connecting ? (
+              <div key="connecting" className="rounded-xl bg-primary/5 border border-primary/20 p-6 text-center space-y-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <p className="text-sm font-medium text-foreground">Vinculando servidor...</p>
               </div>
             ) : waitingForBot ? (
-              <div className="space-y-4">
+              <div key="waiting" className="space-y-4">
                 <div className="rounded-xl bg-primary/5 border border-primary/20 p-6 text-center space-y-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
                   <div>
@@ -676,12 +663,25 @@ const SettingsServerTab = ({ tenant, tenantId, refetchTenant }: Props) => {
                   Cancelar
                 </Button>
               </div>
-            ) : connecting ? (
-              <div className="rounded-xl bg-primary/5 border border-primary/20 p-6 text-center space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                <p className="text-sm font-medium text-foreground">Vinculando servidor...</p>
+            ) : (
+              <div key="idle" className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Clique no botão abaixo para adicionar o bot ao seu servidor Discord. A conexão será feita automaticamente.
+                </p>
+                <Button
+                  onClick={handleAddBot}
+                  disabled={inviteLoading}
+                  className="w-full gap-2 gradient-pink text-primary-foreground"
+                  size="lg"
+                >
+                  {inviteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                  Conectar Bot ao Servidor
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Você será redirecionado ao Discord para autorizar o bot. Ao voltar, o servidor será vinculado automaticamente.
+                </p>
               </div>
-            ) : null}
+            )}
           </div>
         )}
       </div>
