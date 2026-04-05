@@ -314,6 +314,18 @@ export default function ApprovalsPage() {
                       </>
                     )}
 
+                    {order.status === "paid" && (
+                      <Button
+                        size="sm"
+                        onClick={e => { e.stopPropagation(); handleMarkDelivered(order.id); }}
+                        disabled={isProcessingThis}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                      >
+                        <PackageCheck className="h-3.5 w-3.5" />
+                        Marcar como Entregue
+                      </Button>
+                    )}
+
                     {!isPending && order.status !== "canceled" && (
                       <Button
                         size="sm"
