@@ -18,6 +18,7 @@ interface AddStockModalProps {
   onOpenChange: (open: boolean) => void;
   productId: string;
   tenantId: string;
+  fieldId?: string;
   onAdded: () => void;
 }
 
