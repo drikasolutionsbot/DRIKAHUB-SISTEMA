@@ -242,6 +242,7 @@ const DashboardPage = () => {
       add_member: t.dashboard.auditAddMember, remove_member: t.dashboard.auditRemoveMember,
       create_role: t.dashboard.auditCreateRole, delete_role: t.dashboard.auditDeleteRole,
       add_stock: t.dashboard.auditAddStock, deliver_order: t.dashboard.auditDeliverOrder,
+      disconnect_server: t.dashboard.auditDisconnectServer,
     };
     return map[action] || action;
   };

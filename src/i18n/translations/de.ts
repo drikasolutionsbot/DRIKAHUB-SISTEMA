@@ -176,6 +176,7 @@ export const de: TranslationKeys = {
     auditDeleteRole: "hat Rolle entfernt",
     auditAddStock: "hat Bestand hinzugefügt zu",
     auditDeliverOrder: "hat Bestellung geliefert von",
+    auditDisconnectServer: "hat Server getrennt",
     unsavedChanges: "Nicht gespeicherte Änderungen",
     discardChanges: "Änderungen verwerfen",
     saving: "Speichern...",

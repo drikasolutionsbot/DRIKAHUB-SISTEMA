@@ -176,6 +176,7 @@ export const en: TranslationKeys = {
     auditDeleteRole: "removed role",
     auditAddStock: "added stock to",
     auditDeliverOrder: "delivered order from",
+    auditDisconnectServer: "disconnected server",
     unsavedChanges: "Unsaved changes",
     discardChanges: "Discard changes",
     saving: "Saving...",

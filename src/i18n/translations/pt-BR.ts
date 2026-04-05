@@ -180,6 +180,7 @@ export const ptBR = {
     auditDeleteRole: "removeu o cargo",
     auditAddStock: "adicionou estoque em",
     auditDeliverOrder: "entregou pedido de",
+    auditDisconnectServer: "desconectou o servidor",
     // Permission panel
     unsavedChanges: "Alterações não salvas",
     discardChanges: "Descartar alterações",
