@@ -176,12 +176,20 @@ export default function ApprovalsPage() {
             Gerencie pedidos pendentes de confirmação de pagamento
           </p>
         </div>
-        {pendingCount > 0 && (
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-sm px-3 py-1.5 self-start">
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
-            {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 self-start flex-wrap">
+          {pendingCount > 0 && (
+            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-sm px-3 py-1.5">
+              <Clock className="h-3.5 w-3.5 mr-1.5" />
+              {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
+            </Badge>
+          )}
+          {paidCount > 0 && (
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-sm px-3 py-1.5">
+              <PackageCheck className="h-3.5 w-3.5 mr-1.5" />
+              {paidCount} aguardando entrega
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
