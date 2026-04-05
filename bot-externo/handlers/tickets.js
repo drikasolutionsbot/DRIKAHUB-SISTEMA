@@ -88,11 +88,10 @@ async function openTicket(interaction, tenant, targetChannelId = null) {
   try {
     const parentCh = await interaction.guild.channels.fetch(parentChannelId);
 
-    // Ensure the user has SendMessagesInThreads on the parent channel
+    // Ensure the user has permission to send messages inside threads
     try {
       await parentCh.permissionOverwrites.edit(userId, {
         SendMessagesInThreads: true,
-        ViewChannel: true,
       }, { reason: "Ticket: permitir usuário enviar mensagens na thread" });
     } catch (permErr) {
       console.error("[TICKET_OPEN] permission overwrite error:", permErr.message);

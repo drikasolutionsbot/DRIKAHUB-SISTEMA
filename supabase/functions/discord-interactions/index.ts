@@ -1387,6 +1387,26 @@ serve(async (req) => {
           } catch (e) { console.error("Channel check error:", e); }
         }
 
+        // Ensure the user can talk inside threads on the parent channel
+        try {
+          const threadSendPermission = (274877906944n).toString(); // SendMessagesInThreads
+          const overwriteRes = await fetch(`${DISCORD_API}/channels/${parentChannelId}/permissions/${userId}`, {
+            method: "PUT",
+            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              allow: threadSendPermission,
+              deny: "0",
+              type: 1,
+            }),
+          });
+
+          if (!overwriteRes.ok) {
+            console.error("[TICKET_OPEN_BTN] Failed to set thread permission:", await overwriteRes.text());
+          }
+        } catch (e) {
+          console.error("[TICKET_OPEN_BTN] Permission overwrite error:", e);
+        }
+
         // Create private thread
         const ticketSuffix = Date.now().toString(36).slice(-4);
         const threadName = `ticket-${username || userId}-${ticketSuffix}`.toLowerCase().replace(/[^a-z0-9-_]/g, "").substring(0, 100);
