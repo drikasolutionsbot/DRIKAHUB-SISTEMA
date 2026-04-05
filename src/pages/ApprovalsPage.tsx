@@ -137,7 +137,25 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleMarkDelivered = async (orderId: string) => {
+    setProcessing(orderId);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "delivered" as any, updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+      if (error) throw error;
+      toast({ title: "📦 Pedido marcado como entregue!" });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Erro ao marcar entrega", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const pendingCount = orders?.filter(o => o.status === "pending_payment").length || 0;
+  const paidCount = orders?.filter(o => o.status === "paid").length || 0;
 
   const getTimeSince = (date: string) => {
     const diff = Date.now() - new Date(date).getTime();
