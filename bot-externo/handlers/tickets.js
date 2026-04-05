@@ -275,6 +275,11 @@ async function handleDeleteTicket(interaction, tenant, ticketId) {
 
 // ── Remind Ticket ──
 async function handleRemindTicket(interaction, tenant, ticketId) {
+  const isStaff = await checkStaffPermission(tenant, interaction);
+  if (!isStaff) {
+    return interaction.reply({ content: "❌ Apenas membros da equipe podem enviar lembretes.", ephemeral: true });
+  }
+
   await interaction.deferReply({ ephemeral: true });
   const storeConfig = await getStoreConfig(tenant.id);
 
@@ -294,7 +299,7 @@ async function handleRemindTicket(interaction, tenant, ticketId) {
     });
   } catch {}
 
-  await sendWithIdentity(interaction.channel, tenant, { content: `🔔 <@${ticket.discord_user_id}>, este é um lembrete sobre seu ticket!` });
+  await sendWithIdentity(interaction.channel, tenant, { content: `🔔 <@${ticket.discord_user_id}>, este é um lembrete sobre seu ticket! Por favor, verifique se há atualizações pendentes.` });
   await interaction.editReply({ content: `✅ Lembrete enviado para <@${ticket.discord_user_id}>!` });
 }
 
@@ -316,9 +321,18 @@ async function handleAssignTicket(interaction, tenant, ticketId) {
 
   try {
     const ch = await interaction.guild.channels.fetch(ticket.discord_channel_id);
+
+    // Check if user is already in the thread
+    const existingMembers = await ch.members.fetch();
+    if (existingMembers.has(selectedUserId)) {
+      return interaction.editReply({ content: `ℹ️ <@${selectedUserId}> já está neste ticket.` });
+    }
+
     await ch.members.add(selectedUserId);
     await ch.send({ content: `👤 <@${selectedUserId}> foi adicionado ao ticket por <@${interaction.user.id}>.` });
-  } catch {}
+  } catch (err) {
+    return interaction.editReply({ content: "❌ Não foi possível adicionar o membro ao ticket." });
+  }
 
   await interaction.editReply({ content: `✅ <@${selectedUserId}> adicionado ao ticket!` });
 }
