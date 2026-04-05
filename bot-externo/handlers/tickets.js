@@ -275,6 +275,11 @@ async function handleDeleteTicket(interaction, tenant, ticketId) {
 
 // ── Remind Ticket ──
 async function handleRemindTicket(interaction, tenant, ticketId) {
+  const isStaff = await checkStaffPermission(tenant, interaction);
+  if (!isStaff) {
+    return interaction.reply({ content: "❌ Apenas membros da equipe podem enviar lembretes.", ephemeral: true });
+  }
+
   await interaction.deferReply({ ephemeral: true });
   const storeConfig = await getStoreConfig(tenant.id);
 
@@ -294,7 +299,7 @@ async function handleRemindTicket(interaction, tenant, ticketId) {
     });
   } catch {}
 
-  await sendWithIdentity(interaction.channel, tenant, { content: `🔔 <@${ticket.discord_user_id}>, este é um lembrete sobre seu ticket!` });
+  await sendWithIdentity(interaction.channel, tenant, { content: `🔔 <@${ticket.discord_user_id}>, este é um lembrete sobre seu ticket! Por favor, verifique se há atualizações pendentes.` });
   await interaction.editReply({ content: `✅ Lembrete enviado para <@${ticket.discord_user_id}>!` });
 }
 
