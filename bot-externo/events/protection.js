@@ -154,15 +154,22 @@ async function onMemberJoin(client, member) {
 async function onMessage(client, message) {
   if (message.author.bot || !message.guild) return;
 
+  // CRITICAL: Check MessageContent intent FIRST
+  const content = message.content;
+  if (content === "" || content === null || content === undefined) {
+    // Only log once per guild to avoid spam
+    const warnKey = `intent_warn_${message.guild.id}`;
+    if (!spamTracker.has(warnKey)) {
+      console.log(`[protection] ⚠️⚠️⚠️ message.content VAZIO para guild ${message.guild.name} — HABILITE "Message Content Intent" no Discord Developer Portal (https://discord.com/developers/applications) > Bot > Privileged Gateway Intents`);
+      spamTracker.set(warnKey, [{ ts: Date.now(), content: "warned" }]);
+    }
+    if (!content) return; // If truly null/undefined, skip
+  }
+
   const tenant = await client.resolveTenant(message.guild.id);
   if (!tenant) {
     console.log(`[protection] ❌ Tenant não encontrado para guild ${message.guild.id} (${message.guild.name})`);
     return;
-  }
-
-  // Check if MessageContent intent is working
-  if (!message.content && message.content !== "") {
-    console.log(`[protection] ⚠️ message.content é null/undefined — Message Content Intent pode não estar habilitado no Discord Developer Portal`);
   }
 
   const roleIds = getMemberRoleIds(message.member);
@@ -180,7 +187,7 @@ async function onMessage(client, message) {
 
   const settings = await getProtectionSettings(tenant.id);
   const enabledModules = settings.filter(s => s.enabled).map(s => s.module_key);
-  console.log(`[protection] 📋 ${message.guild.name} | Tenant: ${tenant.id} | Módulos ativos: [${enabledModules.join(', ')}] | Content(${message.content?.length || 0}): "${(message.content || '').slice(0, 80)}" | User: ${message.author.username}`);
+  console.log(`[protection] 📋 ${message.guild.name} | Módulos: [${enabledModules.join(', ')}] | Content: "${content.slice(0, 100)}" | User: ${message.author.username} | Roles: [${roleIds.join(',')}]`);
 
   // ── Anti-Spam ──
   const antiSpam = settings.find(s => s.module_key === "anti_spam" && s.enabled);
