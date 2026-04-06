@@ -246,6 +246,8 @@ Deno.serve(async (req) => {
         .eq("tenant_id", tenant_id)
         .eq("delivered", false);
       if (error) throw error;
+      // Sync stock count and Discord embeds
+      await syncStockAndEmbed(supabase, product_id, tenant_id);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
