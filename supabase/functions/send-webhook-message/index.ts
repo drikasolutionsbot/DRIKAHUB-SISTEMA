@@ -409,27 +409,56 @@ serve(async (req) => {
         console.error("Failed to fetch real stock count:", stockError.message);
       }
 
+      const pEmbedConfig = product?.embed_config && typeof product.embed_config === "object" ? product.embed_config : {};
+
       if (embeds && embeds.length > 0) {
         embeds[0].fields = embeds[0].fields || [];
-        const stockField = {
-          name: "Restam",
-          value: `\`${realStockCount ?? 0}\``,
-          inline: true,
-        };
-        const existingStockFieldIndex = embeds[0].fields.findIndex(
-          (field: any) => typeof field?.name === "string" && field.name.toLowerCase() === "restam"
-        );
-        if (existingStockFieldIndex >= 0) {
-          embeds[0].fields[existingStockFieldIndex] = stockField;
-        } else {
-          embeds[0].fields.push(stockField);
+
+        // Update or add price field using custom label
+        if (pEmbedConfig.show_price !== false) {
+          const priceLabel = pEmbedConfig.price_label || "Valor à vista";
+          const existingPriceIdx = embeds[0].fields.findIndex(
+            (f: any) => typeof f?.name === "string" && (f.name.toLowerCase().includes("valor") || f.name.toLowerCase().includes("preço"))
+          );
+          const priceField = {
+            name: `**${priceLabel}**`,
+            value: embeds[0].fields[existingPriceIdx]?.value || "",
+            inline: true,
+          };
+          if (existingPriceIdx >= 0) {
+            embeds[0].fields[existingPriceIdx] = priceField;
+          }
+        }
+
+        // Update or add stock field using custom label
+        if (pEmbedConfig.show_stock_field !== false) {
+          const stockLabel = pEmbedConfig.stock_label || "Restam";
+          const stockField = {
+            name: stockLabel,
+            value: `\`${realStockCount ?? 0}\``,
+            inline: true,
+          };
+          const existingStockIdx = embeds[0].fields.findIndex(
+            (field: any) => typeof field?.name === "string" && (field.name.toLowerCase() === "restam" || field.name.toLowerCase().includes("estoque"))
+          );
+          if (existingStockIdx >= 0) {
+            embeds[0].fields[existingStockIdx] = stockField;
+          } else {
+            embeds[0].fields.push(stockField);
+          }
         }
       }
 
-      if (product?.auto_delivery && embeds && embeds.length > 0) {
+      // Delivery badge using custom text
+      if (embeds && embeds.length > 0) {
+        const showBadge = pEmbedConfig.show_delivery_badge !== false;
         const currentDesc = embeds[0].description || "";
-        if (!currentDesc.includes("Entrega Automática")) {
-          embeds[0].description = `⚡ **Entrega Automática!**\n\n${currentDesc}`;
+        if (showBadge && product?.auto_delivery && !currentDesc.includes("Entrega")) {
+          const badgeText = pEmbedConfig.delivery_auto_text || "⚡ Entrega Automática!";
+          embeds[0].description = `${badgeText}\n\n${currentDesc}`;
+        } else if (showBadge && !product?.auto_delivery && !currentDesc.includes("Entrega")) {
+          const badgeText = pEmbedConfig.delivery_manual_text || "📦 Entrega Manual";
+          embeds[0].description = `${badgeText}\n\n${currentDesc}`;
         }
       }
 
