@@ -193,6 +193,12 @@ async function buildProductPayload(
     embed.footer = { text: footerText };
   }
 
+  if (!isDefaultColor) {
+    embed.color = parseInt(finalColor.replace("#", ""), 16);
+  }
+  if (product.banner_url) embed.image = { url: product.banner_url };
+  if (product.icon_url) embed.thumbnail = { url: product.icon_url };
+
   // Button
   const styleMap: Record<string, number> = {
     primary: 1, secondary: 2, success: 3, danger: 4, link: 2, glass: 2,
