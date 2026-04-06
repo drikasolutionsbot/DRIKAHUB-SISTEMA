@@ -155,12 +155,20 @@ async function onMessage(client, message) {
   if (message.author.bot || !message.guild) return;
 
   const tenant = await client.resolveTenant(message.guild.id);
-  if (!tenant) return;
+  if (!tenant) {
+    console.log(`[protection] ❌ Tenant não encontrado para guild ${message.guild.id} (${message.guild.name})`);
+    return;
+  }
 
   const roleIds = getMemberRoleIds(message.member);
-  if (await isWhitelisted(tenant.id, message.author.id, roleIds)) return;
+  const whitelisted = await isWhitelisted(tenant.id, message.author.id, roleIds);
+  if (whitelisted) {
+    return;
+  }
 
   const settings = await getProtectionSettings(tenant.id);
+  const enabledModules = settings.filter(s => s.enabled).map(s => s.module_key);
+  console.log(`[protection] 📋 ${message.guild.name} | Módulos ativos: [${enabledModules.join(', ')}] | Msg: "${message.content.slice(0, 60)}"`);
 
   // ── Anti-Spam ──
   const antiSpam = settings.find(s => s.module_key === "anti_spam" && s.enabled);
@@ -187,13 +195,14 @@ async function onMessage(client, message) {
     }
 
     if (triggered) {
+      console.log(`[protection] 🚨 Anti-Spam TRIGGERED: ${message.author.username} (${msgs.length} msgs em ${timeWindow/1000}s)`);
       try {
         if (deleteMessages) {
           try {
             const recent = await message.channel.messages.fetch({ limit: Math.min(msgs.length, 10) });
             const userMsgs = recent.filter(m => m.author.id === message.author.id);
-            if (userMsgs.size > 1) await message.channel.bulkDelete(userMsgs).catch(() => {});
-          } catch {}
+            if (userMsgs.size > 1) await message.channel.bulkDelete(userMsgs).catch(e => console.error("[anti_spam] bulkDelete:", e.message));
+          } catch (e) { console.error("[anti_spam] fetch/delete:", e.message); }
         }
 
         await executeAction(action, message.member, "Anti-Spam", muteDuration);
@@ -205,7 +214,8 @@ async function onMessage(client, message) {
           messages_in_window: msgs.length, action,
         });
         spamTracker.delete(key);
-      } catch {}
+        console.log(`[protection] ✅ Anti-Spam executado: ${action}`);
+      } catch (e) { console.error("[anti_spam] Error:", e.message); }
     }
   }
 
@@ -228,6 +238,7 @@ async function onMessage(client, message) {
     // Discord invites
     if (blockInvites && /(discord\.gg|discord\.com\/invite)\//i.test(content)) {
       shouldBlock = true;
+      console.log(`[protection] 🔗 Invite Discord detectado`);
     }
 
     // External links
@@ -243,11 +254,13 @@ async function onMessage(client, message) {
 
           if (blockIpLoggers && ipLoggerDomains.some(d => domain.includes(d))) {
             shouldBlock = true;
+            console.log(`[protection] 🔗 IP logger detectado: ${domain}`);
             break;
           }
 
           if (blockExternal && !domain.includes("discord.com") && !domain.includes("discord.gg")) {
             shouldBlock = true;
+            console.log(`[protection] 🔗 Link externo bloqueado: ${domain}`);
             break;
           }
         } catch {
@@ -257,8 +270,13 @@ async function onMessage(client, message) {
     }
 
     if (shouldBlock) {
+      console.log(`[protection] 🚨 Anti-Link BLOQUEANDO: ${message.author.username}, action=${action}`);
       try {
-        await message.delete().catch(() => {});
+        const deleted = await message.delete().catch(e => { 
+          console.error("[anti_link] Delete falhou:", e.message); 
+          return null; 
+        });
+        console.log(`[protection] 🗑️ Deletado: ${deleted ? 'SIM' : 'NÃO (sem permissão Manage Messages?)'}`);
 
         const actionType = action.replace("delete", "").replace("_", "").trim();
         if (actionType === "warn" || action === "warn") {
@@ -273,7 +291,8 @@ async function onMessage(client, message) {
         await logProtection(tenant.id, "anti_link", action, message.author.id, message.author.username, {
           content: content.slice(0, 200),
         });
-      } catch {}
+        console.log(`[protection] ✅ Anti-Link executado com sucesso`);
+      } catch (e) { console.error("[anti_link] Error geral:", e.message); }
     }
   }
 
@@ -288,8 +307,9 @@ async function onMessage(client, message) {
     const totalMentions = (message.mentions.users?.size || 0) + (message.mentions.roles?.size || 0);
 
     if (totalMentions >= maxMentions) {
+      console.log(`[protection] 🚨 Anti-Mention TRIGGERED: ${message.author.username} (${totalMentions} menções, limite: ${maxMentions})`);
       try {
-        if (deleteMsgFlag) await message.delete().catch(() => {});
+        if (deleteMsgFlag) await message.delete().catch(e => console.error("[anti_mention] Delete falhou:", e.message));
         await executeAction(action, message.member, "Anti-Mention Spam", 5);
 
         await message.channel.send(`⚠️ ${message.author} punido por excesso de menções.`)
@@ -298,7 +318,8 @@ async function onMessage(client, message) {
         await logProtection(tenant.id, "anti_mention", action, message.author.id, message.author.username, {
           mentions: totalMentions, max: maxMentions,
         });
-      } catch {}
+        console.log(`[protection] ✅ Anti-Mention executado: ${action}`);
+      } catch (e) { console.error("[anti_mention] Error:", e.message); }
     }
   }
 
@@ -331,7 +352,7 @@ async function onMessage(client, message) {
           await logProtection(tenant.id, "auto_mod_caps", action, message.author.id, message.author.username, {
             caps_percent: Math.round(percent), threshold: capsPercent,
           });
-        } catch {}
+        } catch (e) { console.error("[anti_caps] Error:", e.message); }
       }
     }
   }
@@ -353,9 +374,8 @@ async function onGuildBanAdd(client, ban) {
   const window = (config.ban_window || 30) * 1000;
   const action = config.action || "remove_roles";
 
-  // Try to find who did the ban via audit log
   try {
-    const auditLogs = await ban.guild.fetchAuditLogs({ type: 22, limit: 1 }); // BAN type
+    const auditLogs = await ban.guild.fetchAuditLogs({ type: 22, limit: 1 });
     const entry = auditLogs.entries.first();
     if (!entry || entry.executor.bot && entry.executor.id === client.user.id) return;
 
@@ -374,7 +394,6 @@ async function onGuildBanAdd(client, ban) {
         await executeAction(action, executor, "Anti-Mass Ban: banimentos em massa detectados");
       }
 
-      // Restore banned user if configured
       if (config.restore_banned) {
         try { await ban.guild.bans.remove(ban.user.id, "Anti-Mass Ban: restauração"); } catch {}
       }
@@ -403,7 +422,7 @@ async function onGuildMemberRemove(client, member) {
   const action = config.action || "remove_roles";
 
   try {
-    const auditLogs = await member.guild.fetchAuditLogs({ type: 20, limit: 1 }); // KICK type
+    const auditLogs = await member.guild.fetchAuditLogs({ type: 20, limit: 1 });
     const entry = auditLogs.entries.first();
     if (!entry || Date.now() - entry.createdTimestamp > 5000) return;
     if (entry.target?.id !== member.id) return;
@@ -452,7 +471,7 @@ async function onChannelDelete(client, channel) {
   const action = config.action || "remove_roles";
 
   try {
-    const auditLogs = await channel.guild.fetchAuditLogs({ type: 12, limit: 1 }); // CHANNEL_DELETE
+    const auditLogs = await channel.guild.fetchAuditLogs({ type: 12, limit: 1 });
     const entry = auditLogs.entries.first();
     if (!entry || Date.now() - entry.createdTimestamp > 5000) return;
     if (entry.executor.bot && entry.executor.id === client.user.id) return;
@@ -497,7 +516,7 @@ async function onRoleDelete(client, role) {
   const action = config.action || "remove_roles";
 
   try {
-    const auditLogs = await role.guild.fetchAuditLogs({ type: 32, limit: 1 }); // ROLE_DELETE
+    const auditLogs = await role.guild.fetchAuditLogs({ type: 32, limit: 1 });
     const entry = auditLogs.entries.first();
     if (!entry || Date.now() - entry.createdTimestamp > 5000) return;
     if (entry.executor.bot && entry.executor.id === client.user.id) return;
