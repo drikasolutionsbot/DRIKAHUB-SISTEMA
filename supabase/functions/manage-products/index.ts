@@ -83,7 +83,8 @@ serve(async (req) => {
 
     throw new Error("Invalid action");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : (typeof error === "object" && error !== null && "message" in error) ? String((error as any).message) : JSON.stringify(error);
+    console.error("manage-products error:", message, error);
     return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
