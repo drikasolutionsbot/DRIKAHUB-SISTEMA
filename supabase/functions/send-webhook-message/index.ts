@@ -125,35 +125,32 @@ async function buildProductPayload(
   const finalColor = productColor || storeColor || "#2B2D31";
   const isDefaultColor = !finalColor || finalColor === "#2B2D31";
 
-  const autoDeliveryLine = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
+  // Delivery badge
+  const showDeliveryBadge = embedConfig.show_delivery_badge !== false;
+  let deliveryLine = "";
+  if (showDeliveryBadge) {
+    if (product.auto_delivery) {
+      deliveryLine = (embedConfig.delivery_auto_text || "⚡ Entrega Automática!") + "\n\n";
+    } else {
+      deliveryLine = (embedConfig.delivery_manual_text || "📦 Entrega Manual") + "\n\n";
+    }
+  }
+
   const embed: Record<string, any> = {
     title: product.name,
-    description: `${autoDeliveryLine}${product.description || ""}`,
-    fields: [
-      {
-        name: "**Valor à vista**",
-        value: `\`R$ ${(product.price_cents / 100).toFixed(2).replace(".", ",")}\``,
-        inline: true,
-      },
-    ],
+    description: `${deliveryLine}${product.description || ""}`,
+    fields: [],
   };
 
-  // Footer - only add if not explicitly hidden
-  if (embedConfig.show_footer !== false) {
-    const footerTemplate = embedConfig.footer_text;
-    const dateStr = new Date().toLocaleString("pt-BR");
-    embed.footer = {
-      text: footerTemplate
-        ? footerTemplate.replace(/\{loja\}/gi, tenant?.name || "Loja").replace(/\{data\}/gi, dateStr)
-        : `Servidor de ${tenant?.name} • ${dateStr}`,
-    };
+  // Price field
+  if (embedConfig.show_price !== false) {
+    const priceLabel = embedConfig.price_label || "Valor à vista";
+    embed.fields.push({
+      name: `**${priceLabel}**`,
+      value: `\`R$ ${(product.price_cents / 100).toFixed(2).replace(".", ",")}\``,
+      inline: true,
+    });
   }
-
-  if (!isDefaultColor) {
-    embed.color = parseInt(finalColor.replace("#", ""), 16);
-  }
-  if (product.banner_url) embed.image = { url: product.banner_url };
-  if (product.icon_url) embed.thumbnail = { url: product.icon_url };
 
   // Stock count
   const { count: realStockCount } = await supabase
@@ -163,11 +160,44 @@ async function buildProductPayload(
     .eq("tenant_id", tenant_id)
     .eq("delivered", false);
 
-  embed.fields.push({
-    name: "Restam",
-    value: `\`${realStockCount ?? 0}\``,
-    inline: true,
-  });
+  // Stock field
+  if (embedConfig.show_stock_field !== false) {
+    const stockLabel = embedConfig.stock_label || "Restam";
+    embed.fields.push({
+      name: stockLabel,
+      value: `\`${realStockCount ?? 0}\``,
+      inline: true,
+    });
+  }
+
+  // Footer
+  if (embedConfig.show_footer !== false) {
+    const stock = realStockCount ?? 0;
+    const dateStr = new Date().toLocaleString("pt-BR");
+    let footerText: string;
+    if (stock > 0 && embedConfig.footer_available_text) {
+      footerText = embedConfig.footer_available_text
+        .replace(/\{loja\}/gi, tenant?.name || "Loja")
+        .replace(/\{data\}/gi, dateStr);
+    } else if (stock <= 0 && embedConfig.footer_unavailable_text) {
+      footerText = embedConfig.footer_unavailable_text
+        .replace(/\{loja\}/gi, tenant?.name || "Loja")
+        .replace(/\{data\}/gi, dateStr);
+    } else if (embedConfig.footer_text) {
+      footerText = embedConfig.footer_text
+        .replace(/\{loja\}/gi, tenant?.name || "Loja")
+        .replace(/\{data\}/gi, dateStr);
+    } else {
+      footerText = `Servidor de ${tenant?.name} • ${dateStr}`;
+    }
+    embed.footer = { text: footerText };
+  }
+
+  if (!isDefaultColor) {
+    embed.color = parseInt(finalColor.replace("#", ""), 16);
+  }
+  if (product.banner_url) embed.image = { url: product.banner_url };
+  if (product.icon_url) embed.thumbnail = { url: product.icon_url };
 
   // Button
   const styleMap: Record<string, number> = {
@@ -385,27 +415,56 @@ serve(async (req) => {
         console.error("Failed to fetch real stock count:", stockError.message);
       }
 
+      const pEmbedConfig = product?.embed_config && typeof product.embed_config === "object" ? product.embed_config : {};
+
       if (embeds && embeds.length > 0) {
         embeds[0].fields = embeds[0].fields || [];
-        const stockField = {
-          name: "Restam",
-          value: `\`${realStockCount ?? 0}\``,
-          inline: true,
-        };
-        const existingStockFieldIndex = embeds[0].fields.findIndex(
-          (field: any) => typeof field?.name === "string" && field.name.toLowerCase() === "restam"
-        );
-        if (existingStockFieldIndex >= 0) {
-          embeds[0].fields[existingStockFieldIndex] = stockField;
-        } else {
-          embeds[0].fields.push(stockField);
+
+        // Update or add price field using custom label
+        if (pEmbedConfig.show_price !== false) {
+          const priceLabel = pEmbedConfig.price_label || "Valor à vista";
+          const existingPriceIdx = embeds[0].fields.findIndex(
+            (f: any) => typeof f?.name === "string" && (f.name.toLowerCase().includes("valor") || f.name.toLowerCase().includes("preço"))
+          );
+          const priceField = {
+            name: `**${priceLabel}**`,
+            value: embeds[0].fields[existingPriceIdx]?.value || "",
+            inline: true,
+          };
+          if (existingPriceIdx >= 0) {
+            embeds[0].fields[existingPriceIdx] = priceField;
+          }
+        }
+
+        // Update or add stock field using custom label
+        if (pEmbedConfig.show_stock_field !== false) {
+          const stockLabel = pEmbedConfig.stock_label || "Restam";
+          const stockField = {
+            name: stockLabel,
+            value: `\`${realStockCount ?? 0}\``,
+            inline: true,
+          };
+          const existingStockIdx = embeds[0].fields.findIndex(
+            (field: any) => typeof field?.name === "string" && (field.name.toLowerCase() === "restam" || field.name.toLowerCase().includes("estoque"))
+          );
+          if (existingStockIdx >= 0) {
+            embeds[0].fields[existingStockIdx] = stockField;
+          } else {
+            embeds[0].fields.push(stockField);
+          }
         }
       }
 
-      if (product?.auto_delivery && embeds && embeds.length > 0) {
+      // Delivery badge using custom text
+      if (embeds && embeds.length > 0) {
+        const showBadge = pEmbedConfig.show_delivery_badge !== false;
         const currentDesc = embeds[0].description || "";
-        if (!currentDesc.includes("Entrega Automática")) {
-          embeds[0].description = `⚡ **Entrega Automática!**\n\n${currentDesc}`;
+        if (showBadge && product?.auto_delivery && !currentDesc.includes("Entrega")) {
+          const badgeText = pEmbedConfig.delivery_auto_text || "⚡ Entrega Automática!";
+          embeds[0].description = `${badgeText}\n\n${currentDesc}`;
+        } else if (showBadge && !product?.auto_delivery && !currentDesc.includes("Entrega")) {
+          const badgeText = pEmbedConfig.delivery_manual_text || "📦 Entrega Manual";
+          embeds[0].description = `${badgeText}\n\n${currentDesc}`;
         }
       }
 
