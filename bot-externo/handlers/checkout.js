@@ -438,6 +438,7 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
   const row1 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`checkout_pay:${order.id}`).setLabel("Ir para o Pagamento").setEmoji("✅").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`checkout_quantity:${order.id}`).setLabel("Editar Quantidade").setEmoji("✏️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`approve_order:${order.id}`).setLabel("Confirmar manualmente").setEmoji("🛠️").setStyle(ButtonStyle.Primary),
   );
   const row2 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`checkout_coupon:${order.id}`).setLabel("Usar Cupom").setEmoji("🏷️").setStyle(ButtonStyle.Secondary),
