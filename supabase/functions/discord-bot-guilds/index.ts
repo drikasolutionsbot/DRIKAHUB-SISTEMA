@@ -37,7 +37,7 @@ serve(async (req) => {
     let tenantIdFromBody: string | null = null;
     let accessToken: string | null = null;
     let action: string | null = null;
-    let invitePermissions = "536870920";
+    let invitePermissions = "8";
     let guildIdFromBody: string | null = null;
     let baselineGuildIds: string[] = [];
 

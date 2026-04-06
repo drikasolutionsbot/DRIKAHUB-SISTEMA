@@ -15,7 +15,7 @@ import {
   Settings,
 } from "lucide-react";
 
-const BOT_PERMISSIONS = "536870920";
+const BOT_PERMISSIONS = "8";
 
 const appendGuildToInvite = (inviteUrl: string, targetGuildId: string) => {
   if (!targetGuildId.trim()) return inviteUrl;
