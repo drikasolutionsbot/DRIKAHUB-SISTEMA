@@ -207,12 +207,25 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // Get product_id from the stock item before deleting
+      const { data: stockItem } = await supabase
+        .from("product_stock_items")
+        .select("product_id")
+        .eq("id", stock_item_id)
+        .eq("tenant_id", tenant_id)
+        .single();
+      const deletedProductId = stockItem?.product_id;
+
       const { error } = await supabase
         .from("product_stock_items")
         .delete()
         .eq("id", stock_item_id)
         .eq("tenant_id", tenant_id);
       if (error) throw error;
+      // Sync stock count and Discord embeds
+      if (deletedProductId) {
+        await syncStockAndEmbed(supabase, deletedProductId, tenant_id);
+      }
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
