@@ -353,15 +353,21 @@ serve(async (req) => {
           });
         } catch {}
       }, 120000);
-    } else if (checkoutThreadId && !isAutoDelivery) {
-      // Manual delivery: keep thread open with staff notification
+    } else if (checkoutThreadId && (!isAutoDelivery || (isAutoDelivery && stockItems.length === 0))) {
+      // Manual delivery OR auto-delivery with no stock: keep thread open with staff notification
+      const isOutOfStock = isAutoDelivery && stockItems.length === 0;
+      const embedTitle = isOutOfStock ? "⚠️ Estoque Esgotado — Entrega Pendente" : "📋 Entrega Manual Pendente";
+      const embedDesc = isOutOfStock
+        ? `O pagamento foi aprovado, mas **não há estoque disponível** para entrega automática.\n\nPor favor, reponha o estoque ou realize a entrega manualmente e clique em **Marcar como Entregue**.`
+        : `Este pedido requer entrega manual.\n\nPor favor, realize a entrega do produto e clique em **Marcar como Entregue** quando finalizar.`;
+
       await fetch(`${DISCORD_API}/channels/${checkoutThreadId}/messages`, {
         method: "POST",
         headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           embeds: [{
-            title: "📋 Entrega Manual Pendente",
-            description: `Este pedido requer entrega manual.\n\nPor favor, realize a entrega do produto e clique em **Marcar como Entregue** quando finalizar.`,
+            title: embedTitle,
+            description: embedDesc,
             color: 0xFEE75C,
             fields: [
               { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true },
@@ -448,12 +454,16 @@ serve(async (req) => {
 
       // 11b. Send delivery log
       try {
+        const isOutOfStock = isAutoDelivery && stockItems.length === 0;
+        const needsManualAction = !isAutoDelivery || isOutOfStock;
         const deliveryLogEmbed: any = {
-          title: isAutoDelivery ? "⚡ Entrega Automática" : "📦 Entrega Manual Pendente",
-          description: isAutoDelivery
+          title: isOutOfStock ? "⚠️ Estoque Esgotado" : isAutoDelivery ? "⚡ Entrega Automática" : "📦 Entrega Manual Pendente",
+          description: isOutOfStock
+            ? `Pedido de <@${order.discord_user_id}> pago, mas **sem estoque** para entrega automática.`
+            : isAutoDelivery
             ? `Usuário <@${order.discord_user_id}> teve seu pedido entregue automaticamente.`
             : `Pedido de <@${order.discord_user_id}> aguardando entrega manual.`,
-          color: isAutoDelivery ? 0x57F287 : 0xFEE75C,
+          color: (isAutoDelivery && !isOutOfStock) ? 0x57F287 : 0xFEE75C,
           fields: [
             { name: "**Detalhes**", value: `${stockItems.length > 0 ? `${stockItems.length}x ` : ""}${order.product_name} | ${formatBRL(order.total_cents)}`, inline: false },
             { name: "**ID do Pedido**", value: order.id, inline: false },
@@ -487,9 +497,9 @@ serve(async (req) => {
             body: logFormData,
           });
         } else {
-          // For manual delivery, include action buttons in the logs channel too
+          // For manual delivery or out-of-stock, include action buttons in the logs channel
           const logPayload: any = { embeds: [deliveryLogEmbed] };
-          if (!isAutoDelivery) {
+          if (needsManualAction) {
             logPayload.components = [{
               type: 1,
               components: [
