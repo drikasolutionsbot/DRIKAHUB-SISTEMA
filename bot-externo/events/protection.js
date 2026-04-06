@@ -154,15 +154,22 @@ async function onMemberJoin(client, member) {
 async function onMessage(client, message) {
   if (message.author.bot || !message.guild) return;
 
+  // CRITICAL: Check MessageContent intent FIRST
+  const content = message.content;
+  if (content === "" || content === null || content === undefined) {
+    // Only log once per guild to avoid spam
+    const warnKey = `intent_warn_${message.guild.id}`;
+    if (!spamTracker.has(warnKey)) {
+      console.log(`[protection] ⚠️⚠️⚠️ message.content VAZIO para guild ${message.guild.name} — HABILITE "Message Content Intent" no Discord Developer Portal (https://discord.com/developers/applications) > Bot > Privileged Gateway Intents`);
+      spamTracker.set(warnKey, [{ ts: Date.now(), content: "warned" }]);
+    }
+    if (!content) return; // If truly null/undefined, skip
+  }
+
   const tenant = await client.resolveTenant(message.guild.id);
   if (!tenant) {
     console.log(`[protection] ❌ Tenant não encontrado para guild ${message.guild.id} (${message.guild.name})`);
     return;
-  }
-
-  // Check if MessageContent intent is working
-  if (!message.content && message.content !== "") {
-    console.log(`[protection] ⚠️ message.content é null/undefined — Message Content Intent pode não estar habilitado no Discord Developer Portal`);
   }
 
   const roleIds = getMemberRoleIds(message.member);
@@ -180,7 +187,7 @@ async function onMessage(client, message) {
 
   const settings = await getProtectionSettings(tenant.id);
   const enabledModules = settings.filter(s => s.enabled).map(s => s.module_key);
-  console.log(`[protection] 📋 ${message.guild.name} | Tenant: ${tenant.id} | Módulos ativos: [${enabledModules.join(', ')}] | Content(${message.content?.length || 0}): "${(message.content || '').slice(0, 80)}" | User: ${message.author.username}`);
+  console.log(`[protection] 📋 ${message.guild.name} | Módulos: [${enabledModules.join(', ')}] | Content: "${content.slice(0, 100)}" | User: ${message.author.username} | Roles: [${roleIds.join(',')}]`);
 
   // ── Anti-Spam ──
   const antiSpam = settings.find(s => s.module_key === "anti_spam" && s.enabled);
@@ -235,6 +242,7 @@ async function onMessage(client, message) {
   const antiLink = settings.find(s => s.module_key === "anti_link" && s.enabled);
   if (antiLink) {
     const config = antiLink.config || {};
+    console.log(`[anti_link] Config:`, JSON.stringify(config));
     const blockInvites = config.block_invites !== false;
     const blockExternal = config.block_external_links === true;
     const blockIpLoggers = config.block_ip_loggers !== false;
@@ -245,12 +253,14 @@ async function onMessage(client, message) {
     const ipLoggerDomains = ["grabify.link", "iplogger.org", "2no.co", "iplogger.com", "iplogger.ru"];
 
     let shouldBlock = false;
+    let blockReason = "";
     const content = message.content;
 
-    // Discord invites
-    if (blockInvites && /(discord\.gg|discord\.com\/invite)\//i.test(content)) {
+    // Discord invites - also catch plain discord.gg/xxx without https
+    if (blockInvites && /(discord\.gg|discord\.com\/invite|discordapp\.com\/invite)\//i.test(content)) {
       shouldBlock = true;
-      console.log(`[protection] 🔗 Invite Discord detectado`);
+      blockReason = "discord_invite";
+      console.log(`[anti_link] 🔗 Invite Discord detectado em: "${content.slice(0, 100)}"`);
     }
 
     // External links
@@ -262,49 +272,61 @@ async function onMessage(client, message) {
         try {
           const domain = new URL(url).hostname.toLowerCase();
           const isAllowed = allowedDomains.some(d => domain.includes(d.toLowerCase()));
-          if (isAllowed) continue;
+          if (isAllowed) { console.log(`[anti_link] ✅ Domínio permitido: ${domain}`); continue; }
 
           if (blockIpLoggers && ipLoggerDomains.some(d => domain.includes(d))) {
             shouldBlock = true;
-            console.log(`[protection] 🔗 IP logger detectado: ${domain}`);
+            blockReason = `ip_logger:${domain}`;
             break;
           }
 
           if (blockExternal && !domain.includes("discord.com") && !domain.includes("discord.gg")) {
             shouldBlock = true;
-            console.log(`[protection] 🔗 Link externo bloqueado: ${domain}`);
+            blockReason = `external:${domain}`;
             break;
           }
         } catch {
           shouldBlock = true;
+          blockReason = "invalid_url";
         }
       }
     }
 
     if (shouldBlock) {
-      console.log(`[protection] 🚨 Anti-Link BLOQUEANDO: ${message.author.username}, action=${action}`);
+      console.log(`[anti_link] 🚨 BLOQUEANDO ${message.author.username} | reason=${blockReason} | action=${action}`);
       try {
+        // Always try to delete the message
         const deleted = await message.delete().catch(e => { 
-          console.error("[anti_link] Delete falhou:", e.message); 
+          console.error(`[anti_link] ❌ Delete FALHOU: ${e.message} — O bot precisa da permissão "Gerenciar Mensagens"`); 
           return null; 
         });
-        console.log(`[protection] 🗑️ Deletado: ${deleted ? 'SIM' : 'NÃO (sem permissão Manage Messages?)'}`);
+        console.log(`[anti_link] 🗑️ Deletado: ${deleted ? 'SIM' : 'FALHOU'}`);
 
-        const actionType = action.replace("delete", "").replace("_", "").trim();
-        if (actionType === "warn" || action === "warn") {
+        // Execute secondary action (mute, warn, kick)
+        if (action === "warn") {
           await message.channel.send(`⚠️ ${message.author}, links não são permitidos aqui.`)
             .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
-        } else if (actionType === "mute" || action === "mute") {
-          await executeAction("mute", message.member, "Anti-Link", 5);
-        } else if (actionType === "kick" || action === "kick") {
-          await executeAction("kick", message.member, "Anti-Link");
+          console.log(`[anti_link] ⚠️ Aviso enviado`);
+        } else if (action === "mute") {
+          await executeAction("mute", message.member, "Anti-Link: link bloqueado", 5);
+          await message.channel.send(`🔇 ${message.author} foi silenciado por enviar links.`)
+            .then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+          console.log(`[anti_link] 🔇 Mute aplicado`);
+        } else if (action === "kick") {
+          await executeAction("kick", message.member, "Anti-Link: link bloqueado");
+          console.log(`[anti_link] 👢 Kick aplicado`);
         }
 
         await logProtection(tenant.id, "anti_link", action, message.author.id, message.author.username, {
-          content: content.slice(0, 200),
+          content: content.slice(0, 200), reason: blockReason,
         });
-        console.log(`[protection] ✅ Anti-Link executado com sucesso`);
-      } catch (e) { console.error("[anti_link] Error geral:", e.message); }
+        console.log(`[anti_link] ✅ Ação concluída com sucesso`);
+      } catch (e) { console.error("[anti_link] ❌ Error geral:", e.message); }
+    } else {
+      // Log when anti-link is active but message passed
+      if (content.includes("discord.gg") || content.includes("http")) {
+        console.log(`[anti_link] ℹ️ Mensagem com URL passou filtro: blockInvites=${blockInvites} blockExternal=${blockExternal} | "${content.slice(0, 80)}"`);
+      }
     }
   }
 
