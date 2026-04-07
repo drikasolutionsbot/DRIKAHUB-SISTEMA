@@ -9,7 +9,7 @@ const {
 } = require("discord.js");
 require("dotenv").config();
 
-const { getTenantByGuild, getGlobalBotConfig } = require("./supabase");
+const { getTenantByGuild, getGlobalBotConfig, autoLinkGuildToPendingTenant } = require("./supabase");
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_BOT_TOKEN);
 
@@ -154,6 +154,27 @@ client.on(Events.GuildCreate, async (guild) => {
   ];
 
   try {
+    let ownerDiscordId = guild.ownerId || null;
+    if (!ownerDiscordId) {
+      try {
+        const owner = await guild.fetchOwner();
+        ownerDiscordId = owner?.id || null;
+      } catch (ownerError) {
+        console.error(`Erro ao resolver owner do servidor ${guild.name}:`, ownerError.message);
+      }
+    }
+
+    const linkedTenant = await autoLinkGuildToPendingTenant({
+      guildId: guild.id,
+      guildName: guild.name,
+      ownerDiscordId,
+    });
+
+    if (linkedTenant) {
+      console.log(`🔗 Servidor ${guild.name} vinculado automaticamente ao tenant ${linkedTenant.name}`);
+      tenantCache.delete(guild.id);
+    }
+
     await rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), {
       body: commands,
     });

@@ -12,6 +12,91 @@ async function getTenantByGuild(guildId) {
   return data;
 }
 
+async function findPendingTenantForOwner(ownerDiscordId) {
+  if (!ownerDiscordId) return null;
+
+  const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const { data: pendingLogs } = await supabase
+    .from("tenant_audit_logs")
+    .select("tenant_id, created_at")
+    .eq("action", "pending_bot_invite")
+    .eq("actor_discord_id", ownerDiscordId)
+    .gte("created_at", cutoff)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const pendingTenantIds = [...new Set((pendingLogs || []).map((row) => row.tenant_id).filter(Boolean))];
+
+  if (pendingTenantIds.length > 0) {
+    const { data: tenants } = await supabase
+      .from("tenants")
+      .select("id, name, discord_guild_id")
+      .in("id", pendingTenantIds)
+      .is("discord_guild_id", null);
+
+    for (const log of pendingLogs || []) {
+      const match = (tenants || []).find((tenant) => tenant.id === log.tenant_id);
+      if (match) return match;
+    }
+  }
+
+  const { data: directOwnerTenant } = await supabase
+    .from("tenants")
+    .select("id, name, discord_guild_id")
+    .eq("owner_discord_id", ownerDiscordId)
+    .is("discord_guild_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return directOwnerTenant || null;
+}
+
+async function autoLinkGuildToPendingTenant({ guildId, guildName, ownerDiscordId }) {
+  if (!guildId || !ownerDiscordId) return null;
+
+  const tenant = await findPendingTenantForOwner(ownerDiscordId);
+  if (!tenant) return null;
+
+  const { data: claimedTenant } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("discord_guild_id", guildId)
+    .neq("id", tenant.id)
+    .maybeSingle();
+
+  if (claimedTenant) {
+    console.warn(`[auto-link] Guild ${guildId} já vinculada a outro tenant`);
+    return null;
+  }
+
+  const { data: updatedTenant, error } = await supabase
+    .from("tenants")
+    .update({ discord_guild_id: guildId, updated_at: new Date().toISOString() })
+    .eq("id", tenant.id)
+    .is("discord_guild_id", null)
+    .select("id, name, discord_guild_id")
+    .single();
+
+  if (error || !updatedTenant) {
+    console.error(`[auto-link] Falha ao vincular guild ${guildId}:`, error?.message || "unknown error");
+    return null;
+  }
+
+  await supabase.from("tenant_audit_logs").insert({
+    tenant_id: tenant.id,
+    action: "auto_link_server",
+    entity_type: "servidor",
+    entity_id: guildId,
+    entity_name: guildName,
+    actor_discord_id: ownerDiscordId,
+    actor_name: "Bot Externo",
+    details: { source: "guild_create" },
+  });
+
+  return updatedTenant;
+}
+
 // ── Products ──
 async function fetchProductsFromEdge(tenantId) {
   try {
@@ -284,6 +369,7 @@ async function getGlobalBotConfig() {
 module.exports = {
   supabase,
   getTenantByGuild,
+  autoLinkGuildToPendingTenant,
   getProducts,
   getProductById,
   getProductFields,
