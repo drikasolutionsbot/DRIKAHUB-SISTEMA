@@ -10,6 +10,7 @@ import { ProductDetailFields } from "./ProductDetailFields";
 
 import { ProductDetailStock } from "./ProductDetailStock";
 import { ProductDetailEmbed, type EmbedConfig } from "./ProductDetailEmbed";
+import { ProductDetailCoupons } from "./ProductDetailCoupons";
 import { PostMessageModal } from "./PostMessageModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -227,7 +228,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               <TabsTrigger value="embed">Embed</TabsTrigger>
               <TabsTrigger value="campos">Campos</TabsTrigger>
               <TabsTrigger value="estoque">Estoque</TabsTrigger>
-              
+              <TabsTrigger value="cupons">Cupons</TabsTrigger>
             </TabsList>
           </div>
 
@@ -246,6 +247,10 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
 
             <TabsContent value="estoque" className="mt-0">
               <ProductDetailStock productId={product.id} />
+            </TabsContent>
+
+            <TabsContent value="cupons" className="mt-0">
+              <ProductDetailCoupons productId={product.id} />
             </TabsContent>
 
           </div>
