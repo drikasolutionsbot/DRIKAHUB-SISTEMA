@@ -84,6 +84,7 @@ serve(async (req) => {
       if (coupon?.max_uses !== undefined) updates.max_uses = coupon.max_uses;
       if (coupon?.active !== undefined) updates.active = coupon.active;
       if (coupon?.expires_at !== undefined) updates.expires_at = coupon.expires_at || null;
+      if (product_id !== undefined) updates.product_id = product_id || null;
 
       const { data, error } = await supabase
         .from("coupons")

@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface Coupon {
   id: string;
@@ -40,6 +41,7 @@ const emptyCoupon = {
   value: 10,
   max_uses: 100,
   expires_at: "",
+  product_id: "" as string,
 };
 
 const CouponsPage = () => {
@@ -52,6 +54,19 @@ const CouponsPage = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newCoupon, setNewCoupon] = useState(emptyCoupon);
+
+  const { data: products = [] } = useQuery<{id: string, name: string}[]>({
+    queryKey: ["products", tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
+      const { data, error } = await supabase.functions.invoke("manage-products", {
+        body: { action: "list", tenant_id: tenantId },
+      });
+      if (error || data?.error) return [];
+      return data ?? [];
+    },
+    enabled: !!tenantId,
+  });
 
   const fetchCoupons = async () => {
     if (!tenantId) return;
@@ -83,6 +98,7 @@ const CouponsPage = () => {
       body: {
         action: "create",
         tenant_id: tenantId,
+        product_id: newCoupon.product_id || null,
         coupon: {
           code: newCoupon.code,
           type: newCoupon.type,
@@ -111,6 +127,7 @@ const CouponsPage = () => {
         action: "update",
         tenant_id: tenantId,
         coupon_id: coupon.id,
+        product_id: coupon.product_id,
         coupon: {
           code: coupon.code,
           type: coupon.type,
@@ -295,6 +312,12 @@ const CouponsPage = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatDiscount(coupon)} de desconto · {coupon.used_count}
                       {coupon.max_uses ? `/${coupon.max_uses}` : ""} usos
+                      {" · "}
+                      <span className="text-foreground/80 font-medium">
+                        {coupon.product_id 
+                          ? (products.find((p) => p.id === coupon.product_id)?.name || "Produto Específico") 
+                          : "Global (Todos)"}
+                      </span>
                       {coupon.expires_at && (
                         <>
                           {" "}· <Calendar className="inline h-3 w-3" />{" "}
@@ -366,6 +389,23 @@ const CouponsPage = () => {
                           placeholder="Ilimitado"
                           className="mt-1.5 h-9 bg-muted/50 border-border text-sm"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Aplicar a</Label>
+                        <Select
+                          value={coupon.product_id || "all"}
+                          onValueChange={(val) => updateCoupon(coupon.id, { product_id: val === "all" ? null : val })}
+                        >
+                          <SelectTrigger className="mt-1.5 h-9 bg-muted/50 border-border text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Global (Todos os Produtos)</SelectItem>
+                            {products.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs">Expira em (opcional)</Label>
@@ -454,11 +494,28 @@ const CouponsPage = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs">Aplicar a</Label>
+                <Select
+                  value={newCoupon.product_id || "all"}
+                  onValueChange={(val) => setNewCoupon((p) => ({ ...p, product_id: val === "all" ? "" : val }))}
+                >
+                  <SelectTrigger className="mt-1.5 bg-muted/50 border-border text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Global (Todos os Produtos)</SelectItem>
+                    {products.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label className="text-xs">Limite de usos</Label>
                 <Input
                   type="number"
-                  value={newCoupon.max_uses}
+                  value={newCoupon.max_uses ?? ""}
                   onChange={(e) => setNewCoupon((p) => ({ ...p, max_uses: parseInt(e.target.value) || 0 }))}
                   placeholder="Ilimitado"
                   className="mt-1.5 bg-muted/50 border-border text-sm"
