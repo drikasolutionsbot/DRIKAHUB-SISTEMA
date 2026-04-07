@@ -330,22 +330,8 @@ serve(async (req) => {
       resolvedDiscordUserId = await resolveDiscordUserIdFromAuthHeader(authHeader);
     }
 
-    // Busca guilds atuais do bot no Discord
-    const discordResponse = await fetchWithRetry("https://discord.com/api/v10/users/@me/guilds", {
-      headers: { Authorization: `Bot ${botToken}` },
-    });
-
-    if (!discordResponse.ok) {
-      const text = await discordResponse.text();
-      throw new Error(`Discord API error [${discordResponse.status}]: ${text}`);
-    }
-
-    const guilds = await discordResponse.json();
-    const mapped = guilds.map((g: any) => ({
-      id: g.id,
-      name: g.name,
-      icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
-    }));
+    const userGuilds = await fetchUserGuilds();
+    const mapped = await filterGuildsWithBotPresent(userGuilds);
 
     // Busca servidores já vinculados a qualquer tenant
     const { data: claimedRows } = await admin

@@ -680,56 +680,14 @@ const DashboardPage = () => {
                       {t.dashboard.waitingConnection}
                     </div>
                   </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                    <p className="text-xs text-muted-foreground">Ou conecte manualmente pelo ID do servidor:</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="ID do servidor"
-                        value={manualConnectId}
-                        onChange={(e) => setManualConnectId(e.target.value)}
-                        className="font-mono text-xs h-8"
-                        maxLength={20}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 shrink-0"
-                        disabled={!manualConnectId.trim() || manualConnecting}
-                        onClick={handleManualConnect}
-                      >
-                        {manualConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Conectar"}
-                      </Button>
-                    </div>
-                  </div>
                   <Button variant="outline" size="sm" className="w-full" onClick={handleCancelBotPolling}>
                     {t.common.cancel}
                   </Button>
                 </div>
               ) : (
-                <div className="w-full max-w-sm space-y-2">
-                  <Button variant="outline" className="gap-2 text-sm w-full" onClick={handleAddBot}>
-                    <ExternalLink className="h-3.5 w-3.5" /> {t.dashboard.addBot}
-                  </Button>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                    <p className="text-xs text-muted-foreground">Já adicionou o bot? Conecte pelo ID:</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="ID do servidor"
-                        value={manualConnectId}
-                        onChange={(e) => setManualConnectId(e.target.value)}
-                        className="font-mono text-xs h-8"
-                        maxLength={20}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 shrink-0"
-                        disabled={!manualConnectId.trim() || manualConnecting}
-                        onClick={handleManualConnect}
-                      >
-                        {manualConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Conectar"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <Button variant="outline" className="gap-2 text-sm" onClick={handleAddBot}>
+                  <ExternalLink className="h-3.5 w-3.5" /> {t.dashboard.addBot}
+                </Button>
               )}
             </div>
           )}
