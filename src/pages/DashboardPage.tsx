@@ -277,6 +277,9 @@ const DashboardPage = () => {
   const getDiscordRequestBody = useCallback(() => {
     const body: Record<string, unknown> = { tenant_id: tenantId };
     const tokenSession = sessionStorage.getItem("token_session");
+    if (providerToken) {
+      body.discord_user_token = providerToken;
+    }
     if (!tokenSession) return body;
 
     try {
@@ -287,7 +290,7 @@ const DashboardPage = () => {
     }
 
     return body;
-  }, [tenantId]);
+  }, [tenantId, providerToken]);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
