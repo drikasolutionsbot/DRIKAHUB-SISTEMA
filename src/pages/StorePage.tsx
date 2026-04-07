@@ -6,6 +6,7 @@ import { ProductList } from "@/components/store/ProductList";
 import { ProductDetail } from "@/components/store/ProductDetail";
 import { ProductSelectModal } from "@/components/store/ProductSelectModal";
 import { CategoryManager, type Category } from "@/components/store/CategoryManager";
+import CouponsPage from "@/pages/CouponsPage";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -229,7 +230,7 @@ const StorePage = () => {
 
         <TabsContent value="coupons" className="mt-4">
           <div className="rounded-xl border border-border bg-card p-6">
-            <p className="text-muted-foreground text-sm">Gerenciamento de cupons em breve.</p>
+            <CouponsPage />
           </div>
         </TabsContent>
 
