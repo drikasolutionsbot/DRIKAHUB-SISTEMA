@@ -12,8 +12,33 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const tenantId = url.searchParams.get("tenant_id");
-    const ticketId = url.searchParams.get("ticket_id");
+    let tenantId = url.searchParams.get("tenant_id");
+    let ticketId = url.searchParams.get("ticket_id");
+    const channelId = url.searchParams.get("channel_id");
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // If channel_id provided, look up tenant_id and ticket_id from tickets table
+    if (channelId && (!tenantId || !ticketId)) {
+      const { data: ticket, error: ticketErr } = await supabase
+        .from("tickets")
+        .select("id, tenant_id")
+        .eq("discord_channel_id", channelId)
+        .single();
+
+      if (ticketErr || !ticket) {
+        return new Response("Transcript não encontrado.", {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }
+
+      tenantId = ticket.tenant_id;
+      ticketId = ticket.id;
+    }
 
     if (!tenantId || !ticketId) {
       return new Response("Link do transcript inválido.", {
@@ -21,11 +46,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
       });
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const filePath = `transcripts/${tenantId}/${ticketId}.html`;
 

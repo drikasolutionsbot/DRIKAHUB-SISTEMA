@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import { FileText, Loader2, AlertCircle, MessageSquare, Clock, Shield } from "lucide-react";
 
 const TranscriptPage = () => {
   const [searchParams] = useSearchParams();
+  const { channelId } = useParams<{ channelId: string }>();
   const [html, setHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Support both /transcript/:channelId and /transcript?tenant_id=...&ticket_id=...
   const tenantId = searchParams.get("tenant_id");
   const ticketId = searchParams.get("ticket_id");
 
   const transcriptUrl = useMemo(() => {
-    if (!tenantId || !ticketId) return null;
     const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    return `${baseUrl}/functions/v1/serve-transcript?tenant_id=${encodeURIComponent(tenantId)}&ticket_id=${encodeURIComponent(ticketId)}`;
-  }, [tenantId, ticketId]);
+    if (channelId) {
+      return `${baseUrl}/functions/v1/serve-transcript?channel_id=${encodeURIComponent(channelId)}`;
+    }
+    if (tenantId && ticketId) {
+      return `${baseUrl}/functions/v1/serve-transcript?tenant_id=${encodeURIComponent(tenantId)}&ticket_id=${encodeURIComponent(ticketId)}`;
+    }
+    return null;
+  }, [channelId, tenantId, ticketId]);
 
   useEffect(() => {
     const loadTranscript = async () => {
@@ -46,11 +53,12 @@ const TranscriptPage = () => {
     loadTranscript();
   }, [transcriptUrl]);
 
+  const displayId = channelId || ticketId?.slice(0, 8) || "";
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center" style={{ background: "linear-gradient(135deg, #0f0f14 0%, #1a1a2e 50%, #16213e 100%)" }}>
         <div className="flex flex-col items-center gap-6 text-center">
-          {/* Animated rings */}
           <div className="relative flex h-20 w-20 items-center justify-center">
             <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-violet-500" style={{ animationDuration: "1.5s" }} />
             <div className="absolute inset-2 animate-spin rounded-full border-2 border-transparent border-t-cyan-400" style={{ animationDuration: "2s", animationDirection: "reverse" }} />
@@ -83,11 +91,8 @@ const TranscriptPage = () => {
     );
   }
 
-  const shortId = ticketId ? ticketId.slice(0, 8) : "";
-
   return (
     <main className="min-h-screen" style={{ background: "linear-gradient(135deg, #0f0f14 0%, #1a1a2e 50%, #16213e 100%)" }}>
-      {/* Header */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
@@ -96,10 +101,10 @@ const TranscriptPage = () => {
             </div>
             <div>
               <h1 className="text-base font-semibold text-white">Transcript</h1>
-              {shortId && (
+              {displayId && (
                 <p className="flex items-center gap-1.5 text-xs text-white/40">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  ID: {shortId}
+                  ID: {displayId}
                 </p>
               )}
             </div>
@@ -118,7 +123,6 @@ const TranscriptPage = () => {
         </div>
       </header>
 
-      {/* Transcript content */}
       <section className="mx-auto max-w-5xl px-0 sm:px-6 sm:py-5">
         <div className="overflow-hidden border-white/10 sm:rounded-2xl sm:border">
           <iframe
@@ -131,7 +135,6 @@ const TranscriptPage = () => {
         </div>
       </section>
 
-      {/* Footer branding */}
       <div className="py-4 text-center">
         <p className="text-xs text-white/20">
           Powered by <span className="font-medium text-white/30">DrikaHub</span>
