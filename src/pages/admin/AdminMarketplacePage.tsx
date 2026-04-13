@@ -703,6 +703,18 @@ const AdminMarketplacePage = () => {
                 className="bg-muted border-border"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Estoque</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="1"
+                value={importItem?.stock || "1"}
+                onChange={(e) => setImportItem((s) => s ? { ...s, stock: e.target.value } : null)}
+                className="bg-muted border-border"
+              />
+              <p className="text-xs text-muted-foreground">Quantidade disponível para venda</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setImportItem(null)}>Cancelar</Button>
