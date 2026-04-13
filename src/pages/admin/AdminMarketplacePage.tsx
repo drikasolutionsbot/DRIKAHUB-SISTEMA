@@ -866,6 +866,7 @@ const AdminMarketplacePage = () => {
                 />
               </div>
             </div>
+          </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditOpen(null)}>Cancelar</Button>
             <Button onClick={handleEdit} disabled={editing || !editForm.title.trim()} className="gradient-pink text-primary-foreground border-none">
