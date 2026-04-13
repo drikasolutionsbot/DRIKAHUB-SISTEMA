@@ -64,12 +64,16 @@ export const DashboardOverview = () => {
 
   const fetchOrders = async () => {
     if (!tenantId) return;
-    const { data } = await supabase
-      .from("orders")
-      .select("id, order_number, discord_user_id, discord_username, product_name, total_cents, status, created_at")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    const { data, error } = await supabase.functions.invoke("query-tenant-data", {
+      body: {
+        tenant_id: tenantId,
+        table: "orders",
+        select: "id, order_number, discord_user_id, discord_username, product_name, total_cents, status, created_at",
+        order_by: "created_at",
+        ascending: false,
+        limit: 1000,
+      },
+    });
     setOrders((data as Order[]) ?? []);
     setLoading(false);
   };
