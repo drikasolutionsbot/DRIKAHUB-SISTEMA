@@ -319,8 +319,11 @@ const MarketplacePage = () => {
               onClick={() => { handleBuy(detailItem!); setDetailItem(null); }}
               className="gradient-pink text-primary-foreground border-none"
             >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Comprar
+              {detailItem?.resale_price_cents === 0 ? (
+                <><Package className="h-4 w-4 mr-2" />Resgatar Grátis</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" />Comprar</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
