@@ -46,6 +46,7 @@ import VerificationPage from "./pages/VerificationPage";
 import TermsPage from "./pages/TermsPage";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
+import PreviewPage from "./pages/PreviewPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import TutorialsPage from "./pages/TutorialsPage";
 import MarketplacePage from "./pages/MarketplacePage";
@@ -92,6 +93,7 @@ const AppRoutes = () => (
     <Route path="/admin/login" element={<AdminLoginPage />} />
     <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
     <Route path="/" element={<LandingPage />} />
+    <Route path="/preview" element={<PreviewPage />} />
     <Route path="/transcript/:channelId" element={<TranscriptPage />} />
     <Route path="/transcript" element={<TranscriptPage />} />
 
