@@ -549,9 +549,15 @@ const AdminMarketplacePage = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-card border-border">
                           {!item.delivered && (
-                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }} className="gap-2">
+                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); setDeliveryFiles([]); }} className="gap-2">
                               <Send className="h-3.5 w-3.5" />
                               Entregar
+                            </DropdownMenuItem>
+                          )}
+                          {item.delivered && (
+                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(item.delivery_content || ""); setDeliveryFiles([]); }} className="gap-2">
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar entrega
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2"><Pencil className="h-3.5 w-3.5" />Editar</DropdownMenuItem>
@@ -754,9 +760,9 @@ const AdminMarketplacePage = () => {
       <Dialog open={!!deliverOpen} onOpenChange={(open) => { if (!open) { setDeliverOpen(null); setDeliveryContent(""); setDeliveryFiles([]); } }}>
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle>Entregar item</DialogTitle>
+            <DialogTitle>{deliverOpen?.delivered ? "Editar entrega" : "Entregar item"}</DialogTitle>
             <DialogDescription>
-              Insira o conteúdo de entrega para <strong>{deliverOpen?.title}</strong>
+              {deliverOpen?.delivered ? "Edite o conteúdo de entrega de" : "Insira o conteúdo de entrega para"} <strong>{deliverOpen?.title}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
