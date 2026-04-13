@@ -519,6 +519,42 @@ const AdminMarketplacePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Deliver dialog */}
+      <Dialog open={!!deliverOpen} onOpenChange={(open) => { if (!open) { setDeliverOpen(null); setDeliveryContent(""); } }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Entregar item</DialogTitle>
+            <DialogDescription>
+              Insira o conteúdo de entrega para <strong>{deliverOpen?.title}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Conteúdo da entrega</Label>
+              <Textarea
+                placeholder="Ex: Login: user@email.com&#10;Senha: 123456&#10;Link: https://..."
+                value={deliveryContent}
+                onChange={(e) => setDeliveryContent(e.target.value)}
+                className="bg-muted border-border min-h-[120px] font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Este conteúdo será visível para o lojista na aba "Minhas Compras"
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setDeliverOpen(null); setDeliveryContent(""); }}>Cancelar</Button>
+            <Button
+              onClick={handleDeliver}
+              disabled={delivering || !deliveryContent.trim()}
+              className="gradient-pink text-primary-foreground border-none"
+            >
+              {delivering ? "Entregando..." : "Confirmar Entrega"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

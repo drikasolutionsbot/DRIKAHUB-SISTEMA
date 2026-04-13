@@ -27,6 +27,9 @@ interface MarketplaceItem {
   created_at: string;
   image_url: string | null;
   lzt_data: Record<string, unknown> | null;
+  delivered: boolean;
+  delivered_at: string | null;
+  delivery_content: string | null;
 }
 
 const MarketplacePage = () => {
