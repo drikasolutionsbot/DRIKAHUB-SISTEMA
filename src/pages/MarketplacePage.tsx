@@ -223,8 +223,11 @@ const MarketplacePage = () => {
                                   className="text-xs gradient-pink text-primary-foreground border-none hover:opacity-90"
                                   onClick={(e) => { e.stopPropagation(); handleBuy(item); }}
                                 >
-                                  <CreditCard className="h-3 w-3 mr-1" />
-                                  Comprar
+                                  {item.resale_price_cents === 0 ? (
+                                    <><Package className="h-3 w-3 mr-1" />Resgatar</>
+                                  ) : (
+                                    <><CreditCard className="h-3 w-3 mr-1" />Comprar</>
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -327,9 +330,12 @@ const MarketplacePage = () => {
       <Dialog open={!!selectedItem && !pixOpen} onOpenChange={(open) => !open && setSelectedItem(null)}>
         <DialogContent className="bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Confirmar compra</DialogTitle>
+            <DialogTitle>{selectedItem?.resale_price_cents === 0 ? "Resgatar item" : "Confirmar compra"}</DialogTitle>
             <DialogDescription>
-              Você está prestes a comprar <strong>{selectedItem?.title}</strong>
+              {selectedItem?.resale_price_cents === 0
+                ? <>Você está prestes a resgatar <strong>{selectedItem?.title}</strong> gratuitamente</>
+                : <>Você está prestes a comprar <strong>{selectedItem?.title}</strong></>
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -339,15 +345,24 @@ const MarketplacePage = () => {
                 {selectedItem && formatBRL(selectedItem.resale_price_cents)}
               </p>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Após o pagamento via PIX, a conta será entregue automaticamente.
-            </p>
+            {selectedItem?.resale_price_cents === 0 ? (
+              <p className="text-xs text-muted-foreground text-center">
+                Este item é gratuito. Clique para resgatar e ele será adicionado às suas compras.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center">
+                Após o pagamento via PIX, a conta será entregue automaticamente.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSelectedItem(null)}>Cancelar</Button>
-            <Button onClick={handleConfirmPurchase} className="gradient-pink text-primary-foreground border-none">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pagar via PIX
+            <Button onClick={handleConfirmPurchase} disabled={claiming} className="gradient-pink text-primary-foreground border-none">
+              {selectedItem?.resale_price_cents === 0 ? (
+                <><Package className="h-4 w-4 mr-2" />{claiming ? "Resgatando..." : "Resgatar Grátis"}</>
+              ) : (
+                <><CreditCard className="h-4 w-4 mr-2" />Pagar via PIX</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
