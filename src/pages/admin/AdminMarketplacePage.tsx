@@ -406,6 +406,7 @@ const AdminMarketplacePage = () => {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Custo: {formatReais(item.cost_cents)}</span>
                           <span className="font-semibold text-foreground">Revenda: {formatBRL(item.resale_price_cents)}</span>
+                          <span>Estoque: <span className={`font-semibold ${item.stock <= 0 ? "text-destructive" : "text-foreground"}`}>{item.stock}</span></span>
                           <span>LZT #{item.lzt_item_id}</span>
                         </div>
                       </div>
@@ -854,7 +855,16 @@ const AdminMarketplacePage = () => {
                   className="bg-muted border-border"
                 />
               </div>
-            </div>
+              <div className="space-y-2">
+                <Label>Estoque</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editForm.stock}
+                  onChange={(e) => setEditForm((f) => ({ ...f, stock: e.target.value }))}
+                  className="bg-muted border-border"
+                />
+              </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditOpen(null)}>Cancelar</Button>
