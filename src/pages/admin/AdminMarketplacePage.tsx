@@ -72,6 +72,10 @@ const AdminMarketplacePage = () => {
   const [deliverOpen, setDeliverOpen] = useState<MarketplaceItem | null>(null);
   const [deliveryContent, setDeliveryContent] = useState("");
   const [delivering, setDelivering] = useState(false);
+  const [editOpen, setEditOpen] = useState<MarketplaceItem | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", category: "", resale_price: "" });
+  const [editing, setEditing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MarketplaceItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [lztCategory, setLztCategory] = useState("");
   const [lztPage, setLztPage] = useState(1);
