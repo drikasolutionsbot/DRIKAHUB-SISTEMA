@@ -342,53 +342,56 @@ const AdminMarketplacePage = () => {
                           <span>LZT #{item.lzt_item_id}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {tab !== "sold" && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleVisibility(item)}>
-                            {item.status === "available" ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        )}
-                        {tab !== "sold" && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-card border-border">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Excluir item</AlertDialogTitle>
-                                <AlertDialogDescription>Tem certeza? Esta ação não pode ser desfeita.</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
+                      <div className="flex items-center gap-2 shrink-0">
                         {tab === "sold" && (
-                          <div className="flex items-center gap-2">
-                            {item.delivered ? (
-                              <Badge className="bg-green-500/10 text-green-500 border-green-500/20 gap-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Entregue
-                              </Badge>
-                            ) : (
-                              <>
-                                <Badge variant="outline" className="text-yellow-500 border-yellow-500/20">Pendente</Badge>
-                                <Button
-                                  size="sm"
-                                  className="text-xs gradient-pink text-primary-foreground border-none h-7"
-                                  onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }}
-                                >
-                                  <Send className="h-3 w-3 mr-1" />
-                                  Entregar
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                          item.delivered ? (
+                            <Badge className="bg-green-500/10 text-green-500 border-green-500/20 gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Entregue
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-yellow-500 border-yellow-500/20">Pendente</Badge>
+                          )
                         )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-card border-border">
+                            <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2">
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar
+                            </DropdownMenuItem>
+                            {tab === "sold" && !item.delivered && (
+                              <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }} className="gap-2">
+                                <Send className="h-3.5 w-3.5" />
+                                Entregar
+                              </DropdownMenuItem>
+                            )}
+                            {item.status === "available" && (
+                              <DropdownMenuItem onClick={() => handleToggleVisibility(item)} className="gap-2">
+                                <EyeOff className="h-3.5 w-3.5" />
+                                Ocultar
+                              </DropdownMenuItem>
+                            )}
+                            {item.status === "hidden" && (
+                              <DropdownMenuItem onClick={() => handleToggleVisibility(item)} className="gap-2">
+                                <Eye className="h-3.5 w-3.5" />
+                                Tornar visível
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeleteTarget(item)}
+                              className="gap-2 text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
