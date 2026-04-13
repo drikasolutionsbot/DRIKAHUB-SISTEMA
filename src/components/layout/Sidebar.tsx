@@ -345,15 +345,8 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           collapsed ? "w-[68px] items-center" : "w-60"
         )}
       >
-        {/* Background layers */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a12] via-[#2d0a1e] to-[#1a0a12]" />
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 12px, hsl(330 80% 45% / 0.2) 12px, hsl(330 80% 45% / 0.08) 14px, transparent 14px, transparent 28px)`,
-        }} />
-        <div className="absolute inset-0 opacity-15" style={{
-          backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 35px, hsl(330 90% 55% / 0.25) 35px, hsl(330 90% 55% / 0.06) 38px, transparent 38px, transparent 60px)`,
-        }} />
-        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-primary/8 to-transparent" />
+        {/* Background */}
+        <div className="absolute inset-0 bg-sidebar-background" />
 
         {/* Logo */}
         <div className={cn(
