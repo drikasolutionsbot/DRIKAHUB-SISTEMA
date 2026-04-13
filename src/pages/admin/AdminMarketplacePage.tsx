@@ -149,7 +149,7 @@ const AdminMarketplacePage = () => {
   const handleImport = async () => {
     if (!importItem) return;
     const priceCents = Math.round(Number(importItem.resalePrice) * 100);
-    if (isNaN(priceCents) || priceCents <= 0) {
+    if (isNaN(priceCents) || priceCents < 0) {
       toast({ title: "Preço inválido", variant: "destructive" });
       return;
     }
@@ -241,7 +241,7 @@ const AdminMarketplacePage = () => {
   const handleEdit = async () => {
     if (!editOpen) return;
     const priceCents = Math.round(Number(editForm.resale_price) * 100);
-    if (isNaN(priceCents) || priceCents <= 0) {
+    if (isNaN(priceCents) || priceCents < 0) {
       toast({ title: "Preço inválido", variant: "destructive" });
       return;
     }
