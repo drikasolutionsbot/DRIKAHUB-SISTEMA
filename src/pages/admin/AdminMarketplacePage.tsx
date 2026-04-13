@@ -304,14 +304,22 @@ const AdminMarketplacePage = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Disponíveis</p>
           <p className="text-2xl font-bold">{available.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Vendidos</p>
-          <p className="text-2xl font-bold text-green-500">{sold.length}</p>
+          <p className="text-2xl font-bold text-primary">{sold.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Aguardando entrega</p>
+          <p className="text-2xl font-bold text-yellow-500">{soldPending.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Entregues</p>
+          <p className="text-2xl font-bold text-green-500">{soldDelivered.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Ocultos</p>
@@ -323,7 +331,10 @@ const AdminMarketplacePage = () => {
         <div className="overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="bg-muted w-max min-w-full sm:w-auto">
             <TabsTrigger value="available" className="text-xs sm:text-sm">Disponíveis ({available.length})</TabsTrigger>
-            <TabsTrigger value="sold" className="text-xs sm:text-sm">Vendidos ({sold.length})</TabsTrigger>
+            <TabsTrigger value="sold" className="text-xs sm:text-sm">
+              <ShoppingBag className="h-3.5 w-3.5 mr-1" />
+              Pedidos ({sold.length})
+            </TabsTrigger>
             <TabsTrigger value="hidden" className="text-xs sm:text-sm">Ocultos ({hidden.length})</TabsTrigger>
           </TabsList>
         </div>
