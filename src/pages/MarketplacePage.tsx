@@ -452,6 +452,40 @@ const MarketplacePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pedido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o pedido de <strong>{deleteTarget?.title}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                try {
+                  const { error } = await supabase.functions.invoke("manage-marketplace", {
+                    body: { action: "delete_purchase", item_id: deleteTarget.id, tenant_id: tenantId },
+                  });
+                  if (error) throw error;
+                  toast({ title: "Excluído", description: "Pedido removido com sucesso." });
+                  queryClient.invalidateQueries({ queryKey: ["marketplace-purchases"] });
+                } catch (err: any) {
+                  toast({ title: "Erro", description: err.message || "Falha ao excluir.", variant: "destructive" });
+                }
+                setDeleteTarget(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </div>
   );
