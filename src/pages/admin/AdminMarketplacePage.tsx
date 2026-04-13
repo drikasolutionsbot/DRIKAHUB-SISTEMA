@@ -682,6 +682,7 @@ const AdminMarketplacePage = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
 };
 
 export default AdminMarketplacePage;
