@@ -18,7 +18,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTenantQuery } from "@/hooks/useSupabaseQuery";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval, eachDayOfInterval } from "date-fns";
