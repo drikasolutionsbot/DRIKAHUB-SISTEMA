@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
-import { ShoppingCart, Tag, CreditCard, Package, History, Eye, Lock, Crown, CheckCircle2, Clock, XCircle, Trash2, MoreVertical, Filter } from "lucide-react";
+import { ShoppingCart, Tag, CreditCard, Package, History, Eye, Lock, Crown, CheckCircle2, Clock, XCircle, Trash2, MoreVertical, Filter, Loader2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -18,8 +18,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import PixGeneratorDialog from "@/components/pix/PixGeneratorDialog";
 import { MarketplaceItemDetail } from "@/components/marketplace/MarketplaceItemDetail";
+import PixQRCode from "@/components/pix/PixQRCode";
 import { useNavigate } from "react-router-dom";
 
 interface MarketplaceItem {
