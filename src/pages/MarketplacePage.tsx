@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { ShoppingCart, Tag, CreditCard, Package, History, Eye, Lock, Crown, CheckCircle2 } from "lucide-react";
@@ -67,14 +67,36 @@ const MarketplacePage = () => {
     enabled: !!tenantId,
   });
 
-  const formatBRL = (cents: number) => `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
+  const formatBRL = (cents: number) =>
+    cents === 0 ? "Grátis" : `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
+
+  const [claiming, setClaiming] = useState(false);
 
   const handleBuy = (item: MarketplaceItem) => {
     setSelectedItem(item);
   };
 
-  const handleConfirmPurchase = () => {
+  const handleConfirmPurchase = async () => {
     if (!selectedItem) return;
+    if (selectedItem.resale_price_cents === 0) {
+      // Free item — claim directly
+      setClaiming(true);
+      try {
+        const { error } = await supabase.functions.invoke("manage-marketplace", {
+          body: { action: "purchase", item_id: selectedItem.id, tenant_id: tenantId },
+        });
+        if (error) throw error;
+        toast({ title: "Item resgatado!", description: "O item gratuito foi adicionado às suas compras." });
+        queryClient.invalidateQueries({ queryKey: ["marketplace-items"] });
+        queryClient.invalidateQueries({ queryKey: ["marketplace-purchases"] });
+        setSelectedItem(null);
+      } catch (err: any) {
+        toast({ title: "Erro", description: err.message || "Não foi possível resgatar o item.", variant: "destructive" });
+      } finally {
+        setClaiming(false);
+      }
+      return;
+    }
     setPixOpen(true);
   };
 
