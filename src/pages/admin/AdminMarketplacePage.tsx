@@ -225,6 +225,48 @@ const AdminMarketplacePage = () => {
     }
   };
 
+  const openEdit = (item: MarketplaceItem) => {
+    setEditForm({
+      title: item.title,
+      description: item.description || "",
+      category: item.category || "",
+      resale_price: (item.resale_price_cents / 100).toFixed(2),
+    });
+    setEditOpen(item);
+  };
+
+  const handleEdit = async () => {
+    if (!editOpen) return;
+    const priceCents = Math.round(Number(editForm.resale_price) * 100);
+    if (isNaN(priceCents) || priceCents <= 0) {
+      toast({ title: "Preço inválido", variant: "destructive" });
+      return;
+    }
+    setEditing(true);
+    try {
+      const { error } = await supabase.functions.invoke("manage-marketplace", {
+        body: {
+          action: "update",
+          item_id: editOpen.id,
+          item: {
+            title: editForm.title.trim(),
+            description: editForm.description.trim() || null,
+            category: editForm.category.trim() || null,
+            resale_price_cents: priceCents,
+          },
+        },
+      });
+      if (error) throw error;
+      toast({ title: "Item atualizado!" });
+      setEditOpen(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-marketplace-items"] });
+    } catch (err) {
+      toast({ title: "Erro ao atualizar", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    } finally {
+      setEditing(false);
+    }
+  };
+
   const available = items.filter((i) => i.status === "available");
   const sold = items.filter((i) => i.status === "sold");
   const hidden = items.filter((i) => i.status === "hidden");
