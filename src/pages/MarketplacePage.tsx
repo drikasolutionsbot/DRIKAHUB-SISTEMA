@@ -45,11 +45,24 @@ const MarketplacePage = () => {
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
   const [detailItem, setDetailItem] = useState<MarketplaceItem | null>(null);
-  const [pixOpen, setPixOpen] = useState(false);
   const [purchaseFilter, setPurchaseFilter] = useState<"all" | "pending" | "delivered" | "cancelled">("all");
   const [deleteTarget, setDeleteTarget] = useState<MarketplaceItem | null>(null);
 
+  // PIX flow states
+  const [claiming, setClaiming] = useState(false);
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixData, setPixData] = useState<{ brcode: string; qr_code_base64: string | null; payment_id: string; amount: string } | null>(null);
+  const [pixPaid, setPixPaid] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const isPro = tenant?.plan === "pro" || tenant?.plan === "business";
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   // Available items
   const { data: items = [], isLoading } = useQuery<MarketplaceItem[]>({
@@ -80,16 +93,31 @@ const MarketplacePage = () => {
   const formatBRL = (cents: number) =>
     cents === 0 ? "Grátis" : `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
 
-  const [claiming, setClaiming] = useState(false);
-
   const handleBuy = (item: MarketplaceItem) => {
     setSelectedItem(item);
+    setPixData(null);
+    setPixPaid(false);
+  };
+
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
+
+  const closeDialog = () => {
+    stopPolling();
+    setSelectedItem(null);
+    setPixData(null);
+    setPixPaid(false);
   };
 
   const handleConfirmPurchase = async () => {
     if (!selectedItem) return;
+
+    // Free item — claim directly
     if (selectedItem.resale_price_cents === 0) {
-      // Free item — claim directly
       setClaiming(true);
       try {
         const { error } = await supabase.functions.invoke("manage-marketplace", {
@@ -107,7 +135,41 @@ const MarketplacePage = () => {
       }
       return;
     }
-    setPixOpen(true);
+
+    // Paid item — generate PIX
+    setPixLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-marketplace-pix", {
+        body: { item_id: selectedItem.id, tenant_id: tenantId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setPixData({
+        brcode: data.brcode,
+        qr_code_base64: data.qr_code_base64 || null,
+        payment_id: data.payment_id,
+        amount: data.amount,
+      });
+
+      // Start polling for payment confirmation
+      pollingRef.current = setInterval(async () => {
+        try {
+          const { data: statusData } = await supabase.functions.invoke("generate-marketplace-pix", {
+            body: { action: "check_status", item_id: selectedItem.id, tenant_id: tenantId },
+          });
+          if (statusData?.status === "paid") {
+            stopPolling();
+            setPixPaid(true);
+            queryClient.invalidateQueries({ queryKey: ["marketplace-items"] });
+            queryClient.invalidateQueries({ queryKey: ["marketplace-purchases"] });
+          }
+        } catch {}
+      }, 5000);
+    } catch (err: any) {
+      toast({ title: "Erro ao gerar PIX", description: err.message, variant: "destructive" });
+    } finally {
+      setPixLoading(false);
+    }
   };
 
   // Group items by category
