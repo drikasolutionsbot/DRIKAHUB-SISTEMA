@@ -70,37 +70,37 @@ const MockDashboard = () => (
     <div className="flex-1 p-4 overflow-hidden">
       {/* TopBar */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1.5 text-white/30 text-[10px] w-48">
+        <div className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] w-48" style={{ background: "hsl(0 0% 14%)", color: "hsl(0 0% 50%)" }}>
           🔍 Buscar...
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded bg-pink-500/20 text-pink-400 text-[9px] font-bold">Pro</span>
-          <span className="text-[10px] text-white/40">BR</span>
-          <div className="w-6 h-6 rounded-full bg-pink-500/30" />
+          <span className="px-2 py-0.5 rounded text-[9px] font-bold" style={{ background: "hsl(330 100% 50% / 0.15)", color: "hsl(330 100% 50%)" }}>Pro</span>
+          <span className="text-[10px]" style={{ color: "hsl(0 0% 50%)" }}>BR</span>
+          <div className="w-6 h-6 rounded-full" style={{ background: "hsl(330 100% 50% / 0.3)" }} />
         </div>
       </div>
 
       {/* Title */}
       <div className="mb-4">
-        <h2 className="text-sm font-bold">Visão Geral</h2>
-        <p className="text-[10px] text-white/30">Resumo do seu servidor e vendas</p>
+        <h2 className="text-sm font-bold" style={{ color: "hsl(0 0% 93%)" }}>Visão Geral</h2>
+        <p className="text-[10px]" style={{ color: "hsl(0 0% 50%)" }}>Resumo do seu servidor e vendas</p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
-          { label: "Receita Total", value: "R$ 327,30", icon: "💰", color: "text-emerald-400", change: "+12%" },
-          { label: "Total de Pedidos", value: "47", icon: "🛒", color: "text-blue-400", change: "+8%" },
-          { label: "Ticket Médio", value: "R$ 46,90", icon: "📊", color: "text-pink-400", change: "+5%" },
-          { label: "Clientes Únicos", value: "34", icon: "👥", color: "text-amber-400", change: "+15%" },
+          { label: "Receita Total", value: "R$ 327,30", icon: "💰", color: "hsl(145 63% 49%)", change: "+12%" },
+          { label: "Total de Pedidos", value: "47", icon: "🛒", color: "hsl(0 0% 93%)", change: "+8%" },
+          { label: "Ticket Médio", value: "R$ 46,90", icon: "📊", color: "hsl(330 100% 50%)", change: "+5%" },
+          { label: "Clientes Únicos", value: "34", icon: "👥", color: "hsl(145 63% 49%)", change: "+15%" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white/[0.03] border border-white/5 rounded-xl p-3">
+          <div key={stat.label} className="rounded-xl p-3" style={{ background: "hsl(0 0% 8%)", border: "1px solid hsl(0 0% 14%)" }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-white/40">{stat.label}</span>
+              <span className="text-[10px]" style={{ color: "hsl(0 0% 50%)" }}>{stat.label}</span>
               <span className="text-sm">{stat.icon}</span>
             </div>
-            <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-            <span className="text-[9px] text-emerald-400">↑ {stat.change}</span>
+            <p className="text-lg font-bold" style={{ color: stat.color }}>{stat.value}</p>
+            <span className="text-[9px]" style={{ color: "hsl(145 63% 49%)" }}>↑ {stat.change}</span>
           </div>
         ))}
       </div>
