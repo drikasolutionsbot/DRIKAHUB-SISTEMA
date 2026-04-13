@@ -549,9 +549,15 @@ const AdminMarketplacePage = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-card border-border">
                           {!item.delivered && (
-                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }} className="gap-2">
+                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); setDeliveryFiles([]); }} className="gap-2">
                               <Send className="h-3.5 w-3.5" />
                               Entregar
+                            </DropdownMenuItem>
+                          )}
+                          {item.delivered && (
+                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(item.delivery_content || ""); setDeliveryFiles([]); }} className="gap-2">
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar entrega
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2"><Pencil className="h-3.5 w-3.5" />Editar</DropdownMenuItem>
