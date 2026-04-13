@@ -105,23 +105,63 @@ serve(async (req) => {
       });
     }
 
-    // List available items (for tenants)
+    // Admin: cancel a purchase (revert to available)
+    if (action === "cancel_purchase") {
+      if (!item_id) throw new Error("Missing item_id");
+      const { data, error } = await supabase
+        .from("marketplace_items")
+        .update({
+          status: "available",
+          bought_by_tenant_id: null,
+          bought_at: null,
+          delivered: false,
+          delivered_at: null,
+          delivery_content: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item_id)
+        .select()
+        .single();
+      if (error) throw error;
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // List items
     if (action === "list") {
       const query = supabase
         .from("marketplace_items")
         .select("*")
         .order("created_at", { ascending: false });
       
-      // If no tenant_id, show all (admin view)
       if (!tenant_id) {
         // admin sees all
       } else {
-        // tenant only sees available
         query.eq("status", "available");
       }
 
       const { data, error } = await query;
       if (error) throw error;
+
+      // For admin view, enrich sold items with tenant names
+      if (!tenant_id && data) {
+        const soldItems = data.filter((i: Record<string, unknown>) => i.bought_by_tenant_id);
+        const tenantIds = [...new Set(soldItems.map((i: Record<string, unknown>) => i.bought_by_tenant_id))];
+        if (tenantIds.length > 0) {
+          const { data: tenants } = await supabase
+            .from("tenants")
+            .select("id, name")
+            .in("id", tenantIds);
+          const tenantMap = new Map((tenants || []).map((t: { id: string; name: string }) => [t.id, t.name]));
+          for (const item of data) {
+            if ((item as Record<string, unknown>).bought_by_tenant_id) {
+              (item as Record<string, unknown>).buyer_name = tenantMap.get((item as Record<string, unknown>).bought_by_tenant_id as string) || "Desconhecido";
+            }
+          }
+        }
+      }
+
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

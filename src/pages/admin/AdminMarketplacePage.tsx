@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Eye, EyeOff, Package, Search, Link, Send, CheckCircle2, Pencil, MoreVertical } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Package, Search, Link, Send, CheckCircle2, Pencil, MoreVertical, XCircle, Clock, ShoppingBag, Filter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ interface MarketplaceItem {
   delivered: boolean;
   delivered_at: string | null;
   delivery_content: string | null;
+  buyer_name?: string;
 }
 
 const LZT_CATEGORIES = [
@@ -76,6 +78,7 @@ const AdminMarketplacePage = () => {
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", resale_price: "" });
   const [editing, setEditing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MarketplaceItem | null>(null);
+  const [soldFilter, setSoldFilter] = useState<"all" | "pending" | "delivered">("all");
   const [importOpen, setImportOpen] = useState(false);
   const [lztCategory, setLztCategory] = useState("");
   const [lztPage, setLztPage] = useState(1);
@@ -267,9 +270,25 @@ const AdminMarketplacePage = () => {
     }
   };
 
+  const handleCancelPurchase = async (item: MarketplaceItem) => {
+    try {
+      const { error } = await supabase.functions.invoke("manage-marketplace", {
+        body: { action: "cancel_purchase", item_id: item.id },
+      });
+      if (error) throw error;
+      toast({ title: "Compra cancelada! Item voltou para disponíveis." });
+      queryClient.invalidateQueries({ queryKey: ["admin-marketplace-items"] });
+    } catch (err) {
+      toast({ title: "Erro ao cancelar", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    }
+  };
+
   const available = items.filter((i) => i.status === "available");
   const sold = items.filter((i) => i.status === "sold");
   const hidden = items.filter((i) => i.status === "hidden");
+  const soldPending = sold.filter((i) => !i.delivered);
+  const soldDelivered = sold.filter((i) => i.delivered);
+  const filteredSold = soldFilter === "pending" ? soldPending : soldFilter === "delivered" ? soldDelivered : sold;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -285,14 +304,22 @@ const AdminMarketplacePage = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Disponíveis</p>
           <p className="text-2xl font-bold">{available.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Vendidos</p>
-          <p className="text-2xl font-bold text-green-500">{sold.length}</p>
+          <p className="text-2xl font-bold text-primary">{sold.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Aguardando entrega</p>
+          <p className="text-2xl font-bold text-yellow-500">{soldPending.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Entregues</p>
+          <p className="text-2xl font-bold text-green-500">{soldDelivered.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Ocultos</p>
@@ -304,13 +331,17 @@ const AdminMarketplacePage = () => {
         <div className="overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="bg-muted w-max min-w-full sm:w-auto">
             <TabsTrigger value="available" className="text-xs sm:text-sm">Disponíveis ({available.length})</TabsTrigger>
-            <TabsTrigger value="sold" className="text-xs sm:text-sm">Vendidos ({sold.length})</TabsTrigger>
+            <TabsTrigger value="sold" className="text-xs sm:text-sm">
+              <ShoppingBag className="h-3.5 w-3.5 mr-1" />
+              Pedidos ({sold.length})
+            </TabsTrigger>
             <TabsTrigger value="hidden" className="text-xs sm:text-sm">Ocultos ({hidden.length})</TabsTrigger>
           </TabsList>
         </div>
 
-        {["available", "sold", "hidden"].map((tab) => {
-          const tabItems = tab === "available" ? available : tab === "sold" ? sold : hidden;
+        {/* Available & Hidden tabs */}
+        {(["available", "hidden"] as const).map((tab) => {
+          const tabItems = tab === "available" ? available : hidden;
           return (
             <TabsContent key={tab} value={tab} className="mt-4">
               {isLoading ? (
@@ -332,9 +363,7 @@ const AdminMarketplacePage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-sm font-semibold truncate">{item.title}</h3>
-                          {item.category && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">{item.category}</Badge>
-                          )}
+                          {item.category && <Badge variant="outline" className="text-[10px] shrink-0">{item.category}</Badge>}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Custo: {formatReais(item.cost_cents)}</span>
@@ -342,57 +371,19 @@ const AdminMarketplacePage = () => {
                           <span>LZT #{item.lzt_item_id}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {tab === "sold" && (
-                          item.delivered ? (
-                            <Badge className="bg-green-500/10 text-green-500 border-green-500/20 gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Entregue
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-yellow-500 border-yellow-500/20">Pendente</Badge>
-                          )
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-card border-border">
-                            <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2">
-                              <Pencil className="h-3.5 w-3.5" />
-                              Editar
-                            </DropdownMenuItem>
-                            {tab === "sold" && !item.delivered && (
-                              <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }} className="gap-2">
-                                <Send className="h-3.5 w-3.5" />
-                                Entregar
-                              </DropdownMenuItem>
-                            )}
-                            {item.status === "available" && (
-                              <DropdownMenuItem onClick={() => handleToggleVisibility(item)} className="gap-2">
-                                <EyeOff className="h-3.5 w-3.5" />
-                                Ocultar
-                              </DropdownMenuItem>
-                            )}
-                            {item.status === "hidden" && (
-                              <DropdownMenuItem onClick={() => handleToggleVisibility(item)} className="gap-2">
-                                <Eye className="h-3.5 w-3.5" />
-                                Tornar visível
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setDeleteTarget(item)}
-                              className="gap-2 text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border-border">
+                          <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2"><Pencil className="h-3.5 w-3.5" />Editar</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleVisibility(item)} className="gap-2">
+                            {item.status === "available" ? <><EyeOff className="h-3.5 w-3.5" />Ocultar</> : <><Eye className="h-3.5 w-3.5" />Tornar visível</>}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive focus:text-destructive"><Trash2 className="h-3.5 w-3.5" />Excluir</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   ))}
                 </div>
@@ -400,6 +391,120 @@ const AdminMarketplacePage = () => {
             </TabsContent>
           );
         })}
+
+        {/* Sold / Orders tab */}
+        <TabsContent value="sold" className="mt-4 space-y-4">
+          {/* Sub-filters */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            {([
+              { key: "all", label: "Todos", count: sold.length },
+              { key: "pending", label: "Aguardando", count: soldPending.length },
+              { key: "delivered", label: "Entregues", count: soldDelivered.length },
+            ] as const).map((f) => (
+              <Button
+                key={f.key}
+                variant={soldFilter === f.key ? "default" : "outline"}
+                size="sm"
+                className={`text-xs h-7 ${soldFilter === f.key ? "gradient-pink text-primary-foreground border-none" : ""}`}
+                onClick={() => setSoldFilter(f.key)}
+              >
+                {f.label} ({f.count})
+              </Button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+            </div>
+          ) : filteredSold.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-12 text-center">
+              <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-20" />
+              <p className="text-muted-foreground">Nenhum pedido nesta categoria</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredSold.map((item) => (
+                <div key={item.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="p-4 flex items-center gap-4">
+                    {item.image_url && (
+                      <img src={item.image_url} alt={item.title} className="h-14 w-14 rounded-lg object-cover shrink-0 border border-border" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold truncate">{item.title}</h3>
+                        {item.category && <Badge variant="outline" className="text-[10px] shrink-0">{item.category}</Badge>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">{formatBRL(item.resale_price_cents)}</span>
+                        {item.buyer_name && (
+                          <span>Comprador: <span className="text-foreground font-medium">{item.buyer_name}</span></span>
+                        )}
+                        {item.bought_at && (
+                          <span>Comprado em {new Date(item.bought_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                        )}
+                        {item.delivered && item.delivered_at && (
+                          <span>Entregue em {new Date(item.delivered_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.delivered ? (
+                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20 gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Entregue
+                        </Badge>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="text-yellow-500 border-yellow-500/20 gap-1 cursor-default">
+                                <Clock className="h-3 w-3" />
+                                Pendente
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>Aguardando entrega manual</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border-border">
+                          {!item.delivered && (
+                            <DropdownMenuItem onClick={() => { setDeliverOpen(item); setDeliveryContent(""); }} className="gap-2">
+                              <Send className="h-3.5 w-3.5" />
+                              Entregar
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => openEdit(item)} className="gap-2"><Pencil className="h-3.5 w-3.5" />Editar</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleCancelPurchase(item)} className="gap-2 text-yellow-500 focus:text-yellow-500">
+                            <XCircle className="h-3.5 w-3.5" />
+                            Cancelar compra
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive focus:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                  {/* Show delivery content preview for delivered items */}
+                  {item.delivered && item.delivery_content && (
+                    <div className="border-t border-border bg-muted/20 px-4 py-2.5">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Conteúdo entregue</p>
+                      <pre className="text-xs font-mono text-muted-foreground truncate">{item.delivery_content}</pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Import from LZT Dialog */}
