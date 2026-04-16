@@ -66,6 +66,17 @@ const providers = [
     instructions: "No painel Efí, acesse API > Aplicações > Credenciais de Produção e copie Client ID e Client Secret.",
     requiresCert: true,
   },
+  {
+    key: "misticpay",
+    name: "MisticPay",
+    color: "bg-purple-500/10 text-purple-400",
+    docsUrl: "https://docs.misticpay.com",
+    fields: [
+      { key: "api_key", label: "Client ID", placeholder: "seu_client_id" },
+      { key: "secret_key", label: "Client Secret", placeholder: "seu_client_secret" },
+    ],
+    instructions: "No painel MisticPay, acesse Configurações > API e copie o Client ID e Client Secret.",
+  },
 ];
 
 interface PaymentProvider {
