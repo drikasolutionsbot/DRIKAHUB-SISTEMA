@@ -585,7 +585,11 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
     } else if (providerKey === "pushinpay") {
       const r = await generatePushinPayPix(apiKey, priceCents, webhookUrl);
       brcode = r.brcode; paymentId = r.payment_id;
-    } else if (providerKey === "efi" || providerKey === "misticpay") {
+    } else if (providerKey === "misticpay") {
+      const secretKey = provider.secret_key_encrypted || "";
+      const r = await generateMisticPayPix(apiKey, secretKey, amountBRL, externalRef, webhookUrl);
+      brcode = r.brcode; paymentId = r.payment_id;
+    } else if (providerKey === "efi") {
       const pixRes = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-pix`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
