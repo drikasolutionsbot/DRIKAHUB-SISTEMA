@@ -411,6 +411,49 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
 
   // Get store branding
   const storeConfig = await getStoreConfig(tenant.id);
+
+  // ── Auto-add staff to checkout thread (so admins/staff can monitor & confirm manually) ──
+  try {
+    let staffRoleIds = (storeConfig?.ticket_staff_role_id || "")
+      .split(",").map((s) => s.trim()).filter(Boolean);
+
+    // Fallback: tenant_roles with management permissions
+    if (staffRoleIds.length === 0) {
+      const { data: fallbackRoles } = await supabase
+        .from("tenant_roles")
+        .select("discord_role_id")
+        .eq("tenant_id", tenant.id)
+        .or("can_manage_app.eq.true,can_manage_permissions.eq.true,can_manage_store.eq.true,can_manage_stock.eq.true,can_manage_resources.eq.true,can_manage_protection.eq.true");
+      staffRoleIds = [...new Set((fallbackRoles || []).map((r) => r.discord_role_id).filter(Boolean))];
+    }
+
+    // Panel users with management permissions
+    const { data: panelStaffRows } = await supabase
+      .from("tenant_permissions")
+      .select("discord_user_id")
+      .eq("tenant_id", tenant.id)
+      .or("can_manage_app.eq.true,can_manage_permissions.eq.true,can_manage_store.eq.true,can_manage_stock.eq.true,can_manage_resources.eq.true,can_manage_protection.eq.true");
+    const panelStaffUserIds = [...new Set((panelStaffRows || []).map((r) => r.discord_user_id).filter((id) => id && id !== userId))];
+
+    const guild = interaction.guild;
+    const guildRoles = await guild.roles.fetch();
+    const adminRoleIds = new Set([...guildRoles.filter((r) => r.permissions.has("Administrator")).keys()]);
+    const effectiveStaffRoleIds = new Set([...staffRoleIds, ...adminRoleIds]);
+
+    const members = await guild.members.fetch({ limit: 1000 });
+    const roleBasedStaffIds = members
+      .filter((m) => !m.user.bot && m.user.id !== userId)
+      .filter((m) => m.roles.cache.some((r) => effectiveStaffRoleIds.has(r.id)))
+      .map((m) => m.user.id);
+
+    const allStaffIds = [...new Set([...roleBasedStaffIds, ...panelStaffUserIds])];
+    for (const staffId of allStaffIds) {
+      try { await checkoutThread.members.add(staffId); } catch {}
+    }
+    console.log(`[CHECKOUT] Added ${allStaffIds.length} staff members to checkout thread #${order.order_number}`);
+  } catch (e) {
+    console.error("[CHECKOUT] staff auto-add error:", e.message);
+  }
   const storeName = storeConfig?.store_title || tenant.name || "Loja";
   const storeLogo = storeConfig?.store_logo_url || tenant.logo_url;
   const productEmbedConfig = getProductEmbedConfig(product);
