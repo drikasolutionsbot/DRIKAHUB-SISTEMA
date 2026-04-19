@@ -144,6 +144,29 @@ serve(async (req) => {
       }
     }
 
+    // ── AbacatePay: Check payment status ──
+    if (provider === "abacatepay" && paymentId) {
+      try {
+        // GET /v1/pixQrCode/check?id=...
+        // Docs: https://docs.abacatepay.com/api-reference/checar-status
+        const res = await fetch(`https://api.abacatepay.com/v1/pixQrCode/check?id=${encodeURIComponent(paymentId)}`, {
+          headers: {
+            Authorization: `Bearer ${providerConfig.api_key_encrypted}`,
+            Accept: "application/json",
+          },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const data = json?.data || json;
+          const status = (data?.status || "").toString().toUpperCase();
+          console.log(`AbacatePay check for ${paymentId}: ${status}`);
+          if (status === "PAID") isPaid = true;
+        }
+      } catch (e) {
+        console.error("AbacatePay polling error:", e);
+      }
+    }
+
     // ── MisticPay: Check payment status via transactions/check ──
     if (provider === "misticpay" && paymentId) {
       try {

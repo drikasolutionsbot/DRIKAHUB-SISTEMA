@@ -225,6 +225,48 @@ async function generateViaEfi(
   };
 }
 
+// ─── Gateway: AbacatePay ──────────────────────────────────────────
+async function generateViaAbacatePay(
+  apiKey: string,
+  amountCents: number,
+  description: string,
+  externalRef: string,
+): Promise<{ brcode: string; qr_code_base64?: string; payment_id: string; expires_at?: string }> {
+  // POST /v1/pixQrCode/create — gera QR Code PIX direto
+  // Docs: https://docs.abacatepay.com/api-reference/criar-qrcode-pix
+  const expiresInMinutes = 15;
+  const res = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: amountCents,
+      expiresIn: expiresInMinutes * 60, // segundos
+      description: description.substring(0, 140),
+      externalId: externalRef,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("AbacatePay error:", res.status, errText);
+    throw new Error(`AbacatePay error: ${res.status} ${errText.slice(0, 200)}`);
+  }
+
+  const json = await res.json();
+  // Resposta: { data: { id, brCode, brCodeBase64, amount, expiresAt, status, ... } }
+  const data = json?.data || json;
+
+  return {
+    brcode: data.brCode || data.qrCode || "",
+    qr_code_base64: data.brCodeBase64 || undefined,
+    payment_id: String(data.id),
+    expires_at: data.expiresAt || undefined,
+  };
+}
+
 // ─── Gateway: MisticPay ───────────────────────────────────────────
 async function generateViaMisticPay(
   clientId: string,
@@ -313,6 +355,9 @@ serve(async (req) => {
           break;
         case "misticpay":
           result = await generateViaMisticPay(apiKey, secretKey, amount, externalRef, webhookUrl);
+          break;
+        case "abacatepay":
+          result = await generateViaAbacatePay(apiKey, amount_cents, description, externalRef);
           break;
         default:
           throw new Error(`Provider ${providerKey} não suporta PIX dinâmico`);
