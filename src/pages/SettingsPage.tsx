@@ -21,6 +21,19 @@ import SettingsProfileTab from "@/components/settings/SettingsProfileTab";
 import EmbedBuilder from "@/components/customization/EmbedBuilder";
 
 import SettingsBotCustomizationTab from "@/components/settings/SettingsBotCustomizationTab";
+import abacatePayIcon from "@/assets/abacatepay-icon.png";
+import misticPayIcon from "@/assets/misticpay-icon.png";
+import efiIcon from "@/assets/efi-icon.png";
+import mercadoPagoIcon from "@/assets/mercadopago-icon.png";
+import pushinPayIcon from "@/assets/pushinpay-icon.png";
+
+const PROVIDER_META: Record<string, { name: string; icon: string }> = {
+  abacatepay: { name: "AbacatePay", icon: abacatePayIcon },
+  misticpay: { name: "Mistic Pay", icon: misticPayIcon },
+  efi: { name: "Efí", icon: efiIcon },
+  mercadopago: { name: "Mercado Pago", icon: mercadoPagoIcon },
+  pushinpay: { name: "PushinPay", icon: pushinPayIcon },
+};
 
 interface UserRole {
   id: string;
@@ -389,11 +402,15 @@ const SettingsPage = () => {
                   {providers.map(p => (
                     <div key={p.id} className="wallet-tx-row">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-xs font-bold uppercase text-muted-foreground">
-                          {p.provider_key.slice(0, 2)}
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted overflow-hidden">
+                          {PROVIDER_META[p.provider_key]?.icon ? (
+                            <img src={PROVIDER_META[p.provider_key].icon} alt={PROVIDER_META[p.provider_key].name} className="h-7 w-7 object-contain" />
+                          ) : (
+                            <span className="text-xs font-bold uppercase text-muted-foreground">{p.provider_key.slice(0, 2)}</span>
+                          )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-foreground capitalize">{p.provider_key.replace(/_/g, " ")}</p>
+                          <p className="text-sm font-medium text-foreground">{PROVIDER_META[p.provider_key]?.name ?? p.provider_key.replace(/_/g, " ")}</p>
                           <p className="text-[11px] text-muted-foreground">
                             {p.api_key_encrypted ? "Credenciais configuradas" : "Sem credenciais"}
                           </p>
