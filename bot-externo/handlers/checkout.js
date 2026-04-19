@@ -241,6 +241,27 @@ async function generateMisticPayPix(clientId, clientSecret, amountBRL, externalR
   return { brcode: data.copyPaste || data.qrCode || "", payment_id: String(data.transactionId || externalRef) };
 }
 
+// ── AbacatePay PIX ──
+async function generateAbacatePayPix(apiKey, amountCents, description, externalRef) {
+  const res = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      amount: amountCents,
+      expiresIn: 900,
+      description: (description || "Pagamento PIX").substring(0, 140),
+      externalId: externalRef,
+    }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`AbacatePay error: ${res.status} ${text.slice(0, 200)}`);
+  let json = {};
+  try { json = JSON.parse(text); } catch {}
+  const data = json?.data || json;
+  const brcode = data.brCode || data.brcode || data.qrCode || data.pixCopyPaste || data.pixCopiaECola || "";
+  return { brcode, payment_id: String(data.id || externalRef) };
+}
+
 async function startCheckout(interaction, tenant, productId) {
   await interaction.deferReply({ ephemeral: true });
 
@@ -632,6 +653,9 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       const secretKey = provider.secret_key_encrypted || "";
       const r = await generateMisticPayPix(apiKey, secretKey, amountBRL, externalRef, webhookUrl);
       brcode = r.brcode; paymentId = r.payment_id;
+    } else if (providerKey === "abacatepay") {
+      const r = await generateAbacatePayPix(apiKey, priceCents, order.product_name, externalRef);
+      brcode = r.brcode; paymentId = r.payment_id;
     } else if (providerKey === "efi") {
       const pixRes = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-pix`, {
         method: "POST",
@@ -649,6 +673,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       : providerKey === "efi" ? "Pix – Efi Bank"
       : providerKey === "mercadopago" ? "Pix – Mercado Pago"
       : providerKey === "misticpay" ? "Pix – Mistic Pay"
+      : providerKey === "abacatepay" ? "Pix – AbacatePay"
       : `Pix – ${providerKey}`;
 
     await sendLog(interaction.guild, tenant, {
