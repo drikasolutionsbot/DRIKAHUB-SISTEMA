@@ -653,6 +653,9 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       const secretKey = provider.secret_key_encrypted || "";
       const r = await generateMisticPayPix(apiKey, secretKey, amountBRL, externalRef, webhookUrl);
       brcode = r.brcode; paymentId = r.payment_id;
+    } else if (providerKey === "abacatepay") {
+      const r = await generateAbacatePayPix(apiKey, priceCents, order.product_name, externalRef);
+      brcode = r.brcode; paymentId = r.payment_id;
     } else if (providerKey === "efi") {
       const pixRes = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-pix`, {
         method: "POST",
@@ -670,6 +673,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       : providerKey === "efi" ? "Pix – Efi Bank"
       : providerKey === "mercadopago" ? "Pix – Mercado Pago"
       : providerKey === "misticpay" ? "Pix – Mistic Pay"
+      : providerKey === "abacatepay" ? "Pix – AbacatePay"
       : `Pix – ${providerKey}`;
 
     await sendLog(interaction.guild, tenant, {
