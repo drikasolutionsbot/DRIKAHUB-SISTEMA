@@ -738,6 +738,9 @@ export type Database = {
       }
       landing_config: {
         Row: {
+          abacatepay_active: boolean
+          abacatepay_api_key: string | null
+          abacatepay_webhook_secret: string | null
           auto_activate_plan: boolean
           created_at: string
           efi_active: boolean
@@ -766,6 +769,9 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          abacatepay_active?: boolean
+          abacatepay_api_key?: string | null
+          abacatepay_webhook_secret?: string | null
           auto_activate_plan?: boolean
           created_at?: string
           efi_active?: boolean
@@ -794,6 +800,9 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          abacatepay_active?: boolean
+          abacatepay_api_key?: string | null
+          abacatepay_webhook_secret?: string | null
           auto_activate_plan?: boolean
           created_at?: string
           efi_active?: boolean

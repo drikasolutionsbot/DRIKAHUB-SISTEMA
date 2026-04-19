@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Plug, Zap } from "lucide-react";
+import { CreditCard, Plug, Zap, Leaf } from "lucide-react";
 import SubscriptionPaymentsTab from "@/components/admin/SubscriptionPaymentsTab";
 import EfiIntegrationTab from "@/components/admin/EfiIntegrationTab";
 import PushinPayIntegrationTab from "@/components/admin/PushinPayIntegrationTab";
+import AbacatePayIntegrationTab from "@/components/admin/AbacatePayIntegrationTab";
 
 const AdminPaymentsPage = () => {
   return (
@@ -13,20 +14,26 @@ const AdminPaymentsPage = () => {
       </div>
 
       <Tabs defaultValue="payments" className="space-y-6">
-        <TabsList className="bg-card border border-border">
-          <TabsTrigger value="payments" className="gap-2">
-            <CreditCard className="h-4 w-4" />
-            Pagamentos
-          </TabsTrigger>
-          <TabsTrigger value="efi" className="gap-2">
-            <Plug className="h-4 w-4" />
-            Efí
-          </TabsTrigger>
-          <TabsTrigger value="pushinpay" className="gap-2">
-            <Zap className="h-4 w-4" />
-            PushinPay
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="bg-card border border-border w-max min-w-full sm:w-auto">
+            <TabsTrigger value="payments" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              Pagamentos
+            </TabsTrigger>
+            <TabsTrigger value="efi" className="gap-2">
+              <Plug className="h-4 w-4" />
+              Efí
+            </TabsTrigger>
+            <TabsTrigger value="pushinpay" className="gap-2">
+              <Zap className="h-4 w-4" />
+              PushinPay
+            </TabsTrigger>
+            <TabsTrigger value="abacatepay" className="gap-2">
+              <Leaf className="h-4 w-4" />
+              AbacatePay
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="payments">
           <SubscriptionPaymentsTab />
@@ -38,6 +45,10 @@ const AdminPaymentsPage = () => {
 
         <TabsContent value="pushinpay">
           <PushinPayIntegrationTab />
+        </TabsContent>
+
+        <TabsContent value="abacatepay">
+          <AbacatePayIntegrationTab />
         </TabsContent>
       </Tabs>
     </div>

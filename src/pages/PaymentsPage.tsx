@@ -77,6 +77,16 @@ const providers = [
     ],
     instructions: "No painel MisticPay, acesse Configurações > API e copie o Client ID e Client Secret.",
   },
+  {
+    key: "abacatepay",
+    name: "AbacatePay",
+    color: "bg-lime-500/10 text-lime-400",
+    docsUrl: "https://docs.abacatepay.com/pages/v1/introduction",
+    fields: [
+      { key: "api_key", label: "API Key", placeholder: "abc_dev_... ou abc_live_..." },
+    ],
+    instructions: "No painel AbacatePay, acesse Integrar > API Keys e copie sua chave (use abc_live_ em produção).",
+  },
 ];
 
 interface PaymentProvider {
@@ -183,7 +193,7 @@ const PaymentsPage = () => {
                 return (
                   <TabsTrigger key={p.key} value={p.key} className="gap-2 text-xs sm:text-sm">
                     <span className="hidden sm:inline">{p.name}</span>
-                    <span className="sm:hidden">{p.key === "mercadopago" ? "MP" : p.key === "pushinpay" ? "Pushin" : p.key === "misticpay" ? "Mistic" : "Efí"}</span>
+                    <span className="sm:hidden">{p.key === "mercadopago" ? "MP" : p.key === "pushinpay" ? "Pushin" : p.key === "misticpay" ? "Mistic" : p.key === "abacatepay" ? "Abacate" : "Efí"}</span>
                     {cfg?.active && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
                   </TabsTrigger>
                 );

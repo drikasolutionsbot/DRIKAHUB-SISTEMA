@@ -80,6 +80,30 @@ async function testEfi(
   }
 }
 
+async function testAbacatePay(apiKey: string): Promise<{ success: boolean; message: string }> {
+  try {
+    // GET /v1/customer/list é endpoint leve para validar o token
+    const res = await fetch("https://api.abacatepay.com/v1/customer/list", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (res.ok) return { success: true, message: "Token AbacatePay validado!" };
+    if (res.status === 401 || res.status === 403) {
+      return { success: false, message: "Token AbacatePay inválido ou expirado" };
+    }
+    // Mesmo 404/400 indica que a chave foi aceita
+    if (res.status === 404 || res.status === 400) {
+      return { success: true, message: "Token AbacatePay aceito pela API" };
+    }
+    return { success: false, message: `Erro ${res.status}: Verifique o token` };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `Erro AbacatePay: ${msg.substring(0, 200)}` };
+  }
+}
+
 async function testMisticPay(clientId: string, clientSecret: string): Promise<{ success: boolean; message: string }> {
   try {
     const res = await fetch("https://api.misticpay.com/api/users/info", {
@@ -124,6 +148,9 @@ serve(async (req) => {
         break;
       case "misticpay":
         result = await testMisticPay(api_key, secret_key || "");
+        break;
+      case "abacatepay":
+        result = await testAbacatePay(api_key);
         break;
       default:
         result = { success: false, message: `Provedor desconhecido: ${provider_key}` };

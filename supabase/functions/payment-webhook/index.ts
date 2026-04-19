@@ -214,6 +214,65 @@ async function handleMisticPay(body: any, tenantId: string, supabase: any) {
   return { handled: true, order_status: "paid", payment_id: transactionId, order_id: order.id };
 }
 
+async function handleAbacatePay(body: any, tenantId: string, supabase: any) {
+  // AbacatePay webhook payload: { event: "billing.paid" | "pix.paid", data: { id, status, ... } }
+  // Docs: https://docs.abacatepay.com/pages/v1/webhooks
+  const event = body?.event || body?.type;
+  const data = body?.data || body;
+  const paymentId = data?.id || data?.pixQrCodeId || body?.id;
+  const status = (data?.status || body?.status || "").toString().toUpperCase();
+
+  console.log(`AbacatePay webhook: event=${event}, paymentId=${paymentId}, status=${status}`);
+
+  if (!paymentId) return { handled: false, reason: "No payment ID in webhook" };
+
+  // AbacatePay envia "PAID" quando confirmado
+  const isPaid = status === "PAID" || event === "billing.paid" || event === "pix.paid";
+  if (!isPaid) return { handled: false, reason: `Status not paid: ${status} / ${event}` };
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, status")
+    .eq("payment_id", String(paymentId))
+    .eq("tenant_id", tenantId)
+    .single();
+
+  if (orderErr || !order) {
+    const extRef = data?.externalId || body?.externalId;
+    if (extRef) {
+      const orderId = extRef.replace(/^order_/, "").replace(/^PIX/, "");
+      const { data: orderByExt } = await supabase
+        .from("orders")
+        .select("id, status")
+        .eq("id", orderId)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (orderByExt) {
+        await supabase
+          .from("orders")
+          .update({ status: "paid", payment_id: String(paymentId), payment_provider: "abacatepay" })
+          .eq("id", orderByExt.id)
+          .eq("tenant_id", tenantId);
+        return { handled: true, order_status: "paid", payment_id: paymentId, order_id: orderByExt.id };
+      }
+    }
+    console.error(`AbacatePay: No order found for payment_id=${paymentId} in tenant=${tenantId}`);
+    return { handled: false, reason: "Order not found by payment_id" };
+  }
+
+  if (order.status === "paid" || order.status === "delivered") {
+    return { handled: false, reason: "Order already processed" };
+  }
+
+  await supabase
+    .from("orders")
+    .update({ status: "paid", payment_provider: "abacatepay" })
+    .eq("id", order.id)
+    .eq("tenant_id", tenantId);
+
+  return { handled: true, order_status: "paid", payment_id: paymentId, order_id: order.id };
+}
+
 // ─── Main handler ──────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -289,6 +348,9 @@ serve(async (req) => {
         break;
       case "misticpay":
         result = await handleMisticPay(body, tenantId, supabase);
+        break;
+      case "abacatepay":
+        result = await handleAbacatePay(body, tenantId, supabase);
         break;
       default:
         result = { handled: false, reason: `Unknown provider: ${provider}` };

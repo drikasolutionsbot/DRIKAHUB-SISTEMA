@@ -54,6 +54,9 @@ const PixQRCode = ({ brcode, amount, size = 200, method, provider, qrCodeBase64,
   const providerLabel: Record<string, string> = {
     mercadopago: "Mercado Pago",
     pushinpay: "PushinPay",
+    efi: "Efí",
+    misticpay: "MisticPay",
+    abacatepay: "AbacatePay",
   };
 
   return (

@@ -22,6 +22,20 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // AbacatePay envia: { event: "billing.paid"|"pix.paid", data: { id, status, ... } }
+    const abacateEvent = body?.event || body?.type;
+    const abacateData = body?.data;
+    if (abacateEvent && abacateData?.id) {
+      const status = (abacateData?.status || "").toString().toUpperCase();
+      const isPaid = status === "PAID" || abacateEvent === "billing.paid" || abacateEvent === "pix.paid";
+      if (isPaid) {
+        return await processByPaymentId(supabase, String(abacateData.id));
+      }
+      return new Response(JSON.stringify({ success: true, ignored: true, reason: `AbacatePay status: ${status}` }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Efí sends: { pix: [{ txid, valor, horario, endToEndId, ... }] }
     const pixArray = body?.pix;
     if (!pixArray || !Array.isArray(pixArray) || pixArray.length === 0) {

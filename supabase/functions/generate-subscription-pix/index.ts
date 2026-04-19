@@ -57,8 +57,10 @@ serve(async (req) => {
       return await generateViaEfi(config, effectiveTenantId, email, amountCents, supabase, metadata);
     } else if (config.pushinpay_active && config.pushinpay_api_key) {
       return await generateViaPushinPay(config, effectiveTenantId, email, amountCents, supabase, metadata);
+    } else if ((config as any).abacatepay_active && (config as any).abacatepay_api_key) {
+      return await generateViaAbacatePay(config, effectiveTenantId, email, amountCents, supabase, metadata);
     } else {
-      throw new Error("Nenhum provedor de pagamento ativo. Ative Efí ou PushinPay no painel admin.");
+      throw new Error("Nenhum provedor de pagamento ativo. Ative Efí, PushinPay ou AbacatePay no painel admin.");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -222,6 +224,65 @@ async function generateViaPushinPay(config: any, tenant_id: string, email: strin
       amount: (amountCents / 100).toFixed(2),
       method: "dynamic",
       provider: "pushinpay",
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+async function generateViaAbacatePay(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any) {
+  const apiKey = config.abacatepay_api_key;
+
+  // POST /v1/pixQrCode/create — Docs: https://docs.abacatepay.com/api-reference/criar-qrcode-pix
+  const res = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: amountCents,
+      expiresIn: 900, // 15 minutos
+      description: "Plano Pro - Drika Hub",
+      externalId: `sub_${Date.now()}`,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("AbacatePay error:", errText);
+    throw new Error(`Erro AbacatePay: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const data = json?.data || json;
+  const brcode = data.brCode || data.qrCode || "";
+  const qrCodeBase64 = data.brCodeBase64 || null;
+  const paymentId = String(data.id || crypto.randomUUID());
+
+  const { data: inserted } = await supabase.from("subscription_payments").insert({
+    tenant_id,
+    plan: "pro",
+    amount_cents: amountCents,
+    payment_provider: "abacatepay",
+    payment_id: paymentId,
+    payer_email: email || null,
+    status: "pending",
+    metadata,
+  }).select("id").single();
+
+  console.log(`Subscription PIX generated via AbacatePay, id ${paymentId}`);
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      brcode,
+      qr_code_base64: qrCodeBase64,
+      payment_id: paymentId,
+      subscription_id: inserted?.id,
+      amount_cents: amountCents,
+      amount: (amountCents / 100).toFixed(2),
+      method: "dynamic",
+      provider: "abacatepay",
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
