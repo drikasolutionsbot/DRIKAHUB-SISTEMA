@@ -241,6 +241,27 @@ async function generateMisticPayPix(clientId, clientSecret, amountBRL, externalR
   return { brcode: data.copyPaste || data.qrCode || "", payment_id: String(data.transactionId || externalRef) };
 }
 
+// ── AbacatePay PIX ──
+async function generateAbacatePayPix(apiKey, amountCents, description, externalRef) {
+  const res = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      amount: amountCents,
+      expiresIn: 900,
+      description: (description || "Pagamento PIX").substring(0, 140),
+      externalId: externalRef,
+    }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`AbacatePay error: ${res.status} ${text.slice(0, 200)}`);
+  let json = {};
+  try { json = JSON.parse(text); } catch {}
+  const data = json?.data || json;
+  const brcode = data.brCode || data.brcode || data.qrCode || data.pixCopyPaste || data.pixCopiaECola || "";
+  return { brcode, payment_id: String(data.id || externalRef) };
+}
+
 async function startCheckout(interaction, tenant, productId) {
   await interaction.deferReply({ ephemeral: true });
 
