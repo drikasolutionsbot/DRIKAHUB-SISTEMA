@@ -196,18 +196,19 @@ const AdminClientsPage = () => {
   const handleGenerateToken = async (tenantId: string) => {
     setGeneratingToken(tenantId);
     try {
-      // Check if tenant already has an active (non-revoked) token
+      // Auto-revoke any existing active tokens before generating a new one
       const { data: existingTokens } = await supabase
         .from("access_tokens")
         .select("id")
         .eq("tenant_id", tenantId)
-        .eq("revoked", false)
-        .limit(1);
+        .eq("revoked", false);
 
       if (existingTokens && existingTokens.length > 0) {
-        toast({ title: "Limite atingido", description: "Este cliente já possui um token ativo. Revogue o token atual antes de gerar um novo.", variant: "destructive" });
-        setGeneratingToken(null);
-        return;
+        const { error: revokeError } = await supabase
+          .from("access_tokens")
+          .update({ revoked: true })
+          .in("id", existingTokens.map((t) => t.id));
+        if (revokeError) throw revokeError;
       }
 
       const { data, error } = await supabase
@@ -222,7 +223,16 @@ const AdminClientsPage = () => {
 
       if (error) throw error;
       setGeneratedToken(data.token);
-      toast({ title: "Token gerado com sucesso!" });
+      const tenantName = tenants.find((t) => t.id === tenantId)?.name || tenantId;
+      await logAudit("token_generated", "tenant", tenantId, tenantName, {
+        revoked_previous: existingTokens?.length || 0,
+      });
+      toast({
+        title: "Novo token gerado!",
+        description: existingTokens && existingTokens.length > 0
+          ? `${existingTokens.length} token(s) anterior(es) foram revogados automaticamente.`
+          : "Token criado com sucesso.",
+      });
       fetchTokens(tenantId);
     } catch (err: any) {
       toast({ title: "Erro ao gerar token", description: err.message, variant: "destructive" });
