@@ -582,7 +582,7 @@ serve(async (req) => {
       payload.components = components;
     }
 
-    let messageId: string;
+    let messageId: string | null = null;
     let usedWebhookId: string | null = null;
     let usedWebhookToken: string | null = null;
 
@@ -647,6 +647,10 @@ serve(async (req) => {
       }
     } else if (!product_id) {
       messageId = await sendBotMessage(channel_id, botToken, payload);
+    }
+
+    if (!messageId) {
+      throw new Error("Falha ao enviar mensagem para o Discord");
     }
 
     // Track the posted message for sync functionality
