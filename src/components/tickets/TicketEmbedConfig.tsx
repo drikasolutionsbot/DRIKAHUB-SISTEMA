@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import DrikaLockedFields from "@/components/customization/DrikaLockedFields";
 import { Loader2, Save, Palette, Type, Image, MessageSquare, Send, Undo2, Shield, ChevronDown, FolderOpen, BookmarkPlus } from "lucide-react";
 import TrashIcon from "@/components/ui/trash-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -352,26 +353,11 @@ const TicketEmbedConfig = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título do Embed</Label>
-              <Input
-                value={data.ticket_embed_title}
-                onChange={(e) => update("ticket_embed_title", e.target.value)}
-                placeholder="🎫 Ticket de Suporte"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea
-                value={data.ticket_embed_description}
-                onChange={(e) => update("ticket_embed_description", e.target.value)}
-                placeholder="Seu ticket foi criado com sucesso!"
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Variáveis: {"{user}"} {"{product}"} {"{ticket_id}"}
-              </p>
-            </div>
+            <DrikaLockedFields
+              title={data.ticket_embed_title}
+              description={data.ticket_embed_description}
+              rows={3}
+            />
             <div className="space-y-2">
               <Label>Texto do Botão</Label>
               <ButtonLabelWithEmoji

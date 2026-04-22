@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import DrikaLockedFields from "@/components/customization/DrikaLockedFields";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ChannelSelectWithCreate from "@/components/channels/ChannelSelectWithCreate";
 import { DiscordButtonStylePicker, type DiscordButtonStyle, getDiscordButtonStyles } from "@/components/discord/DiscordButtonStylePicker";
@@ -425,24 +426,11 @@ const VerificationPage = ({ embedded }: { embedded?: boolean }) => {
               <CardDescription>Aparência da mensagem de verificação no Discord</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label>Título</Label>
-                <Input
-                  value={config.verify_title}
-                  onChange={(e) => update("verify_title", e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Descrição</Label>
-                <Textarea
-                  value={config.verify_description}
-                  onChange={(e) => update("verify_description", e.target.value)}
-                  rows={4}
-                  className="mt-1"
-                  placeholder="Texto da mensagem de verificação..."
-                />
-              </div>
+              <DrikaLockedFields
+                title={config.verify_title}
+                description={config.verify_description}
+                rows={4}
+              />
               <div>
                 <Label>Texto do Botão</Label>
                 <div className="mt-1">
