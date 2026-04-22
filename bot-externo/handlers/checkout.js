@@ -912,11 +912,15 @@ async function rejectOrder(interaction, tenant, orderId) {
 
   try {
     const user = await interaction.client.users.fetch(order.discord_user_id);
-    await user.send({ embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi recusado.`).setColor(0xED4245).setTimestamp()] });
+    const dmRejectedEmbed = new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi recusado.`).setColor(0xED4245).setTimestamp();
+    applyDrikaCover(dmRejectedEmbed);
+    await user.send({ embeds: [dmRejectedEmbed] });
   } catch {}
 
+  const rejectedEmbed = new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>`).setColor(0xED4245).addFields({ name: "📦 Produto", value: order.product_name, inline: true }, { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true }).setTimestamp();
+  applyDrikaCover(rejectedEmbed);
   await interaction.editReply({
-    embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>`).setColor(0xED4245).addFields({ name: "📦 Produto", value: order.product_name, inline: true }, { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true }).setTimestamp()],
+    embeds: [rejectedEmbed],
     components: [],
   });
 
@@ -946,7 +950,7 @@ async function cancelOrder(interaction, tenant, orderId) {
   const channel = interaction.channel;
   const cancelStoreConfig = await getStoreConfig(tenant.id);
   const cancelEmbedColor = await resolveOrderColor(order, cancelStoreConfig);
-  await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor)] });
+  await sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor))] });
 
   // Log: Pedido cancelado pelo cliente
   await sendLog(interaction.guild, tenant, {
@@ -1006,7 +1010,7 @@ async function handleCouponModal(interaction, tenant, orderId) {
   await incrementCouponUsage(coupon.id, coupon.used_count);
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287)],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287))],
   });
 
   await interaction.editReply({ content: "✅ Cupom aplicado!" });
@@ -1054,7 +1058,7 @@ async function handleQuantityModal(interaction, tenant, orderId) {
   await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal });
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id)))],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id))))],
   });
 
   await interaction.editReply({ content: `✅ Quantidade atualizada para ${qty}x!` });
