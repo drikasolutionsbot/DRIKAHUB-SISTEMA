@@ -101,6 +101,45 @@ async function getOrCreateWebhook(channelId: string, botToken: string, botUserId
   }
 }
 
+async function sendBotMessage(channelId: string, botToken: string, payload: Record<string, any>): Promise<string> {
+  const sendRes = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${botToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!sendRes.ok) {
+    const errText = await sendRes.text();
+    throw new Error(`Discord API error: ${sendRes.status} - ${errText}`);
+  }
+
+  const message = await sendRes.json();
+  return message.id;
+}
+
+async function deleteTrackedProductMessage(msg: any, botToken: string) {
+  try {
+    if (msg.webhook_id && msg.webhook_token) {
+      await fetch(`${DISCORD_API}/webhooks/${msg.webhook_id}/${msg.webhook_token}/messages/${msg.message_id}`, {
+        method: "DELETE",
+      });
+      return;
+    }
+
+    await fetch(`${DISCORD_API}/channels/${msg.channel_id}/messages/${msg.message_id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    });
+  } catch (err) {
+    console.error(`Failed to delete old product message ${msg.message_id}:`, err);
+  }
+}
+
 // ── Build product embed payload (shared between post & sync) ──
 async function buildProductPayload(
   supabase: any,
