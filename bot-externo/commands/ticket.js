@@ -3,6 +3,7 @@ const {
 } = require("discord.js");
 const { getStoreConfig } = require("../supabase");
 const { sendWithIdentity } = require("../handlers/webhookSender");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 // Parse emoji from button label (same logic as other commands)
 function parseEmojiFromLabel(label) {
@@ -51,6 +52,7 @@ module.exports = {
     if (storeConfig?.ticket_embed_footer) embed.setFooter({ text: storeConfig.ticket_embed_footer });
     if (storeConfig?.ticket_embed_image_url) embed.setImage(storeConfig.ticket_embed_image_url);
     if (storeConfig?.ticket_embed_thumbnail_url) embed.setThumbnail(storeConfig.ticket_embed_thumbnail_url);
+    applyDrikaCover(embed);
 
     // Parse button label & emoji
     const rawLabel = storeConfig?.ticket_embed_button_label || "📩 Abrir Ticket";

@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,6 +16,7 @@ module.exports = {
       )
       .setColor(parseInt((tenant.primary_color || "#FF69B4").replace("#", ""), 16))
       .setTimestamp();
+    applyDrikaCover(embed);
 
     return interaction.reply({ embeds: [embed], ephemeral: true });
   },

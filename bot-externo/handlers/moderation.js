@@ -1,4 +1,5 @@
 const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 // ── /clear ──
 async function handleClear(interaction, tenant) {
@@ -84,8 +85,10 @@ async function handleBan(interaction, tenant) {
 
   try {
     await interaction.guild.members.ban(targetUser, { reason, deleteMessageSeconds: 604800 });
+    const embed = new EmbedBuilder().setTitle("🔨 Usuário Banido").setDescription(`<@${targetUser.id}> foi banido por <@${interaction.user.id}>.`).addFields({ name: "Motivo", value: reason }).setColor(0x2B2D31).setTimestamp();
+    applyDrikaCover(embed);
     await interaction.editReply({
-      embeds: [new EmbedBuilder().setTitle("🔨 Usuário Banido").setDescription(`<@${targetUser.id}> foi banido por <@${interaction.user.id}>.`).addFields({ name: "Motivo", value: reason }).setColor(0x2B2D31).setTimestamp()],
+      embeds: [embed],
     });
   } catch {
     await interaction.editReply({ content: "❌ Erro ao banir o usuário." });
@@ -106,8 +109,10 @@ async function handleKick(interaction, tenant) {
 
   try {
     await interaction.guild.members.kick(targetUser, reason);
+    const embed = new EmbedBuilder().setTitle("👢 Usuário Expulso").setDescription(`<@${targetUser.id}> foi expulso por <@${interaction.user.id}>.`).addFields({ name: "Motivo", value: reason }).setColor(0x2B2D31).setTimestamp();
+    applyDrikaCover(embed);
     await interaction.editReply({
-      embeds: [new EmbedBuilder().setTitle("👢 Usuário Expulso").setDescription(`<@${targetUser.id}> foi expulso por <@${interaction.user.id}>.`).addFields({ name: "Motivo", value: reason }).setColor(0x2B2D31).setTimestamp()],
+      embeds: [embed],
     });
   } catch {
     await interaction.editReply({ content: "❌ Erro ao expulsar o usuário." });

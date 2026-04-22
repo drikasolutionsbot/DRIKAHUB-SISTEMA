@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const { getProducts, getCategories, countStock, getStoreConfig } = require("../supabase");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -45,6 +46,7 @@ module.exports = {
 
     if (storeConfig?.store_logo_url) embed.setThumbnail(storeConfig.store_logo_url);
     if (storeConfig?.store_banner_url) embed.setImage(storeConfig.store_banner_url);
+    applyDrikaCover(embed);
 
     // Listar produtos
     for (const product of productsWithStock) {

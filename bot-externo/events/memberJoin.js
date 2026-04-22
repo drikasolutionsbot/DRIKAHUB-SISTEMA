@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const { supabase, getStoreConfig } = require("../supabase");
 const { sendWithIdentity } = require("../handlers/webhookSender");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 // ── Cache for welcome configs (TTL 30s) ──
 const welcomeCache = new Map();
@@ -72,6 +73,7 @@ function buildEmbed(embedData, member) {
     }
   }
 
+  applyDrikaCover(embed);
   return embed;
 }
 
