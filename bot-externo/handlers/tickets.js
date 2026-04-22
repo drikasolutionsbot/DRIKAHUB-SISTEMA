@@ -146,8 +146,6 @@ async function openTicket(interaction, tenant, targetChannelId = null) {
 
   if (storeConfig?.ticket_embed_footer) welcomeEmbed.setFooter({ text: storeConfig.ticket_embed_footer });
   if (storeConfig?.ticket_embed_thumbnail_url) welcomeEmbed.setThumbnail(storeConfig.ticket_embed_thumbnail_url);
-  // Capa fixa Drika (override)
-  const { applyDrikaCover } = require("../drikaTemplate");
   applyDrikaCover(welcomeEmbed);
 
   const row1 = new ActionRowBuilder().addComponents(
@@ -222,8 +220,10 @@ async function handleCloseTicket(interaction, tenant, ticketId) {
       console.error("[handleCloseTicket] Log error:", logErr.message);
     }
 
+    const archivedEmbed = new EmbedBuilder().setTitle("📁 Ticket Arquivado").setDescription(`Ticket arquivado por <@${interaction.user.id}>.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16));
+    applyDrikaCover(archivedEmbed);
     await interaction.channel.send({
-      embeds: [new EmbedBuilder().setTitle("📁 Ticket Arquivado").setDescription(`Ticket arquivado por <@${interaction.user.id}>.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
+      embeds: [archivedEmbed],
     });
 
     try {
@@ -269,8 +269,10 @@ async function handleDeleteTicket(interaction, tenant, ticketId) {
       console.error("[handleDeleteTicket] Log error:", logErr.message);
     }
 
+    const deletedEmbed = new EmbedBuilder().setTitle("🗑️ Ticket Deletado").setDescription(`Ticket deletado por <@${interaction.user.id}>.\nO tópico será excluído em 5 segundos.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16));
+    applyDrikaCover(deletedEmbed);
     await interaction.channel.send({
-      embeds: [new EmbedBuilder().setTitle("🗑️ Ticket Deletado").setDescription(`Ticket deletado por <@${interaction.user.id}>.\nO tópico será excluído em 5 segundos.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
+      embeds: [deletedEmbed],
     });
 
     setTimeout(() => { interaction.channel.delete().catch(() => {}); }, 5000);
@@ -306,8 +308,10 @@ async function handleRemindTicket(interaction, tenant, ticketId) {
   try {
     const user = await interaction.client.users.fetch(ticket.discord_user_id);
     const ticketUrl = `https://discord.com/channels/${interaction.guild.id}/${ticket.discord_channel_id}`;
+    const remindEmbed = new EmbedBuilder().setDescription(`${greeting} <@${ticket.discord_user_id}>, você possui um ticket pendente de resposta; se não for respondido, poderá ser fechado.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16));
+    applyDrikaCover(remindEmbed);
     await user.send({
-      embeds: [new EmbedBuilder().setDescription(`${greeting} <@${ticket.discord_user_id}>, você possui um ticket pendente de resposta; se não for respondido, poderá ser fechado.`).setColor(parseInt((storeConfig?.embed_color || "#5865F2").replace("#", ""), 16))],
+      embeds: [remindEmbed],
       components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Ir para o ticket").setStyle(ButtonStyle.Link).setURL(ticketUrl))],
     });
   } catch {}
@@ -756,6 +760,7 @@ async function sendTicketLog(client, ticket, closedByUserId, closedByUsername, a
     )
     .setTimestamp()
     .setFooter({ text: `${closedAtStr} • ${tenant.name || "Servidor"}` });
+  applyDrikaCover(logEmbed);
 
   // Build transcript and upload
   let components = [];
@@ -841,6 +846,7 @@ async function sendTicketLog(client, ticket, closedByUserId, closedByUsername, a
         )
         .setTimestamp()
         .setFooter({ text: tenant.name || "Drika Hub" });
+      applyDrikaCover(dmEmbed);
       await user.send({
         embeds: [dmEmbed],
         components: [new ActionRowBuilder().addComponents(
