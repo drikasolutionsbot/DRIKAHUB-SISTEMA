@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { supabase } = require("../supabase");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 /**
  * Handle member join: if verification is disabled, auto-assign verify role
@@ -36,6 +37,7 @@ async function onMemberJoin(client, member, tenant) {
         .setTimestamp();
 
       if (tenant.logo_url) dm.setThumbnail(tenant.logo_url);
+      applyDrikaCover(dm);
 
       await member.send({ embeds: [dm] }).catch(() => {
         // DMs may be disabled

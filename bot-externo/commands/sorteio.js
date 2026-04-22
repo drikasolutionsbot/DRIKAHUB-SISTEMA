@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -110,6 +111,7 @@ module.exports = {
           .setTitle("🎉 Sorteios Ativos")
           .setDescription(lines.join("\n\n"))
           .setFooter({ text: `${active.length} sorteio(s) ativo(s)` });
+        applyDrikaCover(embed);
 
         await interaction.editReply({ embeds: [embed] });
       } catch (err) {
@@ -136,6 +138,7 @@ module.exports = {
           .setTitle(`🎉 Sorteio Encerrado!`)
           .setDescription(`🏆 **Vencedor${winners.length > 1 ? "es" : ""}:** ${winnerMentions}\n\nParabéns! 🥳`)
           .setTimestamp();
+        applyDrikaCover(embed);
 
         await interaction.editReply({ content: `🎉 ${winnerMentions}`, embeds: [embed] });
       } catch (err) {

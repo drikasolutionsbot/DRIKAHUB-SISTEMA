@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -21,6 +22,7 @@ module.exports = {
       )
       .setColor(latency < 200 ? 0x57f287 : latency < 500 ? 0xfee75c : 0xed4245)
       .setTimestamp();
+    applyDrikaCover(embed);
 
     return interaction.editReply({ embeds: [embed] });
   },

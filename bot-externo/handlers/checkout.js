@@ -10,7 +10,7 @@ const {
   getActivePaymentProvider, triggerAutomation, deliverOrder, supabase,
 } = require("../supabase");
 const { sendWithIdentity } = require("./webhookSender");
-const { DRIKA_COVER_URL } = require("../drikaTemplate");
+const { DRIKA_COVER_URL, applyDrikaCover } = require("../drikaTemplate");
 
 const formatBRL = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 const formatDateTime = (dateObj = new Date()) => ({
@@ -42,6 +42,7 @@ async function sendLog(guild, tenant, { title, description, color, fields: extra
       title,
       description,
       color: embedColor,
+      image: { url: DRIKA_COVER_URL },
       footer: { text: `${storeName} | ${date}, ${time}`, icon_url: storeLogo || undefined },
       timestamp: new Date().toISOString(),
     };
@@ -628,7 +629,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
   const channel = interaction.channel;
   const preStoreConfig = await getStoreConfig(tenant.id);
   const preEmbedColor = await resolveOrderColor(order, preStoreConfig);
-  await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setDescription("⏳ | Gerando QR Code...\nQuase lá, só mais um instante!").setColor(preEmbedColor)] });
+  await sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setDescription("⏳ | Gerando QR Code...\nQuase lá, só mais um instante!").setColor(preEmbedColor))] });
 
   const priceCents = order.total_cents;
   const amountBRL = priceCents / 100;
@@ -689,7 +690,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
   } else {
     // Static PIX
     if (!tenant.pix_key) {
-      return sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Erro").setDescription("Nenhum método de pagamento configurado.").setColor(0xED4245)] });
+      return sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setTitle("❌ Erro").setDescription("Nenhum método de pagamento configurado.").setColor(0xED4245))] });
     }
     brcode = generateStaticBRCode(tenant.pix_key, tenant.name || "Loja", amountBRL, `PED${order.order_number}`);
     await updateOrderStatus(order.id, "pending_payment", { payment_provider: "static_pix" });
@@ -866,7 +867,9 @@ async function approveOrder(interaction, tenant, orderId) {
     const user = await interaction.client.users.fetch(order.discord_user_id);
     const dmStoreConfig = await getStoreConfig(tenant.id);
     const dmEmbedColor = await resolveOrderColor(order, dmStoreConfig);
-    await user.send({ embeds: [new EmbedBuilder().setTitle("✅ Pagamento Confirmado!").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi aprovado!\nSeu produto será entregue em instantes.`).setColor(dmEmbedColor).setTimestamp()] });
+    const dmApprovedEmbed = new EmbedBuilder().setTitle("✅ Pagamento Confirmado!").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi aprovado!\nSeu produto será entregue em instantes.`).setColor(dmEmbedColor).setTimestamp();
+    applyDrikaCover(dmApprovedEmbed);
+    await user.send({ embeds: [dmApprovedEmbed] });
   } catch {}
 
   const approveStoreConfig = await getStoreConfig(tenant.id);
@@ -881,6 +884,7 @@ async function approveOrder(interaction, tenant, orderId) {
       { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true },
     )
     .setTimestamp();
+  applyDrikaCover(approvedEmbed);
 
   await interaction.editReply({ embeds: [approvedEmbed], components: [] });
 
@@ -908,11 +912,15 @@ async function rejectOrder(interaction, tenant, orderId) {
 
   try {
     const user = await interaction.client.users.fetch(order.discord_user_id);
-    await user.send({ embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi recusado.`).setColor(0xED4245).setTimestamp()] });
+    const dmRejectedEmbed = new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi recusado.`).setColor(0xED4245).setTimestamp();
+    applyDrikaCover(dmRejectedEmbed);
+    await user.send({ embeds: [dmRejectedEmbed] });
   } catch {}
 
+  const rejectedEmbed = new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>`).setColor(0xED4245).addFields({ name: "📦 Produto", value: order.product_name, inline: true }, { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true }).setTimestamp();
+  applyDrikaCover(rejectedEmbed);
   await interaction.editReply({
-    embeds: [new EmbedBuilder().setTitle("❌ Pedido Recusado").setDescription(`Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>`).setColor(0xED4245).addFields({ name: "📦 Produto", value: order.product_name, inline: true }, { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true }).setTimestamp()],
+    embeds: [rejectedEmbed],
     components: [],
   });
 
@@ -942,7 +950,7 @@ async function cancelOrder(interaction, tenant, orderId) {
   const channel = interaction.channel;
   const cancelStoreConfig = await getStoreConfig(tenant.id);
   const cancelEmbedColor = await resolveOrderColor(order, cancelStoreConfig);
-  await sendWithIdentity(channel, tenant, { embeds: [new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor)] });
+  await sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setTitle("❌ Compra Cancelada").setDescription(`Pedido **#${order.order_number}** foi cancelado.\nO tópico será arquivado.`).setColor(cancelEmbedColor))] });
 
   // Log: Pedido cancelado pelo cliente
   await sendLog(interaction.guild, tenant, {
@@ -1002,7 +1010,7 @@ async function handleCouponModal(interaction, tenant, orderId) {
   await incrementCouponUsage(coupon.id, coupon.used_count);
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287)],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287))],
   });
 
   await interaction.editReply({ content: "✅ Cupom aplicado!" });
@@ -1050,7 +1058,7 @@ async function handleQuantityModal(interaction, tenant, orderId) {
   await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal });
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id)))],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id))))],
   });
 
   await interaction.editReply({ content: `✅ Quantidade atualizada para ${qty}x!` });

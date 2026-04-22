@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { getProducts, countStock, getStoreConfig } = require("../supabase");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -33,6 +34,7 @@ module.exports = {
       .setDescription(lines.join("\n"))
       .setColor(embedColor)
       .setTimestamp();
+    applyDrikaCover(embed);
 
     return interaction.editReply({ embeds: [embed] });
   },
