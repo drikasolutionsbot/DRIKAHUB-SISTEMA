@@ -53,8 +53,9 @@ const memberJoinHandler = require("./events/memberJoin");
 const protectionHandler = require("./events/protection");
 const verificationHandler = require("./handlers/verification");
 
-// ── Status polling ──
+// ── Status + banner polling ──
 let lastAppliedStatus = null;
+let lastAppliedBannerUrl = undefined;
 
 function normalizeStatus(rawStatus) {
   const fallback = "/panel";
@@ -68,21 +69,45 @@ function normalizeStatus(rawStatus) {
   return (firstLine || fallback).slice(0, 128);
 }
 
-async function syncBotStatus() {
+async function fetchImageBuffer(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Falha ao baixar banner: ${response.status} ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+async function syncBotIdentity() {
   try {
     const config = await getGlobalBotConfig();
     const status = normalizeStatus(config?.global_bot_status);
+    const bannerUrl = config?.global_bot_banner_url?.trim() || null;
 
-    if (status === lastAppliedStatus) return;
+    if (status !== lastAppliedStatus) {
+      client.user.setPresence({
+        activities: [{ name: status, type: ActivityType.Playing }],
+        status: "online",
+      });
+      lastAppliedStatus = status;
+      console.log(`🔄 Status atualizado: "${status}"`);
+    }
 
-    client.user.setPresence({
-      activities: [{ name: status, type: ActivityType.Playing }],
-      status: "online",
-    });
-    lastAppliedStatus = status;
-    console.log(`🔄 Status atualizado: "${status}"`);
+    if (bannerUrl !== lastAppliedBannerUrl) {
+      if (bannerUrl) {
+        const bannerBuffer = await fetchImageBuffer(bannerUrl);
+        await client.user.setBanner(bannerBuffer);
+        console.log("🖼️ Banner global do bot atualizado.");
+      } else if (lastAppliedBannerUrl) {
+        await client.user.edit({ banner: null });
+        console.log("🖼️ Banner global do bot removido.");
+      }
+
+      lastAppliedBannerUrl = bannerUrl;
+    }
   } catch (err) {
-    console.error("Erro ao sincronizar status do bot:", err.message);
+    console.error("Erro ao sincronizar identidade do bot:", err.message);
   }
 }
 
@@ -125,9 +150,9 @@ client.on(Events.ClientReady, async () => {
     }
   }
 
-  // Sync status immediately and then every 15 seconds
-  await syncBotStatus();
-  setInterval(syncBotStatus, 15_000);
+  // Sync identidade global imediatamente e depois a cada 15 segundos
+  await syncBotIdentity();
+  setInterval(syncBotIdentity, 15_000);
 });
 // ── Ao entrar em um novo servidor, registrar os comandos ──
 client.on(Events.GuildCreate, async (guild) => {
