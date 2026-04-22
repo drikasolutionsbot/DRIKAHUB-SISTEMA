@@ -8,6 +8,7 @@ const {
   getTicketById, supabase,
 } = require("../supabase");
 const { sendWithIdentity } = require("./webhookSender");
+const { applyDrikaCover } = require("../drikaTemplate");
 
 // ── Check staff permission ──
 async function checkStaffPermission(tenant, interaction) {
