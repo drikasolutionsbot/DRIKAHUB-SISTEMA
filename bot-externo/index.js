@@ -59,6 +59,7 @@ let lastAppliedUserBannerUrl = undefined;
 let lastAppliedApplicationCoverUrl = undefined;
 let lastAppliedGuildProfileBannerUrl = undefined;
 let lastSeenForceReapplyAt = undefined;
+let lastAppliedMasterBannersFingerprint = undefined;
 
 function normalizeStatus(rawStatus) {
   const fallback = "/panel";
@@ -204,9 +205,15 @@ async function syncBotIdentity(forceGuildProfileBanner = false) {
       console.log(`🔄 Status atualizado: "${status}"`);
     }
 
+    // Master tenants: banner por guild
+    const masterBannersByGuild = await getMasterTenantBanners();
+    const masterFingerprint = JSON.stringify(masterBannersByGuild);
+    const masterChanged = masterFingerprint !== lastAppliedMasterBannersFingerprint;
+
     const shouldUpdateUserBanner = forceAll || bannerUrl !== lastAppliedUserBannerUrl;
     const shouldUpdateApplicationCover = forceAll || bannerUrl !== lastAppliedApplicationCoverUrl;
-    const shouldUpdateGuildProfileBanner = forceAll || bannerUrl !== lastAppliedGuildProfileBannerUrl;
+    const shouldUpdateGuildProfileBanner =
+      forceAll || bannerUrl !== lastAppliedGuildProfileBannerUrl || masterChanged;
 
     if (shouldUpdateUserBanner || shouldUpdateApplicationCover || shouldUpdateGuildProfileBanner) {
       const bannerAsset = bannerUrl ? await fetchImageBuffer(bannerUrl) : null;
@@ -249,8 +256,9 @@ async function syncBotIdentity(forceGuildProfileBanner = false) {
       }
 
       if (shouldUpdateGuildProfileBanner) {
-        const syncedCount = await syncGuildProfileBannerForAllGuilds(bannerAsset);
+        const syncedCount = await syncGuildProfileBannerForAllGuilds(bannerAsset, masterBannersByGuild);
         lastAppliedGuildProfileBannerUrl = bannerUrl;
+        lastAppliedMasterBannersFingerprint = masterFingerprint;
         console.log(
           bannerUrl
             ? `🖼️ Banner do perfil do bot aplicado em ${syncedCount} servidor(es).`
