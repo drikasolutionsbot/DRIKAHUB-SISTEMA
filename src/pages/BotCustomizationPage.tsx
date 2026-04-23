@@ -1,20 +1,54 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/contexts/TenantContext";
-import { Bot, Pencil } from "lucide-react";
+import { Bot, Pencil, ImageIcon, Lock, Crown, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import EditBotProfileModal from "@/components/settings/EditBotProfileModal";
+import { isMaster } from "@/lib/plans";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const BotCustomizationPage = () => {
   const { tenant, tenantId, refetch } = useTenant();
   const [editOpen, setEditOpen] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   if (!tenant) return <Skeleton className="h-64" />;
 
   const botName = tenant.bot_name || "Drika Bot";
   const botAvatar = tenant.bot_avatar_url;
-  
+  const botBanner = (tenant as any).bot_banner_url as string | null;
+  const userIsMaster = isMaster((tenant as any).plan);
+
   const botId = (tenant as any).discord_bot_id || tenant.id;
+
+  const handleBannerUpload = async (file: File) => {
+    if (!tenantId || !userIsMaster) return;
+    setUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${tenantId}/bot-banner/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("tenant-assets")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("tenant-assets").getPublicUrl(path);
+
+      const { data, error } = await supabase.functions.invoke("update-tenant", {
+        body: { tenant_id: tenantId, updates: { bot_banner_url: pub.publicUrl } },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      await refetch();
+      toast({ title: "Capa aplicada! ✅" });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar capa", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
