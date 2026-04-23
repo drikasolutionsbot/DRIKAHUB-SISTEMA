@@ -118,8 +118,8 @@ const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => {
   );
 };
 
-/* ── Subscription Payment Modal (Pro) ── */
-const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void; priceCents: number }) => {
+/* ── Subscription Payment Modal ── */
+const SubscriptionPaymentModal = ({ onClose, priceCents, plan, planLabel }: { onClose: () => void; priceCents: number; plan: "pro" | "master"; planLabel: string }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "pix" | "success">("form");
   const [loading, setLoading] = useState(false);
@@ -172,6 +172,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
           whatsapp: whatsapp.trim() || null,
           name: name.trim() || email.split("@")[0],
           ref_code: refCode,
+          plan,
         },
       });
       if (fnError) {
@@ -258,7 +259,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
             <div className="relative text-center">
               <img src={drikaLogo} alt="Drika" className="h-16 w-auto mx-auto mb-3 drop-shadow-[0_0_20px_rgba(255,0,100,0.3)]" />
               <h3 className="text-xl font-bold text-white tracking-tight">
-                {step === "success" ? "Conta Pro Ativada! 🎉" : "Assinar Drika Hub Pro"}
+                {step === "success" ? `Conta ${planLabel} Ativada! 🎉` : `Assinar Drika Hub ${planLabel}`}
               </h3>
               {step !== "success" && (
                 <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 px-5 py-2 text-sm font-semibold text-primary mt-3 shadow-[0_0_15px_rgba(255,0,100,0.15)]">
@@ -348,7 +349,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
                     <Check className="h-8 w-8 text-emerald-400" />
                   </div>
                   <p className="text-sm text-white/70">
-                    Pagamento confirmado! Seu plano Pro de 30 dias está ativo.
+                    Pagamento confirmado! Seu plano {planLabel} de 30 dias está ativo.
                   </p>
                   {tenantName && (
                     <p className="text-xs text-white/40 mt-1">Loja: <span className="text-white/70 font-medium">{tenantName}</span></p>
@@ -405,6 +406,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [videoOpen, setVideoOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentPlan, setPaymentPlan] = useState<"pro" | "master">("pro");
   const [landingConfig, setLandingConfig] = useState<{
     stat_servers: number; stat_servers_label: string;
     stat_sales: number; stat_sales_label: string;
@@ -412,6 +414,9 @@ const LandingPage = () => {
     video_url: string | null;
     pushinpay_active: boolean;
     pro_price_cents: number;
+    master_price_cents: number;
+    pro_plan_name: string;
+    master_plan_name: string;
   } | null>(null);
 
   useEffect(() => {
@@ -420,6 +425,11 @@ const LandingPage = () => {
     });
   }, []);
   const handleProClick = () => {
+    setPaymentPlan("pro");
+    setPaymentOpen(true);
+  };
+  const handleMasterClick = () => {
+    setPaymentPlan("master");
     setPaymentOpen(true);
   };
 
@@ -638,7 +648,16 @@ const LandingPage = () => {
 
       {/* Subscription Payment Modal */}
       {paymentOpen && (
-        <SubscriptionPaymentModal onClose={() => setPaymentOpen(false)} priceCents={landingConfig?.pro_price_cents || 2690} />
+        <SubscriptionPaymentModal
+          onClose={() => setPaymentOpen(false)}
+          priceCents={paymentPlan === "master"
+            ? (landingConfig?.master_price_cents || 3090)
+            : (landingConfig?.pro_price_cents || 2690)}
+          plan={paymentPlan}
+          planLabel={paymentPlan === "master"
+            ? (landingConfig?.master_plan_name || "Master")
+            : (landingConfig?.pro_plan_name || "Pro")}
+        />
       )}
 
       {/* ===== 6. PRICING ===== */}
@@ -699,7 +718,7 @@ const LandingPage = () => {
                   </span>
                 </div>
                 <span className="inline-flex self-start items-center rounded-full bg-primary/15 text-primary text-[10px] font-semibold px-3 py-1 mb-4 uppercase tracking-wider mt-2">Mais Popular</span>
-                <h3 className="text-xl font-extrabold font-display text-white mb-1">Pro</h3>
+                <h3 className="text-xl font-extrabold font-display text-white mb-1">{landingConfig?.pro_plan_name || "Pro"}</h3>
                 <p className="text-xs text-white/40 mb-5">Solução completa para vendas e atendimento no Discord.</p>
                 <div className="flex items-baseline gap-1 mb-1">
                   <span className="text-[10px] text-white/40">a partir de</span>
@@ -732,31 +751,41 @@ const LandingPage = () => {
               </div>
             </ScrollReveal>
 
-            {/* Enterprise */}
+            {/* Master */}
             <ScrollReveal delay={0.2}>
-              <div className="relative rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 flex flex-col h-full transition-all duration-300 hover:border-white/20">
-                <span className="inline-flex self-start items-center rounded-full bg-white/10 text-white/50 text-[10px] font-semibold px-3 py-1 mb-4 uppercase tracking-wider">Em Desenvolvimento</span>
-                <h3 className="text-xl font-extrabold font-display text-white mb-1">Enterprise</h3>
-                <p className="text-xs text-white/40 mb-5">Recursos avançados para grandes servidores e empresas.</p>
+              <div className="relative rounded-2xl border border-amber-400/40 bg-gradient-to-br from-[#0d0d0d] to-amber-950/20 p-6 flex flex-col h-full transition-all duration-300 hover:border-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.08)]">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-1 text-[10px] font-bold text-black uppercase tracking-wider whitespace-nowrap shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                    <Crown className="h-3 w-3" /> Premium
+                  </span>
+                </div>
+                <span className="inline-flex self-start items-center rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold px-3 py-1 mb-4 uppercase tracking-wider mt-2">Sem Limites</span>
+                <h3 className="text-xl font-extrabold font-display text-white mb-1">{landingConfig?.master_plan_name || "Master"}</h3>
+                <p className="text-xs text-white/40 mb-5">Tudo do Pro + recursos exclusivos para quem quer escalar.</p>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-[10px] text-white/40">a partir de</span>
+                </div>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-2xl font-extrabold font-display text-white/40">Em breve</span>
+                  <span className="text-xs text-white/50">R$</span>
+                  <span className="text-4xl font-extrabold font-display text-white">{((landingConfig?.master_price_cents || 3090) / 100).toFixed(2).replace(".", ",")}</span>
+                  <span className="text-xs text-white/40">/mês</span>
                 </div>
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {[
-                    "Todos os recursos do Pro",
-                    "Múltiplos bots por servidor",
-                    "API personalizada",
-                    "White-label completo",
-                    "Suporte dedicado 24/7",
+                    "Tudo do plano Pro",
+                    "Capa pessoal do bot por loja",
+                    "Créditos de IA ilimitados",
+                    "Identidade visual exclusiva",
+                    "Prioridade máxima no suporte",
                   ].map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-white/40">
-                      <Check className="h-3.5 w-3.5 text-white/30 shrink-0 mt-0.5" />
+                    <li key={f} className="flex items-start gap-2 text-xs text-white/70">
+                      <Check className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <button disabled className="w-full py-2.5 rounded-full bg-white/5 text-white/40 font-semibold text-sm cursor-not-allowed border border-white/10 flex items-center justify-center gap-2">
-                  Em Breve
+                <button onClick={handleMasterClick} className="w-full py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 text-black font-semibold text-sm cursor-pointer border-none hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] transition-all flex items-center justify-center gap-2">
+                  Assinar Master <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </ScrollReveal>

@@ -7,25 +7,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type PlanKey = "pro" | "master";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { tenant_id, email, password, whatsapp, name, ref_code } = await req.json();
+    const { tenant_id, email, password, whatsapp, name, ref_code, plan } = await req.json();
+    const planKey: PlanKey = plan === "master" ? "master" : "pro";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Validate registration data for new subscribers
     const isNewSubscriber = !tenant_id || tenant_id === "new_subscriber";
     if (isNewSubscriber) {
       if (!email || !password) throw new Error("Email e senha são obrigatórios");
       if (password.length < 6) throw new Error("Senha deve ter no mínimo 6 caracteres");
 
-      // Check if email already exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
       const emailExists = existingUsers?.users?.some(
         (u: any) => u.email?.toLowerCase() === email.toLowerCase()
@@ -43,22 +44,26 @@ serve(async (req) => {
       throw new Error("Configuração de pagamento não encontrada");
     }
 
-    const amountCents = config.pro_price_cents || 2690;
+    const amountCents = planKey === "master"
+      ? (config.master_price_cents || 3090)
+      : (config.pro_price_cents || 2690);
 
-    // For new subscribers, use a sentinel tenant_id
+    const planLabel = planKey === "master"
+      ? (config.master_plan_name || "Master")
+      : (config.pro_plan_name || "Pro");
+
     const effectiveTenantId = isNewSubscriber ? "00000000-0000-0000-0000-000000000000" : tenant_id;
 
-    // Store registration metadata for new subscribers (include ref_code for referral tracking)
     const metadata = isNewSubscriber
-      ? { email, password, whatsapp: whatsapp || null, name: name || email.split("@")[0], ref_code: ref_code || null }
-      : { ref_code: ref_code || null };
+      ? { email, password, whatsapp: whatsapp || null, name: name || email.split("@")[0], ref_code: ref_code || null, plan: planKey }
+      : { ref_code: ref_code || null, plan: planKey };
 
     if (config.efi_active && config.efi_client_id && config.efi_client_secret && config.efi_cert_pem && config.efi_key_pem) {
-      return await generateViaEfi(config, effectiveTenantId, email, amountCents, supabase, metadata);
+      return await generateViaEfi(config, effectiveTenantId, email, amountCents, supabase, metadata, planKey, planLabel);
     } else if (config.pushinpay_active && config.pushinpay_api_key) {
-      return await generateViaPushinPay(config, effectiveTenantId, email, amountCents, supabase, metadata);
+      return await generateViaPushinPay(config, effectiveTenantId, email, amountCents, supabase, metadata, planKey);
     } else if ((config as any).abacatepay_active && (config as any).abacatepay_api_key) {
-      return await generateViaAbacatePay(config, effectiveTenantId, email, amountCents, supabase, metadata);
+      return await generateViaAbacatePay(config, effectiveTenantId, email, amountCents, supabase, metadata, planKey, planLabel);
     } else {
       throw new Error("Nenhum provedor de pagamento ativo. Ative Efí, PushinPay ou AbacatePay no painel admin.");
     }
@@ -72,7 +77,7 @@ serve(async (req) => {
   }
 });
 
-async function generateViaEfi(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any) {
+async function generateViaEfi(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any, plan: PlanKey, planLabel: string) {
   const amountBRL = amountCents / 100;
   const txId = crypto.randomUUID().replace(/-/g, "").slice(0, 30);
 
@@ -115,7 +120,7 @@ async function generateViaEfi(config: any, tenant_id: string, email: string | un
       calendario: { expiracao: 900 },
       valor: { original: amountBRL.toFixed(2) },
       chave: config.efi_pix_key || "",
-      infoAdicionais: [{ nome: "Plano", valor: "Pro - Drika Hub" }],
+      infoAdicionais: [{ nome: "Plano", valor: `${planLabel} - Drika Hub` }],
     }),
     client: httpClient,
   } as any);
@@ -147,7 +152,7 @@ async function generateViaEfi(config: any, tenant_id: string, email: string | un
 
   const { data: inserted } = await supabase.from("subscription_payments").insert({
     tenant_id,
-    plan: "pro",
+    plan,
     amount_cents: amountCents,
     payment_provider: "efi",
     payment_id: paymentId,
@@ -156,7 +161,7 @@ async function generateViaEfi(config: any, tenant_id: string, email: string | un
     metadata,
   }).select("id").single();
 
-  console.log(`Subscription PIX generated via Efí, txid ${paymentId}`);
+  console.log(`Subscription PIX (${plan}) generated via Efí, txid ${paymentId}`);
 
   return new Response(
     JSON.stringify({
@@ -169,12 +174,13 @@ async function generateViaEfi(config: any, tenant_id: string, email: string | un
       amount: amountBRL.toFixed(2),
       method: "dynamic",
       provider: "efi",
+      plan,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
 
-async function generateViaPushinPay(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any) {
+async function generateViaPushinPay(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any, plan: PlanKey) {
   const apiKey = config.pushinpay_api_key;
 
   const res = await fetch("https://api.pushinpay.com.br/api/pix/cashIn", {
@@ -202,7 +208,7 @@ async function generateViaPushinPay(config: any, tenant_id: string, email: strin
 
   const { data: inserted } = await supabase.from("subscription_payments").insert({
     tenant_id,
-    plan: "pro",
+    plan,
     amount_cents: amountCents,
     payment_provider: "pushinpay",
     payment_id: String(paymentId),
@@ -211,7 +217,7 @@ async function generateViaPushinPay(config: any, tenant_id: string, email: strin
     metadata,
   }).select("id").single();
 
-  console.log(`Subscription PIX generated via PushinPay, id ${paymentId}`);
+  console.log(`Subscription PIX (${plan}) generated via PushinPay, id ${paymentId}`);
 
   return new Response(
     JSON.stringify({
@@ -224,15 +230,15 @@ async function generateViaPushinPay(config: any, tenant_id: string, email: strin
       amount: (amountCents / 100).toFixed(2),
       method: "dynamic",
       provider: "pushinpay",
+      plan,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
 
-async function generateViaAbacatePay(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any) {
+async function generateViaAbacatePay(config: any, tenant_id: string, email: string | undefined, amountCents: number, supabase: any, metadata: any, plan: PlanKey, planLabel: string) {
   const apiKey = config.abacatepay_api_key;
 
-  // POST /v1/pixQrCode/create — Docs: https://docs.abacatepay.com/api-reference/criar-qrcode-pix
   const res = await fetch("https://api.abacatepay.com/v1/pixQrCode/create", {
     method: "POST",
     headers: {
@@ -241,9 +247,9 @@ async function generateViaAbacatePay(config: any, tenant_id: string, email: stri
     },
     body: JSON.stringify({
       amount: amountCents,
-      expiresIn: 900, // 15 minutos
-      description: "Plano Pro - Drika Hub",
-      externalId: `sub_${Date.now()}`,
+      expiresIn: 900,
+      description: `Plano ${planLabel} - Drika Hub`,
+      externalId: `sub_${plan}_${Date.now()}`,
     }),
   });
 
@@ -271,7 +277,7 @@ async function generateViaAbacatePay(config: any, tenant_id: string, email: stri
 
   const { data: inserted } = await supabase.from("subscription_payments").insert({
     tenant_id,
-    plan: "pro",
+    plan,
     amount_cents: amountCents,
     payment_provider: "abacatepay",
     payment_id: paymentId,
@@ -280,7 +286,7 @@ async function generateViaAbacatePay(config: any, tenant_id: string, email: stri
     metadata,
   }).select("id").single();
 
-  console.log(`Subscription PIX generated via AbacatePay, id ${paymentId}`);
+  console.log(`Subscription PIX (${plan}) generated via AbacatePay, id ${paymentId}`);
 
   return new Response(
     JSON.stringify({
@@ -293,6 +299,7 @@ async function generateViaAbacatePay(config: any, tenant_id: string, email: stri
       amount: (amountCents / 100).toFixed(2),
       method: "dynamic",
       provider: "abacatepay",
+      plan,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
