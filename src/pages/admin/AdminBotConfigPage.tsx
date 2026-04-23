@@ -209,14 +209,33 @@ const AdminBotConfigPage = () => {
         </p>
       </div>
 
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="gradient-pink text-primary-foreground border-none hover:opacity-90"
-      >
-        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-        Salvar configuração global
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="gradient-pink text-primary-foreground border-none hover:opacity-90"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+          Salvar configuração global
+        </Button>
+
+        <Button
+          onClick={handleForceReapply}
+          disabled={reapplying || !bannerUrl}
+          variant="outline"
+          className="gap-2"
+          title={!bannerUrl ? "Configure um banner primeiro" : "Força o bot a reaplicar o banner em todos os contextos"}
+        >
+          {reapplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Aplicar banner em todas as áreas
+        </Button>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground -mt-3">
+        O botão acima força o bot externo a reexecutar a aplicação do banner em até 15 segundos:
+        perfil global do usuário, capa do aplicativo e perfil de membro em cada servidor.
+        Útil quando o Discord aparenta estar com a versão antiga em cache.
+      </p>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadBanner} />
     </div>
