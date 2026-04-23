@@ -202,10 +202,25 @@ const EditBotProfileModal = ({ open, onOpenChange, tenant, tenantId, refetchTena
                 Disponível apenas no plano <strong className="text-primary">Master</strong>.
               </p>
             ) : (
-              <p className="text-[11px] text-muted-foreground">
-                PNG, JPG até 10MB. Recomendado 960×540px.
-                {botBannerUrl && " Clique no X para remover."}
-              </p>
+              <>
+                <p className="text-[11px] text-muted-foreground">
+                  PNG, JPG até 10MB. Recomendado 960×540px.
+                  {botBannerUrl && " Clique no X para remover."}
+                </p>
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 flex items-start gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="text-[11px] text-amber-200/90 leading-relaxed space-y-1">
+                    <p>
+                      <strong className="text-amber-300">Aguarde ~10 minutos entre trocas de capa.</strong> O Discord
+                      impõe rate-limit no perfil do bot (≈2-3 trocas a cada 10 min).
+                    </p>
+                    <p className="text-amber-200/70">
+                      Trocas em excesso disparam <strong>backoff progressivo</strong> — o bot pode ficar bloqueado
+                      por horas para qualquer alteração de perfil (avatar/nome/capa) em todos os servidores.
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
