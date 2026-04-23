@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/contexts/TenantContext";
 import { Bot, Pencil, ImageIcon, Lock, Crown, Loader2, Upload } from "lucide-react";
