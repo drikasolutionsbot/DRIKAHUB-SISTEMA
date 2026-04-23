@@ -229,11 +229,21 @@ const BotCustomizationPage = () => {
         {/* Master lock overlay for non-master users with banner */}
         {botBanner && !userIsMaster && (
           <div className="absolute top-3 left-3 z-10">
-            <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm border-primary/40 text-primary">
-              <Lock className="h-3 w-3" />
-              <Crown className="h-3 w-3" />
-              Master
-            </Badge>
+            <button
+              type="button"
+              onClick={() => openUpgradeModal("master")}
+              className="group focus:outline-none focus:ring-2 focus:ring-primary/60 rounded-full"
+              title="Assinar plano Master"
+            >
+              <Badge
+                variant="outline"
+                className="gap-1 bg-background/80 backdrop-blur-sm border-primary/40 text-primary cursor-pointer transition-all group-hover:bg-primary/10 group-hover:border-primary/70"
+              >
+                <Lock className="h-3 w-3" />
+                <Crown className="h-3 w-3" />
+                Master
+              </Badge>
+            </button>
           </div>
         )}
 
@@ -257,14 +267,20 @@ const BotCustomizationPage = () => {
               {botBanner ? "Trocar Capa" : "Adicionar Capa"}
             </Button>
           ) : (
-            <Badge
-              variant="outline"
-              className="gap-1 bg-background/80 backdrop-blur-sm border-primary/40 text-primary cursor-help"
-              title="Disponível apenas no plano Master"
+            <button
+              type="button"
+              onClick={() => openUpgradeModal("master")}
+              className="group focus:outline-none focus:ring-2 focus:ring-primary/60 rounded-full"
+              title="Assinar plano Master para liberar capa personalizada"
             >
-              <Crown className="h-3 w-3" />
-              Capa Master
-            </Badge>
+              <Badge
+                variant="outline"
+                className="gap-1 bg-background/80 backdrop-blur-sm border-primary/40 text-primary cursor-pointer transition-all group-hover:bg-primary/10 group-hover:border-primary/70"
+              >
+                <Crown className="h-3 w-3" />
+                Capa Master
+              </Badge>
+            </button>
           )}
         </div>
 
