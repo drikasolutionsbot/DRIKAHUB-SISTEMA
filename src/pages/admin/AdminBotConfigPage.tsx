@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bot, Loader2, Upload, X, Check, Info } from "lucide-react";
+import { Bot, Loader2, Upload, X, Check, Info, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,22 +13,48 @@ const AdminBotConfigPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [reapplying, setReapplying] = useState(false);
+  const [configId, setConfigId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
       const { data } = await (supabase as any)
         .from("landing_config")
-        .select("global_bot_status, global_bot_banner_url")
+        .select("id, global_bot_status, global_bot_banner_url")
         .limit(1)
         .single();
       if (data) {
+        setConfigId(data.id);
         setStatus(data.global_bot_status || "/panel");
         setBannerUrl(data.global_bot_banner_url || "");
       }
       setLoading(false);
     })();
   }, []);
+
+  const handleForceReapply = async () => {
+    if (!configId) {
+      toast({ title: "Configuração não carregada", variant: "destructive" });
+      return;
+    }
+    setReapplying(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("landing_config")
+        .update({ global_bot_banner_force_reapply_at: new Date().toISOString() })
+        .eq("id", configId);
+      if (error) throw error;
+      toast({
+        title: "Reaplicação solicitada ✅",
+        description: "O bot vai reaplicar o banner em até 15 segundos em todos os contextos suportados (perfil global, capa do app e perfil em cada servidor).",
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao solicitar", description: err.message, variant: "destructive" });
+    } finally {
+      setReapplying(false);
+    }
+  };
 
   const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,14 +209,33 @@ const AdminBotConfigPage = () => {
         </p>
       </div>
 
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="gradient-pink text-primary-foreground border-none hover:opacity-90"
-      >
-        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-        Salvar configuração global
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="gradient-pink text-primary-foreground border-none hover:opacity-90"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+          Salvar configuração global
+        </Button>
+
+        <Button
+          onClick={handleForceReapply}
+          disabled={reapplying || !bannerUrl}
+          variant="outline"
+          className="gap-2"
+          title={!bannerUrl ? "Configure um banner primeiro" : "Força o bot a reaplicar o banner em todos os contextos"}
+        >
+          {reapplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Aplicar banner em todas as áreas
+        </Button>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground -mt-3">
+        O botão acima força o bot externo a reexecutar a aplicação do banner em até 15 segundos:
+        perfil global do usuário, capa do aplicativo e perfil de membro em cada servidor.
+        Útil quando o Discord aparenta estar com a versão antiga em cache.
+      </p>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadBanner} />
     </div>
