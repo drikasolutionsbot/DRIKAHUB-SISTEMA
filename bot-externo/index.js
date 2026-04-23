@@ -58,6 +58,7 @@ let lastAppliedStatus = null;
 let lastAppliedUserBannerUrl = undefined;
 let lastAppliedApplicationCoverUrl = undefined;
 let lastAppliedGuildProfileBannerUrl = undefined;
+let lastSeenForceReapplyAt = undefined;
 
 function normalizeStatus(rawStatus) {
   const fallback = "/panel";
@@ -154,6 +155,19 @@ async function syncBotIdentity(forceGuildProfileBanner = false) {
     const config = await getGlobalBotConfig();
     const status = normalizeStatus(config?.global_bot_status);
     const bannerUrl = config?.global_bot_banner_url?.trim() || null;
+    const forceReapplyAt = config?.global_bot_banner_force_reapply_at || null;
+
+    // Detecta clique do botão "Aplicar banner em todas as áreas" no painel admin
+    let manualForceTriggered = false;
+    if (forceReapplyAt && forceReapplyAt !== lastSeenForceReapplyAt) {
+      if (lastSeenForceReapplyAt !== undefined) {
+        manualForceTriggered = true;
+        console.log(`🔁 Reaplicação manual do banner solicitada via painel (${forceReapplyAt}).`);
+      }
+      lastSeenForceReapplyAt = forceReapplyAt;
+    }
+
+    const forceAll = forceGuildProfileBanner || manualForceTriggered;
 
     if (status !== lastAppliedStatus) {
       client.user.setPresence({
