@@ -112,19 +112,38 @@ async function updateBotGuildProfileBanner(guildId, imageAsset) {
     const errorText = await response.text();
     throw new Error(`${response.status} ${errorText}`);
   }
+
+  // 🔍 Verifica se o Discord realmente persistiu o banner (bots podem ter restrição silenciosa)
+  const responseBody = await response.json().catch(() => null);
+  const persistedBanner = responseBody?.banner;
+  return { persistedBanner, hadInput: !!banner };
 }
 
 async function syncGuildProfileBannerForAllGuilds(imageAsset) {
   const guilds = [...client.guilds.cache.values()];
   let syncedCount = 0;
+  let persistedCount = 0;
+  let ignoredByDiscord = 0;
 
   for (const guild of guilds) {
     try {
-      await updateBotGuildProfileBanner(guild.id, imageAsset);
+      const { persistedBanner, hadInput } = await updateBotGuildProfileBanner(guild.id, imageAsset);
       syncedCount += 1;
+      if (hadInput) {
+        if (persistedBanner) persistedCount += 1;
+        else ignoredByDiscord += 1;
+      }
     } catch (guildErr) {
       console.error(`❌ Falha ao aplicar banner do perfil do bot no servidor ${guild.name} (${guild.id}):`, guildErr?.message || guildErr);
     }
+  }
+
+  if (imageAsset && ignoredByDiscord > 0) {
+    console.warn(
+      `⚠️ Discord aceitou o PATCH mas NÃO persistiu o banner em ${ignoredByDiscord}/${syncedCount} servidor(es). ` +
+      `Isso confirma que a API atualmente bloqueia banner por guild para bots (mesmo retornando 200 OK). ` +
+      `Persistidos com sucesso: ${persistedCount}.`
+    );
   }
 
   return syncedCount;
