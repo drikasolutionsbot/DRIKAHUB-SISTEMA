@@ -21,16 +21,40 @@ const AdminBotConfigPage = () => {
     (async () => {
       const { data } = await (supabase as any)
         .from("landing_config")
-        .select("global_bot_status, global_bot_banner_url")
+        .select("id, global_bot_status, global_bot_banner_url")
         .limit(1)
         .single();
       if (data) {
+        setConfigId(data.id);
         setStatus(data.global_bot_status || "/panel");
         setBannerUrl(data.global_bot_banner_url || "");
       }
       setLoading(false);
     })();
   }, []);
+
+  const handleForceReapply = async () => {
+    if (!configId) {
+      toast({ title: "Configuração não carregada", variant: "destructive" });
+      return;
+    }
+    setReapplying(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("landing_config")
+        .update({ global_bot_banner_force_reapply_at: new Date().toISOString() })
+        .eq("id", configId);
+      if (error) throw error;
+      toast({
+        title: "Reaplicação solicitada ✅",
+        description: "O bot vai reaplicar o banner em até 15 segundos em todos os contextos suportados (perfil global, capa do app e perfil em cada servidor).",
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao solicitar", description: err.message, variant: "destructive" });
+    } finally {
+      setReapplying(false);
+    }
+  };
 
   const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
