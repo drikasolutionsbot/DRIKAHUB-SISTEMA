@@ -75,39 +75,96 @@ const BotCustomizationPage = () => {
     });
 
     setUploadingBanner(true);
+    let stage: "upload" | "publicUrl" | "update" | "refetch" = "upload";
     try {
       const safeExt = extOk ? ext : "png";
       const path = `${tenantId}/bot-banner/${crypto.randomUUID()}.${safeExt}`;
+
+      // 1) Upload no Storage
+      stage = "upload";
       const { error: upErr } = await supabase.storage
         .from("tenant-assets")
         .upload(path, file, {
           upsert: true,
           contentType: mimeOk ? file.type : `image/${safeExt === "jpg" ? "jpeg" : safeExt}`,
         });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("tenant-assets").getPublicUrl(path);
+      if (upErr) {
+        const msg = (upErr.message || "").toLowerCase();
+        if (msg.includes("exceeded") || msg.includes("size")) {
+          throw new Error(`Arquivo excede o limite do servidor (${MAX_BANNER_MB}MB).`);
+        }
+        if (msg.includes("mime") || msg.includes("type")) {
+          throw new Error("Tipo de arquivo não permitido pelo servidor. Use JPG, PNG ou WebP.");
+        }
+        if (msg.includes("permission") || msg.includes("not authorized") || msg.includes("rls")) {
+          throw new Error("Sem permissão para enviar no storage. Verifique seu login.");
+        }
+        throw new Error(`Falha no upload: ${upErr.message}`);
+      }
 
+      // 2) URL pública
+      stage = "publicUrl";
+      const { data: pub } = supabase.storage.from("tenant-assets").getPublicUrl(path);
+      if (!pub?.publicUrl) {
+        throw new Error("Não foi possível gerar a URL pública da capa.");
+      }
+
+      // 3) Atualizar tenant via edge function
+      stage = "update";
       const { data, error } = await supabase.functions.invoke("update-tenant", {
         body: { tenant_id: tenantId, updates: { bot_banner_url: pub.publicUrl } },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      await refetch();
-      // Mantém preview até a próxima imagem do tenant carregar; depois libera
+      if (error) {
+        throw new Error(`Não foi possível salvar a capa no servidor: ${error.message || "erro desconhecido"}.`);
+      }
+      if (data?.error) {
+        throw new Error(`Servidor recusou a atualização: ${data.error}`);
+      }
+
+      // 4) Refetch (não é fatal se falhar)
+      stage = "refetch";
+      try {
+        await refetch();
+      } catch (refetchErr) {
+        console.warn("[bot-banner] refetch falhou após update bem-sucedido:", refetchErr);
+        toast({
+          title: "Capa salva, recarregue a página",
+          description: "A imagem foi aplicada, mas não conseguimos atualizar a tela automaticamente.",
+        });
+      }
+
       setBannerPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
-      toast({ title: "Capa aplicada! ✅" });
+      toast({ title: "Capa aplicada! ✅", description: "Sua nova capa já está ativa no Discord." });
     } catch (err: any) {
-      // Em caso de erro, descarta o preview para não enganar o usuário
+      console.error("[bot-banner] erro no estágio", stage, err);
+
+      // Descarta o preview para não enganar o usuário
       setBannerPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
-      toast({ title: "Erro ao enviar capa", description: err.message, variant: "destructive" });
+
+      const stageLabel: Record<typeof stage, string> = {
+        upload: "Falha ao enviar a imagem",
+        publicUrl: "Falha ao processar a imagem",
+        update: "Falha ao salvar no perfil do bot",
+        refetch: "Falha ao atualizar a tela",
+      };
+
+      toast({
+        title: stageLabel[stage],
+        description:
+          err?.message?.toString().slice(0, 220) ||
+          "Tente novamente em alguns instantes. Se persistir, verifique sua conexão.",
+        variant: "destructive",
+      });
     } finally {
+      // GARANTIA: botão nunca trava
       setUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
     }
   };
 
