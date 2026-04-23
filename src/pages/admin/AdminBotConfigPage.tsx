@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bot, Loader2, Upload, X, Check, Info, RefreshCw } from "lucide-react";
+import { Bot, Loader2, Upload, X, Check, Info, RefreshCw, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,9 @@ const AdminBotConfigPage = () => {
   const [uploading, setUploading] = useState(false);
   const [reapplying, setReapplying] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [savingDesc, setSavingDesc] = useState(false);
+  const [loadingDesc, setLoadingDesc] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,8 +33,39 @@ const AdminBotConfigPage = () => {
         setBannerUrl(data.global_bot_banner_url || "");
       }
       setLoading(false);
+
+      // Carrega descrição atual da aplicação Discord
+      try {
+        const { data: descData } = await supabase.functions.invoke("get-bot-description");
+        if (descData?.description !== undefined) {
+          setDescription(descData.description || "");
+        }
+      } catch (e) {
+        console.warn("Falha ao carregar descrição do bot", e);
+      } finally {
+        setLoadingDesc(false);
+      }
     })();
   }, []);
+
+  const handleSaveDescription = async () => {
+    setSavingDesc(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-bot-description", {
+        body: { description: description.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: "Descrição atualizada no Discord ✅",
+        description: "A nova bio aparece no perfil do bot em todos os servidores. Pode levar alguns minutos para o Discord propagar o cache.",
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar descrição", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingDesc(false);
+    }
+  };
 
   const handleForceReapply = async () => {
     if (!configId) {
