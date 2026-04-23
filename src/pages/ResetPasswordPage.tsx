@@ -8,6 +8,7 @@ import drikaLogo from "@/assets/DRIKA_HUB_SEM_FUNDO.png";
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,25 +16,58 @@ const ResetPasswordPage = () => {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Supabase coloca os tokens no hash (#access_token=...&type=recovery)
-    // O cliente detecta isso automaticamente e dispara onAuthStateChange("PASSWORD_RECOVERY")
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-        setReady(true);
+    // Estabelece a sessão de recuperação a partir do link enviado por e-mail.
+    // Suporta os 3 formatos que o Supabase pode gerar:
+    //   1) ?code=...                      (PKCE)
+    //   2) #access_token=...&refresh_token=...&type=recovery
+    //   3) ?token_hash=...&type=recovery  (verifyOtp)
+    (async () => {
+      try {
+        const url = new URL(window.location.href);
+        const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+
+        const code = url.searchParams.get("code");
+        const tokenHash = url.searchParams.get("token_hash") || hash.get("token_hash");
+        const type = (url.searchParams.get("type") || hash.get("type")) as any;
+        const accessToken = hash.get("access_token");
+        const refreshToken = hash.get("refresh_token");
+        const errParam = url.searchParams.get("error_description") || hash.get("error_description");
+
+        if (errParam) {
+          setErrorMsg(decodeURIComponent(errParam));
+          return;
+        }
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+        } else if (tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: type || "recovery",
+            token_hash: tokenHash,
+          });
+          if (error) throw error;
+        }
+
+        // Limpa a URL para não reprocessar em refresh
+        window.history.replaceState({}, "", "/reset-password");
+
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setReady(true);
+        } else {
+          setErrorMsg("Link de recuperação inválido ou expirado. Solicite um novo e-mail.");
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || "Não foi possível validar o link de recuperação.");
       }
-    });
-
-    // Verifica se já existe sessão de recovery
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-
-    // Timeout de segurança: se em 2s não houver sessão, libera o form mesmo assim
-    const t = setTimeout(() => setReady(true), 2000);
-    return () => {
-      sub.subscription.unsubscribe();
-      clearTimeout(t);
-    };
+    })();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
