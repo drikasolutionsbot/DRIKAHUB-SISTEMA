@@ -334,7 +334,7 @@ const BotCustomizationPage = () => {
           </Button>
         </div>
 
-        {/* Hidden file input */}
+        {/* Hidden file input — abre o modal de crop */}
         <input
           ref={bannerInputRef}
           type="file"
@@ -342,7 +342,20 @@ const BotCustomizationPage = () => {
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) handleBannerUpload(file);
+            if (file) {
+              // Validações rápidas antes de abrir o crop
+              const sizeMb = file.size / (1024 * 1024);
+              if (sizeMb > MAX_BANNER_MB) {
+                toast({
+                  title: "Imagem muito grande",
+                  description: `A capa deve ter no máximo ${MAX_BANNER_MB}MB (atual: ${sizeMb.toFixed(1)}MB).`,
+                  variant: "destructive",
+                });
+              } else {
+                setCropFile(file);
+                setCropOpen(true);
+              }
+            }
             if (bannerInputRef.current) bannerInputRef.current.value = "";
           }}
         />
