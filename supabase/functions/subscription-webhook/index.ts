@@ -128,6 +128,8 @@ async function activateSubscription(supabase: any, subPayment: any) {
   const isNewSubscriber = subPayment.tenant_id === SENTINEL_TENANT;
   const meta = subPayment.metadata || {};
   const refCode = meta.ref_code || null;
+  // Resolve plan: subPayment.plan column is canonical; fall back to metadata
+  const planKey: "pro" | "master" = (subPayment.plan === "master" || meta.plan === "master") ? "master" : "pro";
 
   if (isNewSubscriber) {
     // Create tenant + user + token from metadata
