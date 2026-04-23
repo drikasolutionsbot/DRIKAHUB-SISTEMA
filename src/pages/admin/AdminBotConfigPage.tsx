@@ -293,6 +293,7 @@ const AdminBotConfigPage = () => {
 
       <div className="flex flex-wrap gap-2">
         <Button
+          onClick={handleSave}
           disabled={saving}
           className="gradient-pink text-primary-foreground border-none hover:opacity-90"
         >
