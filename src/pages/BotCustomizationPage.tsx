@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/contexts/TenantContext";
 import { Bot, Pencil, ImageIcon, Lock, Crown, Loader2, Upload } from "lucide-react";
@@ -13,7 +13,15 @@ const BotCustomizationPage = () => {
   const { tenant, tenantId, refetch } = useTenant();
   const [editOpen, setEditOpen] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup do object URL quando o preview muda/desmonta
+  useEffect(() => {
+    return () => {
+      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+    };
+  }, [bannerPreview]);
 
   if (!tenant) return <Skeleton className="h-64" />;
 
@@ -59,6 +67,13 @@ const BotCustomizationPage = () => {
       return;
     }
 
+    // Preview imediato
+    const localUrl = URL.createObjectURL(file);
+    setBannerPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return localUrl;
+    });
+
     setUploadingBanner(true);
     try {
       const safeExt = extOk ? ext : "png";
@@ -78,8 +93,18 @@ const BotCustomizationPage = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       await refetch();
+      // Mantém preview até a próxima imagem do tenant carregar; depois libera
+      setBannerPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
       toast({ title: "Capa aplicada! ✅" });
     } catch (err: any) {
+      // Em caso de erro, descarta o preview para não enganar o usuário
+      setBannerPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
       toast({ title: "Erro ao enviar capa", description: err.message, variant: "destructive" });
     } finally {
       setUploadingBanner(false);
@@ -98,18 +123,30 @@ const BotCustomizationPage = () => {
 
       {/* Hero Card */}
       <div className="relative rounded-2xl overflow-hidden border border-border bg-card min-h-[280px]">
-        {/* Banner background */}
-        {botBanner ? (
+        {/* Banner background (preview tem prioridade) */}
+        {(bannerPreview || botBanner) ? (
           <div className="absolute inset-0">
             <img
-              src={botBanner}
+              src={bannerPreview || botBanner!}
               alt="Capa do bot"
-              className={`w-full h-full object-cover ${!userIsMaster ? "blur-md scale-110" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                !userIsMaster && botBanner && !bannerPreview ? "blur-md scale-110" : ""
+              } ${uploadingBanner ? "opacity-90" : "opacity-100"}`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-card/40" />
           </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-muted/40 to-card" />
+        )}
+
+        {/* Overlay de upload em andamento */}
+        {uploadingBanner && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur-[2px]">
+            <div className="flex items-center gap-2 rounded-full bg-background/80 px-4 py-2 border border-border shadow-lg">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-xs font-semibold text-foreground">Enviando nova capa...</span>
+            </div>
+          </div>
         )}
 
         {/* Master lock overlay for non-master users with banner */}
