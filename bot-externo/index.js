@@ -112,6 +112,11 @@ async function updateBotGuildProfileBanner(guildId, imageAsset) {
     const errorText = await response.text();
     throw new Error(`${response.status} ${errorText}`);
   }
+
+  // 🔍 Verifica se o Discord realmente persistiu o banner (bots podem ter restrição silenciosa)
+  const responseBody = await response.json().catch(() => null);
+  const persistedBanner = responseBody?.banner;
+  return { persistedBanner, hadInput: !!banner };
 }
 
 async function syncGuildProfileBannerForAllGuilds(imageAsset) {
