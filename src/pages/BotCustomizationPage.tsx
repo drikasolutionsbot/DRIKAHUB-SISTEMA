@@ -123,18 +123,30 @@ const BotCustomizationPage = () => {
 
       {/* Hero Card */}
       <div className="relative rounded-2xl overflow-hidden border border-border bg-card min-h-[280px]">
-        {/* Banner background */}
-        {botBanner ? (
+        {/* Banner background (preview tem prioridade) */}
+        {(bannerPreview || botBanner) ? (
           <div className="absolute inset-0">
             <img
-              src={botBanner}
+              src={bannerPreview || botBanner!}
               alt="Capa do bot"
-              className={`w-full h-full object-cover ${!userIsMaster ? "blur-md scale-110" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                !userIsMaster && botBanner && !bannerPreview ? "blur-md scale-110" : ""
+              } ${uploadingBanner ? "opacity-90" : "opacity-100"}`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-card/40" />
           </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-muted/40 to-card" />
+        )}
+
+        {/* Overlay de upload em andamento */}
+        {uploadingBanner && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur-[2px]">
+            <div className="flex items-center gap-2 rounded-full bg-background/80 px-4 py-2 border border-border shadow-lg">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-xs font-semibold text-foreground">Enviando nova capa...</span>
+            </div>
+          </div>
         )}
 
         {/* Master lock overlay for non-master users with banner */}
