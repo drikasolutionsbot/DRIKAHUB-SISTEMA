@@ -178,14 +178,14 @@ async function activateSubscription(supabase: any, subPayment: any) {
       if (referrer) referredByTenantId = referrer.id;
     }
 
-    // 2. Create tenant with Pro plan
+    // 2. Create tenant with the purchased plan
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .insert({
         name: tenantName,
         email: email,
         whatsapp: whatsapp || null,
-        plan: "pro",
+        plan: planKey,
         plan_started_at: now.toISOString(),
         plan_expires_at: periodEnd.toISOString(),
         referred_by_tenant_id: referredByTenantId,
@@ -211,13 +211,14 @@ async function activateSubscription(supabase: any, subPayment: any) {
       role: "owner",
     });
 
-    // 4. Generate access token (30 days for Pro)
+    // 4. Generate access token (30 days)
+    const planLabelCap = planKey === "master" ? "Master" : "Pro";
     const tokenExpires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: tokenData } = await supabase
       .from("access_tokens")
       .insert({
         tenant_id: tenant.id,
-        label: `Token Pro - ${tenantName}`,
+        label: `Token ${planLabelCap} - ${tenantName}`,
         created_by: userId,
         expires_at: tokenExpires,
       })
@@ -227,16 +228,18 @@ async function activateSubscription(supabase: any, subPayment: any) {
     // 5. Update subscription payment with real tenant_id and token
     await supabase.from("subscription_payments").update({
       status: "paid",
+      plan: planKey,
       paid_at: now.toISOString(),
       period_start: now.toISOString(),
       period_end: periodEnd.toISOString(),
       tenant_id: tenant.id,
       metadata: {
         ...meta,
-        password: "***", // Don't keep password
+        password: "***",
         token: tokenData?.token || null,
         tenant_name: tenantName,
         registered: true,
+        plan: planKey,
       },
       updated_at: now.toISOString(),
     }).eq("id", subPayment.id);
@@ -246,11 +249,12 @@ async function activateSubscription(supabase: any, subPayment: any) {
       await processReferralReward(supabase, referredByTenantId, refCode, config, tenantName);
     }
 
-    console.log(`New Pro subscriber registered: tenant ${tenant.id}, email ${email}`);
+    console.log(`New ${planKey} subscriber registered: tenant ${tenant.id}, email ${email}`);
   } else {
     // Existing tenant renewal/upgrade
     await supabase.from("subscription_payments").update({
       status: "paid",
+      plan: planKey,
       paid_at: now.toISOString(),
       period_start: now.toISOString(),
       period_end: periodEnd.toISOString(),
@@ -259,13 +263,13 @@ async function activateSubscription(supabase: any, subPayment: any) {
 
     if (autoActivate) {
       await supabase.from("tenants").update({
-        plan: "pro",
+        plan: planKey,
         plan_started_at: now.toISOString(),
         plan_expires_at: periodEnd.toISOString(),
         updated_at: now.toISOString(),
       }).eq("id", subPayment.tenant_id);
 
-      console.log(`Subscription renewed for tenant ${subPayment.tenant_id} until ${periodEnd.toISOString()}`);
+      console.log(`Subscription (${planKey}) renewed for tenant ${subPayment.tenant_id} until ${periodEnd.toISOString()}`);
     }
 
     // Check if this tenant was referred and this is their first Pro payment
