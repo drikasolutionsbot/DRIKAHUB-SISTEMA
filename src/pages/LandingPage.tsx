@@ -118,8 +118,8 @@ const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => {
   );
 };
 
-/* ── Subscription Payment Modal (Pro) ── */
-const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void; priceCents: number }) => {
+/* ── Subscription Payment Modal ── */
+const SubscriptionPaymentModal = ({ onClose, priceCents, plan, planLabel }: { onClose: () => void; priceCents: number; plan: "pro" | "master"; planLabel: string }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "pix" | "success">("form");
   const [loading, setLoading] = useState(false);
@@ -172,6 +172,7 @@ const SubscriptionPaymentModal = ({ onClose, priceCents }: { onClose: () => void
           whatsapp: whatsapp.trim() || null,
           name: name.trim() || email.split("@")[0],
           ref_code: refCode,
+          plan,
         },
       });
       if (fnError) {
