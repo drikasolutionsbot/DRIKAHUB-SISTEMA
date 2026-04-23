@@ -58,11 +58,24 @@ serve(async (req) => {
       throw new Error("No updates provided");
     }
 
-    const allowedFields = ["name", "logo_url", "banner_url", "primary_color", "secondary_color", "bot_status", "bot_status_interval", "bot_prefix", "bot_name", "bot_avatar_url", "discord_guild_id", "ecloud_custom_url", "verify_enabled", "verify_redirect_url", "verify_role_id", "verify_channel_id", "verify_logs_channel_id", "verify_title", "verify_description", "verify_button_label", "verify_embed_color", "verify_image_url", "verify_button_style", "pix_key", "pix_key_type"];
+    const allowedFields = ["name", "logo_url", "banner_url", "primary_color", "secondary_color", "bot_status", "bot_status_interval", "bot_prefix", "bot_name", "bot_avatar_url", "bot_banner_url", "discord_guild_id", "ecloud_custom_url", "verify_enabled", "verify_redirect_url", "verify_role_id", "verify_channel_id", "verify_logs_channel_id", "verify_title", "verify_description", "verify_button_label", "verify_embed_color", "verify_image_url", "verify_button_style", "pix_key", "pix_key_type"];
     const safeUpdates: Record<string, string> = {};
     for (const key of Object.keys(updates)) {
       if (allowedFields.includes(key)) {
         safeUpdates[key] = updates[key];
+      }
+    }
+
+    // Master-only enforcement: bloquear bot_banner_url para tenants não-Master
+    if ("bot_banner_url" in safeUpdates) {
+      const { data: tenantPlan } = await supabase
+        .from("tenants")
+        .select("plan")
+        .eq("id", tenant_id)
+        .single();
+      if (tenantPlan?.plan !== "master") {
+        delete safeUpdates.bot_banner_url;
+        console.warn(`Tenant ${tenant_id} (plano ${tenantPlan?.plan || "?"}) tentou salvar bot_banner_url — bloqueado (Master only).`);
       }
     }
 
@@ -138,8 +151,8 @@ serve(async (req) => {
       }
     }
 
-    // If bot_name or bot_avatar_url was updated, sync in Discord server
-    if ((safeUpdates.bot_name || safeUpdates.bot_avatar_url) && data.discord_guild_id && tenantBotToken) {
+    // If bot_name, bot_avatar_url or bot_banner_url was updated, sync in Discord server
+    if ((safeUpdates.bot_name || safeUpdates.bot_avatar_url || "bot_banner_url" in safeUpdates) && data.discord_guild_id && tenantBotToken) {
       try {
         const memberPatch: Record<string, any> = {};
 
@@ -147,26 +160,41 @@ serve(async (req) => {
           memberPatch.nick = safeUpdates.bot_name;
         }
 
-        if (safeUpdates.bot_avatar_url) {
-          // Download avatar and convert to base64 data URI
+        // Helper: download URL → data URI base64 (chunked p/ evitar stack overflow)
+        const urlToDataUri = async (url: string): Promise<string | null> => {
           try {
-            const imgRes = await fetch(safeUpdates.bot_avatar_url);
-            if (imgRes.ok) {
-              const imgBuffer = new Uint8Array(await imgRes.arrayBuffer());
-              // Chunked conversion to avoid stack overflow
-              let binary = "";
-              const chunkSize = 8192;
-              for (let i = 0; i < imgBuffer.length; i += chunkSize) {
-                binary += String.fromCharCode(...imgBuffer.subarray(i, i + chunkSize));
-              }
-              const base64 = btoa(binary);
-              const contentType = imgRes.headers.get("content-type") || "image/png";
-              memberPatch.avatar = `data:${contentType};base64,${base64}`;
-            } else {
-              console.error("Failed to download bot avatar:", imgRes.status);
+            const r = await fetch(url);
+            if (!r.ok) {
+              console.error("Failed to download asset:", url, r.status);
+              return null;
             }
-          } catch (imgErr) {
-            console.error("Error downloading bot avatar:", imgErr);
+            const buf = new Uint8Array(await r.arrayBuffer());
+            let binary = "";
+            const chunk = 8192;
+            for (let i = 0; i < buf.length; i += chunk) {
+              binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+            }
+            const base64 = btoa(binary);
+            const ct = r.headers.get("content-type") || "image/png";
+            return `data:${ct};base64,${base64}`;
+          } catch (e) {
+            console.error("Error downloading asset:", url, e);
+            return null;
+          }
+        };
+
+        if (safeUpdates.bot_avatar_url) {
+          const dataUri = await urlToDataUri(safeUpdates.bot_avatar_url);
+          if (dataUri) memberPatch.avatar = dataUri;
+        }
+
+        // Banner é Master-only (já validado acima, então se chegou aqui é permitido)
+        if ("bot_banner_url" in safeUpdates) {
+          if (safeUpdates.bot_banner_url) {
+            const dataUri = await urlToDataUri(safeUpdates.bot_banner_url);
+            if (dataUri) memberPatch.banner = dataUri;
+          } else {
+            memberPatch.banner = null; // remover banner
           }
         }
 

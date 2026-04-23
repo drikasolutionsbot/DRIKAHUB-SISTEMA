@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
-import { Loader2, Bot, Upload } from "lucide-react";
+import { Loader2, Bot, Upload, Lock, Crown, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { isMaster } from "@/lib/plans";
 
 interface Props {
   open: boolean;
@@ -25,27 +26,35 @@ interface Props {
 const EditBotProfileModal = ({ open, onOpenChange, tenant, tenantId, refetchTenant }: Props) => {
   const [botName, setBotName] = useState(tenant?.bot_name || "");
   const [botAvatarUrl, setBotAvatarUrl] = useState(tenant?.bot_avatar_url || "");
-  
+  const [botBannerUrl, setBotBannerUrl] = useState(tenant?.bot_banner_url || "");
+
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = async (file: File) => {
+  const userIsMaster = isMaster(tenant?.plan);
+
+  const handleUpload = async (file: File, kind: "avatar" | "banner") => {
     if (!tenantId) return;
-    setUploadingAvatar(true);
+    const setUploading = kind === "avatar" ? setUploadingAvatar : setUploadingBanner;
+    setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${tenantId}/bot-avatar/${crypto.randomUUID()}.${ext}`;
+      const subdir = kind === "avatar" ? "bot-avatar" : "bot-banner";
+      const path = `${tenantId}/${subdir}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from("tenant-assets")
         .upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from("tenant-assets").getPublicUrl(path);
-      setBotAvatarUrl(data.publicUrl);
+      if (kind === "avatar") setBotAvatarUrl(data.publicUrl);
+      else setBotBannerUrl(data.publicUrl);
     } catch (err: any) {
       toast({ title: "Erro ao enviar", description: err.message, variant: "destructive" });
     } finally {
-      setUploadingAvatar(false);
+      setUploading(false);
     }
   };
 
@@ -53,14 +62,17 @@ const EditBotProfileModal = ({ open, onOpenChange, tenant, tenantId, refetchTena
     if (!tenantId) return;
     setSaving(true);
     try {
+      const updates: Record<string, any> = {
+        bot_name: botName.trim() || null,
+        bot_avatar_url: botAvatarUrl.trim() || null,
+      };
+      // Banner só é enviado para tenants Master
+      if (userIsMaster) {
+        updates.bot_banner_url = botBannerUrl.trim() || null;
+      }
+
       const { data, error } = await supabase.functions.invoke("update-tenant", {
-        body: {
-          tenant_id: tenantId,
-          updates: {
-            bot_name: botName.trim() || null,
-            bot_avatar_url: botAvatarUrl.trim() || null,
-          },
-        },
+        body: { tenant_id: tenantId, updates },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -119,6 +131,59 @@ const EditBotProfileModal = ({ open, onOpenChange, tenant, tenantId, refetchTena
             />
           </div>
 
+          {/* Banner — exclusivo Master */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                Capa do Bot
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 gap-1 border-primary/40 text-primary bg-primary/10"
+                >
+                  <Crown className="h-2.5 w-2.5" />
+                  Master
+                </Badge>
+              </Label>
+              {!userIsMaster && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Bloqueado
+                </span>
+              )}
+            </div>
+
+            <div className={`relative ${!userIsMaster ? "opacity-60 pointer-events-none select-none" : ""}`}>
+              <div className="flex items-center gap-4">
+                <div className="shrink-0">
+                  {botBannerUrl ? (
+                    <img src={botBannerUrl} alt="Capa" className="h-16 w-28 rounded-md object-cover border-2 border-border" />
+                  ) : (
+                    <div className="h-16 w-28 rounded-md bg-muted flex items-center justify-center border-2 border-border">
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => bannerRef.current?.click()}
+                  disabled={uploadingBanner || !userIsMaster}
+                >
+                  {uploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Escolher Capa
+                </Button>
+              </div>
+            </div>
+
+            {!userIsMaster ? (
+              <p className="text-[11px] text-muted-foreground">
+                <Crown className="inline h-3 w-3 mr-1 text-primary" />
+                Disponível apenas no plano <strong className="text-primary">Master</strong>.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">PNG, JPG até 10MB. Recomendado 960×540px.</p>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
@@ -133,8 +198,13 @@ const EditBotProfileModal = ({ open, onOpenChange, tenant, tenantId, refetchTena
 
         <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleUpload(file);
+          if (file) handleUpload(file, "avatar");
           if (avatarRef.current) avatarRef.current.value = "";
+        }} />
+        <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleUpload(file, "banner");
+          if (bannerRef.current) bannerRef.current.value = "";
         }} />
       </DialogContent>
     </Dialog>

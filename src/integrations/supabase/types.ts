@@ -753,6 +753,7 @@ export type Database = {
           global_bot_banner_url: string | null
           global_bot_status: string
           id: string
+          master_price_cents: number
           pro_price_cents: number
           pushinpay_active: boolean
           pushinpay_api_key: string | null
@@ -785,6 +786,7 @@ export type Database = {
           global_bot_banner_url?: string | null
           global_bot_status?: string
           id?: string
+          master_price_cents?: number
           pro_price_cents?: number
           pushinpay_active?: boolean
           pushinpay_api_key?: string | null
@@ -817,6 +819,7 @@ export type Database = {
           global_bot_banner_url?: string | null
           global_bot_status?: string
           id?: string
+          master_price_cents?: number
           pro_price_cents?: number
           pushinpay_active?: boolean
           pushinpay_api_key?: string | null
@@ -2068,6 +2071,7 @@ export type Database = {
           affiliate_active: boolean
           banner_url: string | null
           bot_avatar_url: string | null
+          bot_banner_url: string | null
           bot_client_id: string | null
           bot_name: string | null
           bot_prefix: string | null
@@ -2112,6 +2116,7 @@ export type Database = {
           affiliate_active?: boolean
           banner_url?: string | null
           bot_avatar_url?: string | null
+          bot_banner_url?: string | null
           bot_client_id?: string | null
           bot_name?: string | null
           bot_prefix?: string | null
@@ -2156,6 +2161,7 @@ export type Database = {
           affiliate_active?: boolean
           banner_url?: string | null
           bot_avatar_url?: string | null
+          bot_banner_url?: string | null
           bot_client_id?: string | null
           bot_name?: string | null
           bot_prefix?: string | null
