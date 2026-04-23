@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, TrendingUp, Package, Video, Save, Upload, Link, Loader2, Crown } from "lucide-react";
+import { Users, TrendingUp, Package, Video, Save, Upload, Link, Loader2, Crown, Sparkles } from "lucide-react";
 import { logAudit } from "@/lib/auditLog";
 
 const AdminLandingConfigPage = () => {
@@ -13,7 +13,8 @@ const AdminLandingConfigPage = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
-  const [priceInput, setPriceInput] = useState("26.90");
+  const [proPriceInput, setProPriceInput] = useState("26.90");
+  const [masterPriceInput, setMasterPriceInput] = useState("30.90");
   const [form, setForm] = useState({
     stat_servers: 120,
     stat_servers_label: "Servidores ativos",
@@ -24,6 +25,9 @@ const AdminLandingConfigPage = () => {
     video_url: "",
     video_type: "url" as "url" | "file",
     pro_price_cents: 2690,
+    master_price_cents: 3090,
+    pro_plan_name: "Pro",
+    master_plan_name: "Master",
   });
 
   useEffect(() => {
@@ -45,8 +49,12 @@ const AdminLandingConfigPage = () => {
           video_url: data.video_url || "",
           video_type: (data.video_type as "url" | "file") || "url",
           pro_price_cents: data.pro_price_cents || 2690,
+          master_price_cents: (data as any).master_price_cents || 3090,
+          pro_plan_name: (data as any).pro_plan_name || "Pro",
+          master_plan_name: (data as any).master_plan_name || "Master",
         });
-        setPriceInput(((data.pro_price_cents || 2690) / 100).toFixed(2));
+        setProPriceInput(((data.pro_price_cents || 2690) / 100).toFixed(2));
+        setMasterPriceInput((((data as any).master_price_cents || 3090) / 100).toFixed(2));
       }
       setLoading(false);
     };
@@ -68,6 +76,9 @@ const AdminLandingConfigPage = () => {
         video_url: form.video_url || null,
         video_type: form.video_type,
         pro_price_cents: form.pro_price_cents,
+        master_price_cents: form.master_price_cents,
+        pro_plan_name: form.pro_plan_name,
+        master_plan_name: form.master_plan_name,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", configId);
@@ -107,7 +118,6 @@ const AdminLandingConfigPage = () => {
     const newUrl = urlData.publicUrl;
     setForm((prev) => ({ ...prev, video_url: newUrl, video_type: "file" }));
     
-    // Auto-save video URL to DB after upload
     if (configId) {
       const { error: updateError } = await supabase
         .from("landing_config")
@@ -144,43 +154,100 @@ const AdminLandingConfigPage = () => {
         <p className="text-muted-foreground">Configure os dados exibidos na página inicial</p>
       </div>
 
-      {/* Pro Plan Price */}
+      {/* Plans Configuration */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Crown className="h-4 w-4 text-primary" />
-            Preço do Plano Pro
+            Planos — Nome e Preço
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <p className="text-xs text-muted-foreground">
-            Defina o valor mensal do plano Pro. Este valor será exibido na landing page e cobrado no checkout.
+            Personalize o nome e o valor mensal dos planos. Esses dados serão exibidos na landing page e cobrados no checkout via gateway de pagamento configurado.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg border border-border bg-muted/30">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Valor em R$</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={priceInput}
-                onChange={(e) => {
-                  const val = e.target.value.replace(",", ".");
-                  if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                    setPriceInput(val);
-                    const num = parseFloat(val || "0");
-                    if (!isNaN(num)) {
-                      setForm((p) => ({ ...p, pro_price_cents: Math.round(num * 100) }));
-                    }
-                  }
-                }}
-                placeholder="26.90"
-              />
+
+          {/* Pro Plan */}
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-emerald-500" />
+              <span className="text-sm font-semibold text-emerald-500">Plano Pro</span>
             </div>
-            <div className="flex items-end">
-              <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-semibold text-primary">
-                R$ {(form.pro_price_cents / 100).toFixed(2).replace(".", ",")}/mês
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Nome exibido</Label>
+                <Input
+                  value={form.pro_plan_name}
+                  onChange={(e) => setForm((p) => ({ ...p, pro_plan_name: e.target.value }))}
+                  placeholder="Pro"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Valor em R$</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={proPriceInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(",", ".");
+                    if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+                      setProPriceInput(val);
+                      const num = parseFloat(val || "0");
+                      if (!isNaN(num)) setForm((p) => ({ ...p, pro_price_cents: Math.round(num * 100) }));
+                    }
+                  }}
+                  placeholder="26.90"
+                />
+              </div>
+              <div className="flex items-end">
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 text-sm font-semibold text-emerald-500 w-full text-center">
+                  R$ {(form.pro_price_cents / 100).toFixed(2).replace(".", ",")}/mês
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Master Plan */}
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Plano Master</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Nome exibido</Label>
+                <Input
+                  value={form.master_plan_name}
+                  onChange={(e) => setForm((p) => ({ ...p, master_plan_name: e.target.value }))}
+                  placeholder="Master"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Valor em R$</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={masterPriceInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(",", ".");
+                    if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+                      setMasterPriceInput(val);
+                      const num = parseFloat(val || "0");
+                      if (!isNaN(num)) setForm((p) => ({ ...p, master_price_cents: Math.round(num * 100) }));
+                    }
+                  }}
+                  placeholder="30.90"
+                />
+              </div>
+              <div className="flex items-end">
+                <div className="rounded-lg bg-primary/10 border border-primary/30 px-4 py-2 text-sm font-semibold text-primary w-full text-center">
+                  R$ {(form.master_price_cents / 100).toFixed(2).replace(".", ",")}/mês
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              ✨ Inclui capa pessoal do bot por loja e créditos de IA ilimitados.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -275,7 +342,6 @@ const AdminLandingConfigPage = () => {
             Cole um link de vídeo (YouTube, etc.) ou faça upload de um arquivo de vídeo. Esse vídeo será exibido em um modal na landing page.
           </p>
 
-          {/* URL input */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Link className="h-3 w-3" /> Link do vídeo (YouTube, MP4, etc.)
@@ -293,7 +359,6 @@ const AdminLandingConfigPage = () => {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* File upload */}
           <div>
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
               <Upload className="h-3 w-3" /> Upload de arquivo de vídeo
@@ -321,7 +386,6 @@ const AdminLandingConfigPage = () => {
             <p className="text-[10px] text-muted-foreground mt-1">Sem restrição de tamanho. Formatos: MP4, MOV, WebM, etc.</p>
           </div>
 
-          {/* Preview */}
           {form.video_url && (
             <div className="p-3 rounded-lg border border-border bg-muted/30">
               <Label className="text-xs text-muted-foreground mb-1 block">URL configurada:</Label>
@@ -331,7 +395,6 @@ const AdminLandingConfigPage = () => {
         </CardContent>
       </Card>
 
-      {/* Save */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
