@@ -194,7 +194,7 @@ const SettingsPlanTab = ({ tenant, tenantId, refetchTenant }: Props) => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xl font-bold text-gradient-pink capitalize">
-              {tenant.plan === "pro" ? "Pro" : isExpired ? "Expirado" : "Free (Trial)"}
+              {isExpired ? "Expirado" : tenant.plan === "master" ? "Master" : tenant.plan === "pro" ? "Pro" : "Free (Trial)"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Plano ativo</p>
           </div>
