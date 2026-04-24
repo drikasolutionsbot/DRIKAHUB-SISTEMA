@@ -273,19 +273,21 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
 
       {/* Unsaved changes bar */}
       {dirty && (
-        <div className="flex items-center justify-end px-6 py-3 border-t border-border bg-card animate-fade-in gap-3">
-          <span className="text-sm text-muted-foreground mr-auto">Alterações não salvas</span>
-          <Button variant="ghost" size="sm" onClick={handleDiscard}>
-            Limpar
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-foreground text-background hover:bg-foreground/90"
-          >
-            {saving ? "Salvando..." : "Salvar"}
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end px-4 sm:px-6 py-3 border-t border-border bg-card animate-fade-in gap-2 sm:gap-3">
+          <span className="text-sm text-muted-foreground sm:mr-auto">Alterações não salvas</span>
+          <div className="flex items-center gap-2 sm:gap-3 justify-end">
+            <Button variant="ghost" size="sm" onClick={handleDiscard}>
+              Limpar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-foreground text-background hover:bg-foreground/90"
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </div>
       )}
 
