@@ -136,27 +136,33 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-border">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="text-muted-foreground hover:text-foreground transition-colors md:hidden"
+            className="text-muted-foreground hover:text-foreground transition-colors lg:hidden shrink-0"
+            aria-label="Voltar"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div>
-            <h2 className="text-lg font-bold font-display">Especificações do produto</h2>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-bold font-display truncate">Especificações do produto</h2>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Configure as informações deste produto
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                Excluir
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10 px-2 sm:px-3"
+                aria-label="Excluir produto"
+              >
+                <Trash2 className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Excluir</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="border-destructive/20 bg-card/95 backdrop-blur-xl max-w-md">
@@ -186,8 +192,9 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
           <Button
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-xs px-2 sm:px-3"
             disabled={syncing}
+            aria-label="Sincronizar mensagens"
             onClick={async () => {
               if (!tenantId) return;
               setSyncing(true);
@@ -209,12 +216,19 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
               }
             }}
           >
-            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
-            Sincronizar Mensagens
+            {syncing ? <Loader2 className="h-3.5 w-3.5 sm:mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 sm:mr-1.5" />}
+            <span className="hidden sm:inline">Sincronizar Mensagens</span>
+            <span className="sm:hidden">Sync</span>
           </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setPostModalOpen(true)}>
-            <Send className="h-3.5 w-3.5 mr-1.5" />
-            Postar Mensagem
+          <Button
+            size="sm"
+            className="text-xs px-2 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => setPostModalOpen(true)}
+            aria-label="Postar mensagem no servidor"
+          >
+            <Send className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Postar Mensagem</span>
+            <span className="sm:hidden">Postar</span>
           </Button>
         </div>
       </div>
@@ -222,8 +236,8 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
       {/* Tabs content */}
       <div className="flex-1 overflow-y-auto">
         <Tabs defaultValue="geral" className="h-full">
-          <div className="px-6 pt-4">
-            <TabsList className="bg-muted">
+          <div className="px-4 sm:px-6 pt-4 overflow-x-auto scrollbar-none">
+            <TabsList className="bg-muted w-max min-w-full sm:w-auto">
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="embed">Embed</TabsTrigger>
               <TabsTrigger value="campos">Campos</TabsTrigger>
@@ -232,7 +246,7 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
             </TabsList>
           </div>
 
-          <div className="px-6 py-4">
+          <div className="px-4 sm:px-6 py-4">
             <TabsContent value="geral" className="mt-0">
               <ProductDetailGeneral product={edited} onChange={handleChange} categories={categories} />
             </TabsContent>
@@ -259,19 +273,21 @@ export const ProductDetail = ({ product, onBack, onSave, onDelete, categories = 
 
       {/* Unsaved changes bar */}
       {dirty && (
-        <div className="flex items-center justify-end px-6 py-3 border-t border-border bg-card animate-fade-in gap-3">
-          <span className="text-sm text-muted-foreground mr-auto">Alterações não salvas</span>
-          <Button variant="ghost" size="sm" onClick={handleDiscard}>
-            Limpar
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-foreground text-background hover:bg-foreground/90"
-          >
-            {saving ? "Salvando..." : "Salvar"}
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end px-4 sm:px-6 py-3 border-t border-border bg-card animate-fade-in gap-2 sm:gap-3">
+          <span className="text-sm text-muted-foreground sm:mr-auto">Alterações não salvas</span>
+          <div className="flex items-center gap-2 sm:gap-3 justify-end">
+            <Button variant="ghost" size="sm" onClick={handleDiscard}>
+              Limpar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-foreground text-background hover:bg-foreground/90"
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </div>
       )}
 
