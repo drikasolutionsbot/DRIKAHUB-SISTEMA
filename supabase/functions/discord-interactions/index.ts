@@ -1977,7 +1977,7 @@ serve(async (req) => {
         const MANAGE_GUILD = BigInt(0x20);
         const isStaff = (memberPerms & ADMIN) === ADMIN || (memberPerms & MANAGE_GUILD) === MANAGE_GUILD;
         if (!isStaff) {
-          return respondImmediateEphemeral(interaction, "🔒 Apenas a equipe da loja pode confirmar a entrega deste pedido.");
+          return respondImmediate(interaction, "🔒 Apenas a equipe da loja pode confirmar a entrega deste pedido.");
         }
 
         await respondDeferredUpdate(interaction, botToken);
@@ -2044,7 +2044,7 @@ serve(async (req) => {
         const MANAGE_GUILD2 = BigInt(0x20);
         const isStaff2 = (memberPerms2 & ADMIN2) === ADMIN2 || (memberPerms2 & MANAGE_GUILD2) === MANAGE_GUILD2;
         if (!isStaff2) {
-          return respondImmediateEphemeral(interaction, "🔒 Apenas a equipe da loja pode cancelar este pedido.");
+          return respondImmediate(interaction, "🔒 Apenas a equipe da loja pode cancelar este pedido.");
         }
 
         await respondDeferredUpdate(interaction, botToken);
