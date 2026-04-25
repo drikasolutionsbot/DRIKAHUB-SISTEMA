@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     });
   } catch (err: any) {
     console.error("[send-password-reset] error:", err.message);
-    return new Response(JSON.stringify({ error: err.message || "Erro interno" }), {
+    return new Response(JSON.stringify({ error: (err as Error).message || "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

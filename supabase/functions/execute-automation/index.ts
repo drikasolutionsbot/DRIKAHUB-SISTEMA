@@ -80,14 +80,14 @@ Deno.serve(async (req) => {
         results.push({ id: auto.id, result: "success" });
       } catch (err: any) {
         await logExecution(supabase, tenant_id, auto.id, "error", err.message, trigger_data);
-        results.push({ id: auto.id, result: "error", error: err.message });
+        results.push({ id: auto.id, result: "error", error: (err as Error).message });
       }
     }
 
     return json({ executed, total: automations.length, results });
   } catch (err: any) {
     console.error("execute-automation error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

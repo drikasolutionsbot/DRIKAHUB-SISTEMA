@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
     return json({ success: true, event, user_id: userId, results });
   } catch (err: any) {
     console.error("handle-member-join error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
