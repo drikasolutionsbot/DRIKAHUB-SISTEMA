@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tr, getTenantLang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +41,7 @@ Deno.serve(async (req) => {
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
     if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
     const guildId = tenant.discord_guild_id;
+    const lang = await getTenantLang(supabase, tenant_id);
 
     // Get welcome config
     const { data: config } = await supabase
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
       // 2. Welcome message in channel
       if (config.enabled && config.channel_enabled && config.channel_id) {
         try {
-          const embed = buildEmbed(config.embed_data, replaceVars, tenant);
+          const embed = buildEmbed(config.embed_data, replaceVars, tenant, lang);
           const payload: any = { embeds: [embed] };
           if (config.content) payload.content = replaceVars(config.content);
 
@@ -130,7 +132,7 @@ Deno.serve(async (req) => {
           });
           if (dmRes.ok) {
             const dm = await dmRes.json();
-            const embed = buildEmbed(config.dm_embed_data, replaceVars, tenant);
+            const embed = buildEmbed(config.dm_embed_data, replaceVars, tenant, lang);
             const payload: any = { embeds: [embed] };
             if (config.dm_content) payload.content = replaceVars(config.dm_content);
 
@@ -153,7 +155,7 @@ Deno.serve(async (req) => {
     if (event === "GUILD_MEMBER_REMOVE") {
       if (config.goodbye_enabled && config.goodbye_channel_id) {
         try {
-          const embed = buildEmbed(config.goodbye_embed_data, replaceVars, tenant);
+          const embed = buildEmbed(config.goodbye_embed_data, replaceVars, tenant, lang);
           const payload: any = { embeds: [embed] };
           if (config.goodbye_content) payload.content = replaceVars(config.goodbye_content);
 
@@ -185,13 +187,13 @@ function json(data: any) {
   });
 }
 
-function buildEmbed(embedData: any, replaceVars: (t: string) => string, tenant: any): any {
+function buildEmbed(embedData: any, replaceVars: (t: string) => string, tenant: any, lang?: any): any {
   if (!embedData) return {};
 
   const embed: any = {
     color: parseInt((embedData.color || "#2B2D31").replace("#", ""), 16),
-    title: "👋 Bem-vindo(a)!",
-    description: replaceVars("Olá **{username}**, seja bem-vindo(a) ao **{server}**! 🥳\n\nVocê é nosso membro **#{memberCount}**. Aproveite sua estadia!"),
+    title: embedData.title ? replaceVars(embedData.title) : tr(lang, "welcome_title"),
+    description: embedData.description ? replaceVars(embedData.description) : replaceVars(tr(lang, "welcome_desc")),
   };
 
   if (embedData.image_url) embed.image = { url: replaceVars(embedData.image_url) };

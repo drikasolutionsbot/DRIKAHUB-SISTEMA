@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tr, getTenantLang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,9 +69,11 @@ Deno.serve(async (req) => {
     const safeImageUrl = typeof image_url === "string" && image_url.trim() ? image_url.trim() : null;
     const safeThumbnailUrl = typeof thumbnail_url === "string" && thumbnail_url.trim() ? thumbnail_url.trim() : null;
 
+    const lang = await getTenantLang(supabase, tenant_id);
+
     const embed: any = {
-      title: title || "🎫 Ticket de Suporte",
-      description: description || "Seu ticket foi criado com sucesso! Aguarde atendimento da nossa equipe.",
+      title: title || tr(lang, "ticket_default_title"),
+      description: description || tr(lang, "ticket_default_desc"),
       color: colorInt,
     };
 
@@ -89,13 +92,13 @@ Deno.serve(async (req) => {
 
     const discordStyle = styleMap[button_style || "glass"] || 2;
 
-    const rawLabel = button_label || "📩 Abrir Ticket";
+    const rawLabel = button_label || `📩 ${tr(lang, "open_ticket")}`;
     const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(rawLabel);
 
     const ticketButton: any = {
       type: 2,
       style: discordStyle,
-      label: btnLabel || "Abrir Ticket",
+      label: btnLabel || tr(lang, "open_ticket"),
       custom_id: `ticket_open_${tenant_id}_${channel_id}`,
     };
 

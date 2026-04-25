@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tr, trf, normLang } from "../_shared/i18n.ts";
 
 const DISCORD_API = "https://discord.com/api/v10";
 
@@ -85,7 +86,7 @@ serve(async (req) => {
 
   const { data: tenants } = await supabase
     .from("tenants")
-    .select("id, name, logo_url")
+    .select("id, name, logo_url, language")
     .in("id", tenantIds);
 
   const configMap: Record<string, any> = {};
@@ -133,13 +134,14 @@ serve(async (req) => {
             const dateStr = new Date().toLocaleDateString("pt-BR");
             const timeStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+            const lang = normLang(tenant?.language);
             await fetch(`${DISCORD_API}/channels/${sc.logs_channel_id}/messages`, {
               method: "POST",
               headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
               body: JSON.stringify({
                 embeds: [{
-                  title: "🍃 Pagamento expirado",
-                  description: `Usuário <@${order.discord_user_id}> deixou o pagamento expirar.`,
+                  title: tr(lang, "payment_expired_log_title"),
+                  description: trf(lang, "payment_expired_log_desc", { user_id: order.discord_user_id }),
                   color: 0xED4245,
                   fields: [
                     { name: "**Detalhes**", value: `\`${order.product_name} | R$ ${(order.total_cents / 100).toFixed(2)}\``, inline: false },
@@ -171,8 +173,8 @@ serve(async (req) => {
               headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
               body: JSON.stringify({
                 embeds: [{
-                  title: "⏰ Pedido Expirado",
-                  description: `Seu pedido **#${order.order_number}** (${order.product_name}) expirou por falta de pagamento.\nCaso deseje, faça uma nova compra.`,
+                  title: tr(normLang(tenantMap[order.tenant_id]?.language), "order_expired_title2"),
+                  description: trf(normLang(tenantMap[order.tenant_id]?.language), "order_expired_desc2", { order_number: order.order_number, product: order.product_name }),
                   color: 0xED4245,
                   timestamp: new Date().toISOString(),
                 }],
