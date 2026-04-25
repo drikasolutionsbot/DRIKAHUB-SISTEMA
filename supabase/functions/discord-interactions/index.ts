@@ -17,13 +17,13 @@ async function verifyDiscordSignature(
 
     const key = await crypto.subtle.importKey(
       "raw",
-      publicKeyBytes,
-      { name: "Ed25519", namedCurve: "Ed25519" },
+      publicKeyBytes as any,
+      { name: "Ed25519", namedCurve: "Ed25519" } as any,
       false,
       ["verify"]
     );
 
-    return await crypto.subtle.verify("Ed25519", key, signatureBytes, messageBytes);
+    return await crypto.subtle.verify("Ed25519", key, signatureBytes as any, messageBytes as any);
   } catch (e) {
     console.error("Signature verification error:", e);
     return false;
@@ -934,7 +934,7 @@ serve(async (req) => {
           return `${emoji} **${f.name}** — ${priceStr}${desc}`;
         });
 
-        const varEmbedColor = await resolveProductEmbedColor(fullProduct || product, product.tenant_id);
+        const varEmbedColor = await resolveProductEmbedColor(product, product.tenant_id);
         const embed = {
           title: `📋 Variações de ${product.name}`,
           description: fieldLines.join("\n"),
@@ -1433,7 +1433,7 @@ serve(async (req) => {
         }
 
         // Determine parent channel for thread creation
-        let parentChannelId = targetChannelId || storeConfig?.ticket_channel_id || channelId;
+        let parentChannelId = targetChannelId || storeConfig?.ticket_channel_id || interaction.channel_id;
 
         // If it's a category, find first text channel
         if (parentChannelId) {
@@ -2402,7 +2402,7 @@ serve(async (req) => {
         await supabase.from("coupons").update({ used_count: coupon.used_count + 1 }).eq("id", coupon.id);
 
         const channelId = interaction.channel_id;
-        const couponColor = await resolveOrderEmbedColor(order) || 0x57F287;
+        const couponColor = 0x57F287;
         // Send updated review in the thread
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
@@ -2465,7 +2465,7 @@ serve(async (req) => {
         await supabase.from("orders").update({ total_cents: newTotal }).eq("id", orderId);
 
         const channelId = interaction.channel_id;
-        const qtyColor = await resolveOrderEmbedColor(order) || 0x2B2D31;
+        const qtyColor = 0x2B2D31;
         await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },

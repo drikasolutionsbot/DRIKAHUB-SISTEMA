@@ -104,7 +104,7 @@ async function syncEntriesFromDiscord(
     );
 
     const changedEntries = participantRows.filter((p: any) => {
-      const prev = existingById.get(p.discord_user_id);
+      const prev = existingById.get(p.discord_user_id) as any;
       return (
         prev &&
         (prev.discord_username !== p.discord_username ||
@@ -544,7 +544,7 @@ Deno.serve(async (req) => {
 
     throw new Error(`Unknown action: ${action}`);
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

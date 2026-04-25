@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
           const data = await res.json();
           results.push({ tenant_id: t.id, ...data });
         } catch (err: any) {
-          results.push({ tenant_id: t.id, error: err.message });
+          results.push({ tenant_id: t.id, error: (err as Error).message });
         }
       }
       return json({ success: true, results });
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
 
     throw new Error(`Unknown action: ${action}`);
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
