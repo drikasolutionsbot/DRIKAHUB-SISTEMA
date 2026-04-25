@@ -36,6 +36,32 @@ function parseEmojiFromLabel(label: string) {
   return { emoji: null, cleanLabel: label, isCustom: false, animated: false, customName: undefined, customId: undefined };
 }
 
+const DEFAULT_PT_TEXTS = new Set([
+  "comprar",
+  "🛒 comprar",
+  "valor à vista",
+  "valor a vista",
+  "restam",
+  "⚡ entrega automática!",
+  "⚡ entrega automatica!",
+  "🛠️ entrega manual",
+  "📦 entrega manual",
+  "✅ disponível • compre agora!",
+  "✅ disponivel • compre agora!",
+  "❌ indisponível",
+  "❌ indisponivel",
+]);
+
+function isDefaultLocalizedText(value: unknown): boolean {
+  if (typeof value !== "string") return true;
+  const normalized = value.trim().toLowerCase();
+  return !normalized || DEFAULT_PT_TEXTS.has(normalized) || normalized === "buy" || normalized === "🛒 buy" || normalized === "kaufen" || normalized === "🛒 kaufen";
+}
+
+function localizedOrCustom(value: unknown, lang: Lang, key: string): string {
+  return isDefaultLocalizedText(value) ? tr(lang, key) : String(value);
+}
+
 // Get bot user id to ensure we only reuse webhooks owned by the same bot/application
 async function getBotUserId(botToken: string): Promise<string | null> {
   try {
