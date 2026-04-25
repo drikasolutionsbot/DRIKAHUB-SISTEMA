@@ -39,9 +39,16 @@ serve(async (req) => {
     // 2. Get tenant + external bot token
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("name, logo_url, discord_guild_id")
+      .select("name, logo_url, discord_guild_id, bot_name, bot_avatar_url")
       .eq("id", tenant_id)
       .single();
+
+    // Identidade da loja para embeds em DM (DM usa perfil global do bot;
+    // por isso aplicamos a marca no embed via author + footer)
+    const storeBrand = {
+      name: tenant?.bot_name || tenant?.name || "Loja",
+      icon_url: tenant?.bot_avatar_url || tenant?.logo_url || undefined,
+    };
 
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
     if (!botToken) throw new Error("Bot externo não configurado (DISCORD_BOT_TOKEN)");
