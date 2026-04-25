@@ -595,7 +595,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: "sync",
-            tenant_id: tenantId,
+            tenant_id,
             product_id: order.product_id,
           }),
         });
