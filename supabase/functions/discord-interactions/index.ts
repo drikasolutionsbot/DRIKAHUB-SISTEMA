@@ -2566,8 +2566,56 @@ serve(async (req) => {
 
         return ok();
       }
-    } catch (err) {
-      console.error("Modal interaction error:", err);
+
+      // ─── FEEDBACK MODAL SUBMIT ────────────────────────────
+      if (customId.startsWith("feedback_modal:")) {
+        const orderId = customId.replace("feedback_modal:", "");
+        const ratingRaw = interaction.data?.components?.[0]?.components?.[0]?.value?.trim() || "";
+        const comment = interaction.data?.components?.[1]?.components?.[0]?.value?.trim() || null;
+        const rating = parseInt(ratingRaw);
+
+        if (isNaN(rating) || rating < 1 || rating > 5) {
+          return respondImmediate(interaction, "❌ Nota inválida. Use um número de 1 a 5.");
+        }
+
+        const { data: order } = await supabase.from("orders").select("*").eq("id", orderId).single();
+        if (!order) {
+          return respondImmediate(interaction, "❌ Pedido não encontrado.");
+        }
+
+        const { error: insertErr } = await supabase.from("order_feedbacks").insert({
+          tenant_id: order.tenant_id,
+          order_id: order.id,
+          discord_user_id: userId,
+          discord_username: interaction.member?.user?.username || interaction.user?.username || null,
+          rating,
+          comment,
+        });
+
+        if (insertErr) {
+          if (insertErr.code === "23505") {
+            return respondImmediate(interaction, "⭐ Você já avaliou esta compra. Obrigado!");
+          }
+          return respondImmediate(interaction, `❌ Erro ao salvar avaliação: ${insertErr.message}`);
+        }
+
+        // Envia para o canal de logs da loja
+        const stars = "⭐".repeat(rating) + "☆".repeat(5 - rating);
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "⭐ Nova avaliação recebida",
+          description: `<@${userId}> avaliou o pedido **#${order.order_number}**.`,
+          color: rating >= 4 ? 0x57F287 : rating === 3 ? 0xFEE75C : 0xED4245,
+          fields: [
+            { name: "**Nota**", value: `${stars} (${rating}/5)`, inline: true },
+            { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            ...(comment ? [{ name: "**Comentário**", value: comment, inline: false }] : []),
+          ],
+        });
+
+        return respondImmediate(interaction, `✅ Obrigado pela sua avaliação de ${stars}!`);
+      }
+
       try {
         await editFollowup(interaction, botToken, `❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
       } catch {}
