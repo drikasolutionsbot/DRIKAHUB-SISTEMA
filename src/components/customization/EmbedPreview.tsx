@@ -150,7 +150,7 @@ const EmbedPreview = ({ embed }: { embed: EmbedData }) => {
                   <span>
                     {embed.footer_text}
                     {embed.footer_text && embed.timestamp && " • "}
-                    {embed.timestamp && new Date().toLocaleDateString("pt-BR")}
+                    {embed.timestamp && new Date().toLocaleDateString(locale)}
                   </span>
                 </div>
               )}
