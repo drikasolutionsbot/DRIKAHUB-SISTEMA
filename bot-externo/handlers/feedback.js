@@ -1,4 +1,5 @@
 const { supabase } = require("../supabase");
+const { tr, trf, resolveOrderLang } = require("../i18n");
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -26,18 +27,22 @@ async function alreadyRated(orderId, userId) {
 
 // "Deixe seu feedback" → edita a mensagem mostrando os 3 botões
 async function openFeedback(interaction, orderId) {
+  const order = await getOrderById(orderId);
+  if (!order) return interaction.reply({ content: tr("pt-BR", "order_not_found"), ephemeral: true });
+  const L = await resolveOrderLang(supabase, order);
+
   if (await alreadyRated(orderId, interaction.user.id)) {
-    return interaction.reply({ content: "⭐ Você já avaliou esta compra. Obrigado!", ephemeral: true });
+    return interaction.reply({ content: tr(L, "feedback_already_rated"), ephemeral: true });
   }
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:1`).setLabel("Ruim :(").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:3`).setLabel("Mediano").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:5`).setLabel("Muito Bom!").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:1`).setLabel(tr(L, "feedback_bad")).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:3`).setLabel(tr(L, "feedback_average")).setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`feedback_rate:${orderId}:5`).setLabel(tr(L, "feedback_good")).setStyle(ButtonStyle.Primary),
   );
 
   await interaction.update({
-    content: interaction.message?.content || "Como foi sua experiência?",
+    content: interaction.message?.content || tr(L, "feedback_experience_prompt"),
     components: [row],
   });
 }
