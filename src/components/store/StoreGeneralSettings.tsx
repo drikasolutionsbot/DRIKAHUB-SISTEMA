@@ -38,6 +38,7 @@ interface StoreConfig {
 const defaultConfig: StoreConfig = {
   sales_channel_id: "",
   logs_channel_id: "",
+  feedback_channel_id: "",
   payment_timeout_minutes: 30,
   embed_color: "#2B2D31",
   store_title: "",
