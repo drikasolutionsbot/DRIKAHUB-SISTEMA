@@ -2612,10 +2612,22 @@ serve(async (req) => {
 
       // ─── FEEDBACK MODAL SUBMIT ────────────────────────────
       if (customId.startsWith("feedback_modal:")) {
-        const orderId = customId.replace("feedback_modal:", "");
-        const ratingRaw = interaction.data?.components?.[0]?.components?.[0]?.value?.trim() || "";
-        const comment = interaction.data?.components?.[1]?.components?.[0]?.value?.trim() || null;
-        const rating = parseInt(ratingRaw);
+        // Formato novo: feedback_modal:<orderId>:<rating> (só comentário)
+        // Formato legado: feedback_modal:<orderId> (rating + comentário)
+        const parts = customId.split(":");
+        const orderId = parts[1];
+        const presetRating = parts[2] ? parseInt(parts[2]) : null;
+
+        let rating: number;
+        let comment: string | null;
+        if (presetRating !== null && !isNaN(presetRating)) {
+          rating = presetRating;
+          comment = interaction.data?.components?.[0]?.components?.[0]?.value?.trim() || null;
+        } else {
+          const ratingRaw = interaction.data?.components?.[0]?.components?.[0]?.value?.trim() || "";
+          comment = interaction.data?.components?.[1]?.components?.[0]?.value?.trim() || null;
+          rating = parseInt(ratingRaw);
+        }
 
         if (isNaN(rating) || rating < 1 || rating > 5) {
           return respondImmediate(interaction, "❌ Nota inválida. Use um número de 1 a 5.");
