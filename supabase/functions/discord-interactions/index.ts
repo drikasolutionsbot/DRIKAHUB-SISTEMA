@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { tr, normLang, getTenantLang, type Lang } from "../_shared/i18n.ts";
+import { tr, trf, normLang, getTenantLang, type Lang } from "../_shared/i18n.ts";
 
 const DISCORD_API = "https://discord.com/api/v10";
 
@@ -70,6 +70,20 @@ function resolveHexColor(value: unknown, fallback = "#5865F2") {
   const raw = typeof value === "string" ? value.trim() : "";
   const normalized = raw ? (raw.startsWith("#") ? raw : `#${raw}`) : fallback;
   return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : fallback;
+}
+
+async function resolveOrderLang(supabase: any, order: any): Promise<Lang> {
+  let lang = await getTenantLang(supabase, order?.tenant_id);
+  if (order?.product_id) {
+    const { data: product } = await supabase
+      .from("products")
+      .select("language")
+      .eq("id", order.product_id)
+      .eq("tenant_id", order.tenant_id)
+      .maybeSingle();
+    if (product?.language) lang = normLang(product.language);
+  }
+  return lang;
 }
 
 // ─── PIX generation helpers (same as generate-pix) ──────────
