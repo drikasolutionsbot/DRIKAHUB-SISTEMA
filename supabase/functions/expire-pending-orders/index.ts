@@ -86,7 +86,7 @@ serve(async (req) => {
 
   const { data: tenants } = await supabase
     .from("tenants")
-    .select("id, name, logo_url")
+    .select("id, name, logo_url, language")
     .in("id", tenantIds);
 
   const configMap: Record<string, any> = {};
