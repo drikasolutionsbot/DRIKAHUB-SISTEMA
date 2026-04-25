@@ -423,7 +423,7 @@ serve(async (req) => {
     // Fetch tenant customization
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("bot_name, bot_avatar_url, banner_url, name")
+      .select("bot_name, bot_avatar_url, banner_url, name, language")
       .eq("id", tenant_id)
       .single();
 
