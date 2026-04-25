@@ -322,7 +322,7 @@ serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          content: `Avalie o serviço de ${buyerMention} sobre este produto.\n-# Sua avaliação é muito importante para reputação dessa loja.`,
+          content: trf(lang, "review_prompt", { buyer: buyerMention }),
           components: [{
             type: 1,
             components: [
