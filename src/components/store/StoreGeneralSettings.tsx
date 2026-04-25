@@ -19,6 +19,7 @@ import { useLocalDraft } from "@/hooks/useLocalDraft";
 interface StoreConfig {
   sales_channel_id: string;
   logs_channel_id: string;
+  feedback_channel_id: string;
   payment_timeout_minutes: number;
   embed_color: string;
   store_title: string;
