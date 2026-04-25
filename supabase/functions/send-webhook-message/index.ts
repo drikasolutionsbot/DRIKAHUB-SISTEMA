@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tr, normLang, type Lang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -163,15 +164,16 @@ async function buildProductPayload(
   const storeColor = storeConfig?.embed_color;
   const finalColor = productColor || storeColor || "#2B2D31";
   const isDefaultColor = !finalColor || finalColor === "#2B2D31";
+  const lang: Lang = normLang(tenant?.language);
 
   // Delivery badge
   const showDeliveryBadge = embedConfig.show_delivery_badge !== false;
   let deliveryLine = "";
   if (showDeliveryBadge) {
     if (product.auto_delivery) {
-      deliveryLine = (embedConfig.delivery_auto_text || "⚡ Entrega Automática!") + "\n\n";
+      deliveryLine = (embedConfig.delivery_auto_text || tr(lang, "delivery_auto")) + "\n\n";
     } else {
-      deliveryLine = (embedConfig.delivery_manual_text || "📦 Entrega Manual") + "\n\n";
+      deliveryLine = (embedConfig.delivery_manual_text || tr(lang, "delivery_manual")) + "\n\n";
     }
   }
 
@@ -183,7 +185,7 @@ async function buildProductPayload(
 
   // Price field
   if (embedConfig.show_price !== false) {
-    const priceLabel = embedConfig.price_label || "Valor à vista";
+    const priceLabel = embedConfig.price_label || tr(lang, "price_label");
     embed.fields.push({
       name: `**${priceLabel}**`,
       value: `\`R$ ${(product.price_cents / 100).toFixed(2).replace(".", ",")}\``,
@@ -201,7 +203,7 @@ async function buildProductPayload(
 
   // Stock field
   if (embedConfig.show_stock_field !== false) {
-    const stockLabel = embedConfig.stock_label || "Restam";
+    const stockLabel = embedConfig.stock_label || tr(lang, "stock_label");
     embed.fields.push({
       name: stockLabel,
       value: `\`${realStockCount ?? 0}\``,
@@ -212,7 +214,8 @@ async function buildProductPayload(
   // Footer
   if (embedConfig.show_footer !== false) {
     const stock = realStockCount ?? 0;
-    const dateStr = new Date().toLocaleString("pt-BR");
+    const localeMap: Record<Lang, string> = { "pt-BR": "pt-BR", en: "en-US", de: "de-DE" };
+    const dateStr = new Date().toLocaleString(localeMap[lang]);
     let footerText: string;
     if (stock > 0 && embedConfig.footer_available_text) {
       footerText = embedConfig.footer_available_text
@@ -227,7 +230,7 @@ async function buildProductPayload(
         .replace(/\{loja\}/gi, tenant?.name || "Loja")
         .replace(/\{data\}/gi, dateStr);
     } else {
-      footerText = `Servidor de ${tenant?.name} • ${dateStr}`;
+      footerText = `${tenant?.name || "Loja"} • ${dateStr}`;
     }
     embed.footer = { text: footerText };
   }
@@ -247,13 +250,15 @@ async function buildProductPayload(
   const discordBuyStyle = styleMap[product.button_style || "success"] || 3;
   const rawBuyLabel = embedConfig.buy_button_label || "";
   const normalizedBuyLabel = rawBuyLabel.trim();
-  const finalBuyLabel = !normalizedBuyLabel || normalizedBuyLabel.toLowerCase() === "comprar" ? "🛒 Comprar" : rawBuyLabel;
+  const defaultBuyEmoji = tr(lang, "buy_emoji");
+  const defaultBuyText = tr(lang, "buy");
+  const finalBuyLabel = !normalizedBuyLabel || normalizedBuyLabel.toLowerCase() === "comprar" || normalizedBuyLabel.toLowerCase() === "buy" || normalizedBuyLabel.toLowerCase() === "kaufen" ? defaultBuyEmoji : rawBuyLabel;
   const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(finalBuyLabel);
 
   const buyButton: any = {
     type: 2,
     style: discordBuyStyle,
-    label: btnLabel || "Comprar",
+    label: btnLabel || defaultBuyText,
     custom_id: `buy_product:${product_id}`,
   };
 
@@ -290,7 +295,7 @@ async function syncProductMessages(
   // Fetch tenant
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("bot_name, bot_avatar_url, banner_url, name")
+    .select("bot_name, bot_avatar_url, banner_url, name, language")
     .eq("id", tenant_id)
     .single();
 
@@ -422,7 +427,7 @@ serve(async (req) => {
     // Fetch tenant customization
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("bot_name, bot_avatar_url, banner_url, name")
+      .select("bot_name, bot_avatar_url, banner_url, name, language")
       .eq("id", tenant_id)
       .single();
 
@@ -464,15 +469,16 @@ serve(async (req) => {
       }
 
       const pEmbedConfig = product?.embed_config && typeof product.embed_config === "object" ? product.embed_config : {};
+      const lang2: Lang = normLang(tenant?.language);
 
       if (embeds && embeds.length > 0) {
         embeds[0].fields = embeds[0].fields || [];
 
         // Update or add price field using custom label
         if (pEmbedConfig.show_price !== false) {
-          const priceLabel = pEmbedConfig.price_label || "Valor à vista";
+          const priceLabel = pEmbedConfig.price_label || tr(lang2, "price_label");
           const existingPriceIdx = embeds[0].fields.findIndex(
-            (f: any) => typeof f?.name === "string" && (f.name.toLowerCase().includes("valor") || f.name.toLowerCase().includes("preço"))
+            (f: any) => typeof f?.name === "string" && (f.name.toLowerCase().includes("valor") || f.name.toLowerCase().includes("preço") || f.name.toLowerCase().includes("price") || f.name.toLowerCase().includes("preis"))
           );
           const priceField = {
             name: `**${priceLabel}**`,
@@ -486,14 +492,14 @@ serve(async (req) => {
 
         // Update or add stock field using custom label
         if (pEmbedConfig.show_stock_field !== false) {
-          const stockLabel = pEmbedConfig.stock_label || "Restam";
+          const stockLabel = pEmbedConfig.stock_label || tr(lang2, "stock_label");
           const stockField = {
             name: stockLabel,
             value: `\`${realStockCount ?? 0}\``,
             inline: true,
           };
           const existingStockIdx = embeds[0].fields.findIndex(
-            (field: any) => typeof field?.name === "string" && (field.name.toLowerCase() === "restam" || field.name.toLowerCase().includes("estoque"))
+            (field: any) => typeof field?.name === "string" && (field.name.toLowerCase() === "restam" || field.name.toLowerCase().includes("estoque") || field.name.toLowerCase().includes("stock") || field.name.toLowerCase().includes("verfügbar"))
           );
           if (existingStockIdx >= 0) {
             embeds[0].fields[existingStockIdx] = stockField;
@@ -507,11 +513,12 @@ serve(async (req) => {
       if (embeds && embeds.length > 0) {
         const showBadge = pEmbedConfig.show_delivery_badge !== false;
         const currentDesc = embeds[0].description || "";
-        if (showBadge && product?.auto_delivery && !currentDesc.includes("Entrega")) {
-          const badgeText = pEmbedConfig.delivery_auto_text || "⚡ Entrega Automática!";
+        const hasBadge = /Entrega|Delivery|Lieferung/i.test(currentDesc);
+        if (showBadge && product?.auto_delivery && !hasBadge) {
+          const badgeText = pEmbedConfig.delivery_auto_text || tr(lang2, "delivery_auto");
           embeds[0].description = `${badgeText}\n\n${currentDesc}`;
-        } else if (showBadge && !product?.auto_delivery && !currentDesc.includes("Entrega")) {
-          const badgeText = pEmbedConfig.delivery_manual_text || "📦 Entrega Manual";
+        } else if (showBadge && !product?.auto_delivery && !hasBadge) {
+          const badgeText = pEmbedConfig.delivery_manual_text || tr(lang2, "delivery_manual");
           embeds[0].description = `${badgeText}\n\n${currentDesc}`;
         }
       }
@@ -530,14 +537,15 @@ serve(async (req) => {
       const discordBuyStyle = styleMap[product?.button_style || "success"] || 3;
 
       const rawBuyLabel = (product?.embed_config as any)?.buy_button_label || "";
-      const normalizedBuyLabel = rawBuyLabel.trim();
-      const finalBuyLabel = !normalizedBuyLabel || normalizedBuyLabel.toLowerCase() === "comprar" ? "🛒 Comprar" : rawBuyLabel;
+      const normalizedBuyLabel = rawBuyLabel.trim().toLowerCase();
+      const isDefaultLabel = !normalizedBuyLabel || normalizedBuyLabel === "comprar" || normalizedBuyLabel === "buy" || normalizedBuyLabel === "kaufen";
+      const finalBuyLabel = isDefaultLabel ? tr(lang2, "buy_emoji") : rawBuyLabel;
       const { emoji: btnEmoji, cleanLabel: btnLabel, isCustom, customId, customName, animated } = parseEmojiFromLabel(finalBuyLabel);
 
       const buyButton: any = {
         type: 2,
         style: discordBuyStyle,
-        label: btnLabel || "Comprar",
+        label: btnLabel || tr(lang2, "buy"),
         custom_id: `buy_product:${product_id}`,
       };
 

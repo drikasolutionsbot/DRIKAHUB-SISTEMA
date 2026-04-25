@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { tr, normLang, type Lang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,50 +20,52 @@ type DefaultTemplate = {
   buttons?: Array<{ label: string; url: string; emoji?: string; style?: number }>;
 };
 
-const DEFAULT_TEMPLATES: Record<string, DefaultTemplate> = {
-  order_delivered: {
-    title: "📦 Pedido entregue",
-    description: "Olá **{customer}**! Seu pedido **#{order_number}** foi entregue com sucesso.\n\n**Produto:** {product}\n**Quantidade:** {quantity}\n**Total:** {total}\n\n```{delivery_content}```",
-    color: 0x57f287,
-    footer: "{store_name} • Obrigado pela compra!",
-  },
-  payment_approved: {
-    title: "🟢 Pagamento aprovado",
-    description: "Olá **{customer}**! Seu pagamento do pedido **#{order_number}** foi aprovado.\n\n**Produto:** {product}\n**Total:** {total}\n\nEm instantes você receberá a entrega.",
-    color: 0x57f287,
-    footer: "{store_name}",
-  },
-  order_rejected: {
-    title: "❌ Pedido rejeitado",
-    description: "Olá **{customer}**, infelizmente seu pedido **#{order_number}** foi rejeitado pela equipe.\n\nSe acreditar que houve um engano, abra um ticket de suporte.",
-    color: 0xed4245,
-    footer: "{store_name}",
-  },
-  order_canceled: {
-    title: "🚫 Pedido cancelado",
-    description: "Olá **{customer}**, seu pedido **#{order_number}** foi cancelado.\n\nSe tiver dúvidas, abra um ticket de suporte.",
-    color: 0xed4245,
-    footer: "{store_name}",
-  },
-  order_expired: {
-    title: "⏰ Pedido expirado",
-    description: "Olá **{customer}**, o pagamento do pedido **#{order_number}** não foi confirmado a tempo e o pedido expirou.\n\nVocê pode realizar uma nova compra a qualquer momento.",
-    color: 0xfee75c,
-    footer: "{store_name}",
-  },
-  ticket_opened: {
-    title: "🎫 Ticket aberto",
-    description: "Olá **{customer}**! Seu ticket foi aberto com sucesso.\n\nA equipe da **{store_name}** responderá em breve. Aguarde no canal do ticket.",
-    color: 0x5865f2,
-    footer: "{store_name} • Suporte",
-  },
-  ticket_closed: {
-    title: "🔒 Ticket encerrado",
-    description: "Olá **{customer}**, seu ticket foi encerrado.\n\nObrigado pelo contato! Se precisar de algo mais, abra um novo ticket.",
-    color: 0x99aab5,
-    footer: "{store_name}",
-  },
-};
+function buildDefaultTemplates(lang: Lang): Record<string, DefaultTemplate> {
+  return {
+    order_delivered: {
+      title: tr(lang, "order_delivered_title"),
+      description: tr(lang, "order_delivered_desc"),
+      color: 0x57f287,
+      footer: `{store_name} • ${tr(lang, "thanks_for_purchase")}`,
+    },
+    payment_approved: {
+      title: tr(lang, "payment_approved_title"),
+      description: tr(lang, "payment_approved_desc"),
+      color: 0x57f287,
+      footer: "{store_name}",
+    },
+    order_rejected: {
+      title: tr(lang, "order_rejected_title"),
+      description: tr(lang, "order_rejected_desc"),
+      color: 0xed4245,
+      footer: "{store_name}",
+    },
+    order_canceled: {
+      title: tr(lang, "order_canceled_title"),
+      description: tr(lang, "order_canceled_desc"),
+      color: 0xed4245,
+      footer: "{store_name}",
+    },
+    order_expired: {
+      title: tr(lang, "order_expired_title"),
+      description: tr(lang, "order_expired_desc"),
+      color: 0xfee75c,
+      footer: "{store_name}",
+    },
+    ticket_opened: {
+      title: tr(lang, "ticket_opened_title"),
+      description: tr(lang, "ticket_opened_desc"),
+      color: 0x5865f2,
+      footer: `{store_name} • ${tr(lang, "support")}`,
+    },
+    ticket_closed: {
+      title: tr(lang, "ticket_closed_title"),
+      description: tr(lang, "ticket_closed_desc"),
+      color: 0x99aab5,
+      footer: "{store_name}",
+    },
+  };
+}
 
 // ─── Placeholder substitution ───────────────────────────────────────
 function applyVars(text: string, vars: Record<string, any>): string {
@@ -111,10 +114,11 @@ serve(async (req) => {
     // 1. Load tenant for branding + bot token
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("name, logo_url, bot_name, bot_avatar_url")
+      .select("name, logo_url, bot_name, bot_avatar_url, language")
       .eq("id", tenant_id)
       .maybeSingle();
 
+    const lang: Lang = normLang((tenant as any)?.language);
     const storeBrand = {
       name: (tenant as any)?.bot_name || (tenant as any)?.name || "Loja",
       icon_url: (tenant as any)?.bot_avatar_url || (tenant as any)?.logo_url || undefined,
@@ -129,7 +133,8 @@ serve(async (req) => {
       .maybeSingle();
 
     const useCustom = tpl && (tpl as any).enabled !== false && (tpl as any).embed_data && Object.keys((tpl as any).embed_data).length > 0;
-    const fallback = DEFAULT_TEMPLATES[template_key];
+    const defaults = buildDefaultTemplates(lang);
+    const fallback = defaults[template_key];
     if (!useCustom && !fallback) {
       throw new Error(`No template found for key ${template_key}`);
     }

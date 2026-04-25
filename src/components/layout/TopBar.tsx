@@ -319,7 +319,14 @@ export const TopBar = ({ onToggleSidebar }: TopBarProps) => {
             {(Object.keys(languageLabels) as Language[]).map((lang) => (
               <DropdownMenuItem
                 key={lang}
-                onClick={() => setLanguage(lang)}
+                onClick={async () => {
+                  setLanguage(lang);
+                  if (tenantId) {
+                    try {
+                      await supabase.from("tenants").update({ language: lang } as any).eq("id", tenantId);
+                    } catch (e) { console.error("Failed to sync language to tenant", e); }
+                  }
+                }}
                 className={`cursor-pointer gap-2 ${language === lang ? "bg-primary/10 text-primary" : ""}`}
               >
                 <span>{languageFlags[lang]}</span>
