@@ -587,7 +587,7 @@ serve(async (req) => {
       embeds: [salesEmbed],
       components: [{
         type: 1,
-        components: [{ type: 2, style: 5, label: "Comprar", url: `https://discord.com/channels/${guildId}` }],
+        components: [{ type: 2, style: 5, label: tr(lang, "buy"), url: `https://discord.com/channels/${guildId}` }],
       }],
     };
 
