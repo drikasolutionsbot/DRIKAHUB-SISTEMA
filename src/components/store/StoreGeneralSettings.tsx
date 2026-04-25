@@ -19,6 +19,7 @@ import { useLocalDraft } from "@/hooks/useLocalDraft";
 interface StoreConfig {
   sales_channel_id: string;
   logs_channel_id: string;
+  feedback_channel_id: string;
   payment_timeout_minutes: number;
   embed_color: string;
   store_title: string;
@@ -37,6 +38,7 @@ interface StoreConfig {
 const defaultConfig: StoreConfig = {
   sales_channel_id: "",
   logs_channel_id: "",
+  feedback_channel_id: "",
   payment_timeout_minutes: 30,
   embed_color: "#2B2D31",
   store_title: "",
@@ -203,6 +205,20 @@ const StoreGeneralSettings = () => {
                 defaultNewName="logs-vendas"
               />
               <p className="text-[11px] text-muted-foreground mt-1">Logs detalhados de transações</p>
+            </div>
+            <div>
+              <Label>Canal de Feedbacks ⭐</Label>
+              <ChannelSelectWithCreate
+                value={config.feedback_channel_id}
+                onChange={(v) => update("feedback_channel_id", v)}
+                channels={channels}
+                categories={categories}
+                onChannelCreated={fetchChannels}
+                tenantId={tenantId}
+                placeholder="Selecione o canal de feedbacks"
+                defaultNewName="feedbacks"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Avaliações dos clientes serão postadas aqui. Se vazio, usa o canal de logs.</p>
             </div>
           </CardContent>
         </Card>

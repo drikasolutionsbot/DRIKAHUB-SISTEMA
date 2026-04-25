@@ -2599,19 +2599,43 @@ serve(async (req) => {
           return respondImmediate(interaction, `❌ Erro ao salvar avaliação: ${insertErr.message}`);
         }
 
-        // Envia para o canal de logs da loja
+        // Envia para o canal de feedbacks (ou logs como fallback)
         const stars = "⭐".repeat(rating) + "☆".repeat(5 - rating);
-        await sendStoreLog(supabase, botToken, order.tenant_id, {
+        const embedColor = rating >= 4 ? 0x57F287 : rating === 3 ? 0xFEE75C : 0xED4245;
+        const feedbackEmbed = {
           title: "⭐ Nova avaliação recebida",
           description: `<@${userId}> avaliou o pedido **#${order.order_number}**.`,
-          color: rating >= 4 ? 0x57F287 : rating === 3 ? 0xFEE75C : 0xED4245,
+          color: embedColor,
           fields: [
             { name: "**Nota**", value: `${stars} (${rating}/5)`, inline: true },
             { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
             { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
             ...(comment ? [{ name: "**Comentário**", value: comment, inline: false }] : []),
           ],
-        });
+          timestamp: new Date().toISOString(),
+        };
+
+        const { data: sc } = await supabase
+          .from("store_configs")
+          .select("feedback_channel_id, logs_channel_id")
+          .eq("tenant_id", order.tenant_id)
+          .maybeSingle();
+
+        const targetChannel = sc?.feedback_channel_id || sc?.logs_channel_id;
+        if (targetChannel) {
+          try {
+            await fetch(`${DISCORD_API}/channels/${targetChannel}/messages`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bot ${botToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ embeds: [feedbackEmbed] }),
+            });
+          } catch (e) {
+            console.error("Failed to post feedback:", e);
+          }
+        }
 
         return respondImmediate(interaction, `✅ Obrigado pela sua avaliação de ${stars}!`);
       }
