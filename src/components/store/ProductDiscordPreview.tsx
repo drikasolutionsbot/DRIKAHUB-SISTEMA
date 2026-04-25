@@ -163,7 +163,7 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
               {cfg.show_price !== false && (
                 <div>
-                  <p className="text-[#dcddde] text-[10px] font-semibold">**{cfg.price_label || "Valor à vista"}**</p>
+                  <p className="text-[#dcddde] text-[10px] font-semibold">**{cfg.price_label || L.price}**</p>
                   <p className="text-[#dcddde] text-xs">{formatPrice(product.price_cents)}</p>
                 </div>
               )}
