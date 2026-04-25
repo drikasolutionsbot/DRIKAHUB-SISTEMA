@@ -40,9 +40,10 @@ serve(async (req) => {
     // 2. Get tenant + external bot token
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("name, logo_url, discord_guild_id, bot_name, bot_avatar_url")
+      .select("name, logo_url, discord_guild_id, bot_name, bot_avatar_url, language")
       .eq("id", tenant_id)
       .single();
+    const lang = normLang((tenant as any)?.language);
 
     // Identidade da loja para embeds em DM (DM usa perfil global do bot;
     // por isso aplicamos a marca no embed via author + footer)
