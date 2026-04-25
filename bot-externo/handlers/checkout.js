@@ -1163,7 +1163,11 @@ async function cancelManual(interaction, tenant, orderId) {
 
   try {
     const user = await interaction.client.users.fetch(order.discord_user_id);
-    await user.send({ embeds: [new EmbedBuilder().setTitle("❌ Pedido Cancelado").setDescription(`Seu pedido **#${order.order_number}** (${order.product_name}) foi cancelado.`).setColor(0xED4245)] });
+    const L = await resolveOrderLang(supabase, order);
+    await user.send({ embeds: [new EmbedBuilder()
+      .setTitle(tr(L, "order_canceled_title"))
+      .setDescription(trf(L, "order_canceled_desc", { order_number: order.order_number, product: order.product_name }))
+      .setColor(0xED4245)] });
   } catch {}
 
   await interaction.editReply({
@@ -1187,16 +1191,17 @@ async function cancelManual(interaction, tenant, orderId) {
 // ── Copy Delivered ──
 async function copyDelivered(interaction, tenant, orderId) {
   const order = await getOrder(orderId);
-  if (!order) return interaction.reply({ content: "❌ Pedido não encontrado.", ephemeral: true });
+  if (!order) return interaction.reply({ content: tr("pt-BR", "order_not_found"), ephemeral: true });
+  const L = await resolveOrderLang(supabase, order);
 
   const { data: items } = await supabase.from("product_stock_items").select("content")
     .eq("product_id", order.product_id).eq("tenant_id", order.tenant_id)
     .eq("delivered_to", order.discord_user_id).eq("delivered", true)
     .order("delivered_at", { ascending: false }).limit(10);
 
-  if (!items?.length) return interaction.reply({ content: "❌ Nenhum conteúdo entregue encontrado.", ephemeral: true });
+  if (!items?.length) return interaction.reply({ content: tr(L, "delivered_not_found"), ephemeral: true });
   const content = items.map((i) => i.content).join("\n");
-  return interaction.reply({ content: `📋 **Produto entregue:**\n\`\`\`\n${content}\n\`\`\``, ephemeral: true });
+  return interaction.reply({ content: trf(L, "delivered_copy_response", { content }), ephemeral: true });
 }
 
 // ── View Variations ──
