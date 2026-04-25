@@ -2315,6 +2315,57 @@ serve(async (req) => {
         return ok();
       }
 
+      // ─── FEEDBACK BUTTON: opens rating modal ──────────────
+      if (customId.startsWith("feedback_order:")) {
+        const orderId = customId.replace("feedback_order:", "");
+
+        const { data: existingFb } = await supabase
+          .from("order_feedbacks")
+          .select("id")
+          .eq("order_id", orderId)
+          .eq("discord_user_id", userId)
+          .maybeSingle();
+
+        if (existingFb) {
+          return respondImmediate(interaction, "⭐ Você já avaliou esta compra. Obrigado!");
+        }
+
+        return new Response(JSON.stringify({
+          type: 9,
+          data: {
+            custom_id: `feedback_modal:${orderId}`,
+            title: "Avaliar sua compra",
+            components: [
+              {
+                type: 1,
+                components: [{
+                  type: 4,
+                  custom_id: "rating",
+                  label: "Nota de 1 a 5 (estrelas)",
+                  style: 1,
+                  min_length: 1,
+                  max_length: 1,
+                  placeholder: "5",
+                  required: true,
+                }],
+              },
+              {
+                type: 1,
+                components: [{
+                  type: 4,
+                  custom_id: "comment",
+                  label: "Comentário (opcional)",
+                  style: 2,
+                  max_length: 500,
+                  placeholder: "Conte como foi sua experiência...",
+                  required: false,
+                }],
+              },
+            ],
+          },
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+
     } catch (err) {
       console.error("Interaction error:", err);
       try {
@@ -2325,6 +2376,7 @@ serve(async (req) => {
       return ok();
     }
   }
+
 
   // Type 5: MODAL_SUBMIT
   if (interaction.type === 5) {
@@ -2513,6 +2565,55 @@ serve(async (req) => {
         });
 
         return ok();
+      }
+
+      // ─── FEEDBACK MODAL SUBMIT ────────────────────────────
+      if (customId.startsWith("feedback_modal:")) {
+        const orderId = customId.replace("feedback_modal:", "");
+        const ratingRaw = interaction.data?.components?.[0]?.components?.[0]?.value?.trim() || "";
+        const comment = interaction.data?.components?.[1]?.components?.[0]?.value?.trim() || null;
+        const rating = parseInt(ratingRaw);
+
+        if (isNaN(rating) || rating < 1 || rating > 5) {
+          return respondImmediate(interaction, "❌ Nota inválida. Use um número de 1 a 5.");
+        }
+
+        const { data: order } = await supabase.from("orders").select("*").eq("id", orderId).single();
+        if (!order) {
+          return respondImmediate(interaction, "❌ Pedido não encontrado.");
+        }
+
+        const { error: insertErr } = await supabase.from("order_feedbacks").insert({
+          tenant_id: order.tenant_id,
+          order_id: order.id,
+          discord_user_id: userId,
+          discord_username: interaction.member?.user?.username || interaction.user?.username || null,
+          rating,
+          comment,
+        });
+
+        if (insertErr) {
+          if (insertErr.code === "23505") {
+            return respondImmediate(interaction, "⭐ Você já avaliou esta compra. Obrigado!");
+          }
+          return respondImmediate(interaction, `❌ Erro ao salvar avaliação: ${insertErr.message}`);
+        }
+
+        // Envia para o canal de logs da loja
+        const stars = "⭐".repeat(rating) + "☆".repeat(5 - rating);
+        await sendStoreLog(supabase, botToken, order.tenant_id, {
+          title: "⭐ Nova avaliação recebida",
+          description: `<@${userId}> avaliou o pedido **#${order.order_number}**.`,
+          color: rating >= 4 ? 0x57F287 : rating === 3 ? 0xFEE75C : 0xED4245,
+          fields: [
+            { name: "**Nota**", value: `${stars} (${rating}/5)`, inline: true },
+            { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
+            { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+            ...(comment ? [{ name: "**Comentário**", value: comment, inline: false }] : []),
+          ],
+        });
+
+        return respondImmediate(interaction, `✅ Obrigado pela sua avaliação de ${stars}!`);
       }
     } catch (err) {
       console.error("Modal interaction error:", err);

@@ -298,7 +298,7 @@ serve(async (req) => {
       dmButtons.push({
         type: 1,
         components: [
-          { type: 2, style: 5, label: "Comprar novamente", emoji: { name: "💲" }, url: `https://discord.com/channels/${guildId}` },
+          { type: 2, style: 1, label: "Avaliar compra", emoji: { name: "⭐" }, custom_id: `feedback_order:${order.id}` },
         ],
       });
 
