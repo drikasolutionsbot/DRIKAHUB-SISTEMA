@@ -2360,9 +2360,12 @@ serve(async (req) => {
       if (customId.startsWith("feedback_rate:")) {
         const [, orderId, ratingStr] = customId.split(":");
         const rating = parseInt(ratingStr);
+        const { data: order } = await supabase.from("orders").select("id, tenant_id, product_id").eq("id", orderId).maybeSingle();
+        if (!order) return respondImmediate(interaction, tr("pt-BR", "order_not_found"));
+        const L = await resolveOrderLang(supabase, order);
 
         if (isNaN(rating) || rating < 1 || rating > 5) {
-          return respondImmediate(interaction, "❌ Nota inválida.");
+          return respondImmediate(interaction, tr(L, "feedback_invalid_rating"));
         }
 
         const { data: existingFb } = await supabase
@@ -2373,25 +2376,25 @@ serve(async (req) => {
           .maybeSingle();
 
         if (existingFb) {
-          return respondImmediate(interaction, "⭐ Você já avaliou esta compra. Obrigado!");
+          return respondImmediate(interaction, tr(L, "feedback_already_rated"));
         }
 
-        const ratingLabel = rating <= 1 ? "Ruim" : rating <= 3 ? "Mediano" : "Muito Bom";
+        const ratingLabel = rating <= 1 ? tr(L, "feedback_bad") : rating <= 3 ? tr(L, "feedback_average") : tr(L, "feedback_good");
 
         return new Response(JSON.stringify({
           type: 9,
           data: {
             custom_id: `feedback_modal:${orderId}:${rating}`,
-            title: `Avaliação: ${ratingLabel}`,
+            title: trf(L, "feedback_modal_title", { rating: ratingLabel }),
             components: [{
               type: 1,
               components: [{
                 type: 4,
                 custom_id: "comment",
-                label: "Deixe seu comentário (opcional)",
+                label: tr(L, "feedback_comment_label"),
                 style: 2,
                 max_length: 500,
-                placeholder: "Conte como foi sua experiência...",
+                placeholder: tr(L, "feedback_comment_placeholder"),
                 required: false,
               }],
             }],
