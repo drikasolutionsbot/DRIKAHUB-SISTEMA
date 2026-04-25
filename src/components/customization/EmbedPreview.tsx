@@ -1,5 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import type { EmbedData } from "./types";
+import { useTenant } from "@/contexts/TenantContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /** Minimal markdown: bold, italic, underline, links */
 const renderMarkdown = (text: string) => {
@@ -31,6 +33,15 @@ const BUTTON_COLORS: Record<string, string> = {
 };
 
 const EmbedPreview = ({ embed }: { embed: EmbedData }) => {
+  const { tenant } = useTenant();
+  const { language } = useLanguage();
+  const localeMap: Record<string, string> = { "pt-BR": "pt-BR", en: "en-US", de: "de-DE" };
+  const todayLabel: Record<string, string> = { "pt-BR": "Hoje às", en: "Today at", de: "Heute um" };
+  const locale = localeMap[language] || "pt-BR";
+  const botName = tenant?.bot_name || tenant?.name || "Bot";
+  const botAvatar = tenant?.bot_avatar_url || null;
+  const initial = (botName.trim()[0] || "B").toUpperCase();
+
   const hasContent = embed.title || embed.description || embed.author_name || embed.fields.length > 0 || embed.image_url || embed.thumbnail_url || embed.footer_text;
   const buttons = (embed.buttons || []).filter(b => b.enabled);
 
@@ -45,13 +56,23 @@ const EmbedPreview = ({ embed }: { embed: EmbedData }) => {
   return (
     <div className="font-[Whitney,Helvetica_Neue,Helvetica,Arial,sans-serif] text-sm">
       <div className="flex gap-4 p-4">
-        <div className="h-10 w-10 rounded-full bg-[#5865F2] flex items-center justify-center shrink-0">
-          <span className="text-white text-xs font-bold">B</span>
-        </div>
+        {botAvatar ? (
+          <img
+            src={botAvatar}
+            alt={botName}
+            className="h-10 w-10 rounded-full object-cover shrink-0"
+            onError={e => { e.currentTarget.style.display = "none"; }}
+          />
+        ) : (
+          <div className="h-10 w-10 rounded-full bg-[#5865F2] flex items-center justify-center shrink-0">
+            <span className="text-white text-xs font-bold">{initial}</span>
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="font-medium text-white text-[0.95rem]">Drika Bot</span>
-            <span className="text-[#72767d] text-[0.7rem]">Hoje às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+            <span className="font-medium text-white text-[0.95rem]">{botName}</span>
+            <span className="bg-[#5865F2] text-white text-[0.6rem] font-bold px-1 py-px rounded">BOT</span>
+            <span className="text-[#72767d] text-[0.7rem]">{todayLabel[language] || "Hoje às"} {new Date().toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span>
           </div>
 
           {hasContent && (
@@ -129,7 +150,7 @@ const EmbedPreview = ({ embed }: { embed: EmbedData }) => {
                   <span>
                     {embed.footer_text}
                     {embed.footer_text && embed.timestamp && " • "}
-                    {embed.timestamp && new Date().toLocaleDateString("pt-BR")}
+                    {embed.timestamp && new Date().toLocaleDateString(locale)}
                   </span>
                 </div>
               )}
