@@ -56,7 +56,7 @@ const MarketplacePage = () => {
   const [pixPaid, setPixPaid] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isPro = tenant?.plan === "pro" || tenant?.plan === "business";
+  const isPro = tenant?.plan === "pro" || tenant?.plan === "master" || tenant?.plan === "business";
 
   // Cleanup polling on unmount
   useEffect(() => {
