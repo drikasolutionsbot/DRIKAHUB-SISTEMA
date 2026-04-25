@@ -187,13 +187,13 @@ function json(data: any) {
   });
 }
 
-function buildEmbed(embedData: any, replaceVars: (t: string) => string, tenant: any): any {
+function buildEmbed(embedData: any, replaceVars: (t: string) => string, tenant: any, lang?: any): any {
   if (!embedData) return {};
 
   const embed: any = {
     color: parseInt((embedData.color || "#2B2D31").replace("#", ""), 16),
-    title: "👋 Bem-vindo(a)!",
-    description: replaceVars("Olá **{username}**, seja bem-vindo(a) ao **{server}**! 🥳\n\nVocê é nosso membro **#{memberCount}**. Aproveite sua estadia!"),
+    title: embedData.title ? replaceVars(embedData.title) : tr(lang, "welcome_title"),
+    description: embedData.description ? replaceVars(embedData.description) : replaceVars(tr(lang, "welcome_desc")),
   };
 
   if (embedData.image_url) embed.image = { url: replaceVars(embedData.image_url) };
