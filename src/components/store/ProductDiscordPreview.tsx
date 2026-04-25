@@ -55,6 +55,8 @@ const typeLabels: Record<string, string> = {
 
 export const ProductDiscordPreview = ({ product, storeName, fields = [], embedColor, embedConfig }: ProductDiscordPreviewProps) => {
   const { tenant, tenantId } = useTenant();
+  const { language } = useLanguage();
+  const L = DISCORD_LABELS[language] || DISCORD_LABELS["pt-BR"];
   const botName = storeName || tenant?.name || "Bot";
   const botAvatar = tenant?.logo_url;
   const cfg: EmbedConfig = { ...DEFAULT_EMBED, ...embedConfig };
