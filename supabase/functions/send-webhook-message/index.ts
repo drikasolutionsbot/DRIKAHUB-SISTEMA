@@ -190,7 +190,8 @@ async function buildProductPayload(
   const storeColor = storeConfig?.embed_color;
   const finalColor = productColor || storeColor || "#2B2D31";
   const isDefaultColor = !finalColor || finalColor === "#2B2D31";
-  const lang: Lang = normLang(tenant?.language);
+  // Idioma: produto > tenant
+  const lang: Lang = normLang(product.language || tenant?.language);
 
   // Delivery badge
   const showDeliveryBadge = embedConfig.show_delivery_badge !== false;
