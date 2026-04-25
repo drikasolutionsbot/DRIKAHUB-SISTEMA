@@ -9,6 +9,7 @@ const sorteioCommand = require("../commands/sorteio");
 const checkoutHandler = require("../handlers/checkout");
 const ticketsHandler = require("../handlers/tickets");
 const moderationHandler = require("../handlers/moderation");
+const feedbackHandler = require("../handlers/feedback");
 
 module.exports = async function handleInteraction(client, interaction) {
   const guildId = interaction.guildId;
