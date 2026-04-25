@@ -118,7 +118,31 @@ serve(async (req) => {
       .eq("id", tenant_id)
       .maybeSingle();
 
-    const lang: Lang = normLang((tenant as any)?.language);
+    let lang: Lang = normLang((tenant as any)?.language);
+
+    // 1.b. If a product_id is in vars (or resolvable from order_id), use product.language
+    let productIdForLang: string | null = (vars && (vars.product_id || vars.productId)) || null;
+    if (!productIdForLang && vars && (vars.order_id || vars.orderId)) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("product_id")
+        .eq("id", vars.order_id || vars.orderId)
+        .eq("tenant_id", tenant_id)
+        .maybeSingle();
+      productIdForLang = (ord as any)?.product_id || null;
+    }
+    if (productIdForLang) {
+      const { data: prod } = await supabase
+        .from("products")
+        .select("language")
+        .eq("id", productIdForLang)
+        .eq("tenant_id", tenant_id)
+        .maybeSingle();
+      if ((prod as any)?.language) {
+        lang = normLang((prod as any).language);
+      }
+    }
+
     const storeBrand = {
       name: (tenant as any)?.bot_name || (tenant as any)?.name || "Loja",
       icon_url: (tenant as any)?.bot_avatar_url || (tenant as any)?.logo_url || undefined,

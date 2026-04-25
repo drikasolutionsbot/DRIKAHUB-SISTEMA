@@ -103,6 +103,8 @@ const StorePage = () => {
           button_style: product.button_style,
           embed_config: product.embed_config,
           role_id: product.role_id,
+          payment_provider_key: (product as any).payment_provider_key ?? null,
+          language: (product as any).language ?? null,
         },
       },
     });
