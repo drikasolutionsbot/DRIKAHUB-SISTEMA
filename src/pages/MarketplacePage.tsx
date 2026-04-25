@@ -186,9 +186,9 @@ const MarketplacePage = () => {
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Lock className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-xl font-bold mb-2">Acesso Exclusivo Pro</h2>
+            <h2 className="text-xl font-bold mb-2">Acesso Exclusivo Pro & Master</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              O Marketplace Atacadão está disponível apenas para clientes com plano Pro.
+              O Marketplace Atacadão está disponível apenas para clientes dos planos Pro ou Master.
               Faça upgrade para desbloquear contas digitais com preços de atacado.
             </p>
             <Button
