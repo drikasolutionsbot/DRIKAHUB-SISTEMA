@@ -89,8 +89,9 @@ async function submitFeedback(interaction, orderId, rating) {
 
   const order = await getOrderById(orderId);
   if (!order) {
-    return interaction.reply({ content: "❌ Pedido não encontrado.", ephemeral: true });
+    return interaction.reply({ content: tr("pt-BR", "order_not_found"), ephemeral: true });
   }
+  const L = await resolveOrderLang(supabase, order);
 
   const { error: insertErr } = await supabase.from("order_feedbacks").insert({
     tenant_id: order.tenant_id,
@@ -103,9 +104,9 @@ async function submitFeedback(interaction, orderId, rating) {
 
   if (insertErr) {
     if (insertErr.code === "23505") {
-      return interaction.reply({ content: "⭐ Você já avaliou esta compra. Obrigado!", ephemeral: true });
+      return interaction.reply({ content: tr(L, "feedback_already_rated"), ephemeral: true });
     }
-    return interaction.reply({ content: `❌ Erro ao salvar avaliação: ${insertErr.message}`, ephemeral: true });
+    return interaction.reply({ content: trf(L, "feedback_save_error", { error: insertErr.message }), ephemeral: true });
   }
 
   // Posta no canal de feedbacks (ou logs como fallback)
@@ -134,17 +135,17 @@ async function submitFeedback(interaction, orderId, rating) {
       const color = r >= 4 ? 0x57F287 : r === 3 ? 0xFEE75C : 0xED4245;
 
       const embed = new EmbedBuilder()
-        .setTitle("⭐ Nova avaliação recebida")
-        .setDescription(`<@${interaction.user.id}> avaliou o pedido **#${order.order_number}**.`)
+        .setTitle(tr(L, "feedback_log_title"))
+        .setDescription(trf(L, "feedback_log_desc", { user_id: interaction.user.id, order_number: order.order_number }))
         .setColor(color)
         .addFields(
-          { name: "**Nota**", value: `${stars} (${r}/5)`, inline: true },
-          { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
-          { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
+          { name: `**${tr(L, "rating_label")}**`, value: `${stars} (${r}/5)`, inline: true },
+          { name: `**${tr(L, "product_label")}**`, value: `\`${order.product_name}\``, inline: true },
+          { name: `**${tr(L, "order_id_label")}**`, value: `\`${order.id}\``, inline: false },
         )
         .setTimestamp(new Date());
 
-      if (comment) embed.addFields({ name: "**Comentário**", value: comment, inline: false });
+      if (comment) embed.addFields({ name: `**${tr(L, "comment_label")}**`, value: comment, inline: false });
 
       const channel = await interaction.client.channels.fetch(targetChannel).catch(() => null);
       if (channel) await channel.send({ embeds: [embed] });
@@ -154,7 +155,7 @@ async function submitFeedback(interaction, orderId, rating) {
   }
 
   const stars = "⭐".repeat(r);
-  return interaction.reply({ content: `✅ Obrigado pela sua avaliação de ${stars}!`, ephemeral: true });
+  return interaction.reply({ content: trf(L, "feedback_thanks", { stars }), ephemeral: true });
 }
 
 module.exports = { openFeedback, rateFeedback, submitFeedback };
