@@ -315,9 +315,7 @@ serve(async (req) => {
           components: [{
             type: 1,
             components: [
-              { type: 2, style: 4, label: "Ruim :(", custom_id: `feedback_rate:${order.id}:1` },
-              { type: 2, style: 2, label: "Mediano", custom_id: `feedback_rate:${order.id}:3` },
-              { type: 2, style: 1, label: "Muito Bom!", custom_id: `feedback_rate:${order.id}:5` },
+              { type: 2, style: 1, label: "Deixe seu feedback", emoji: { name: "⭐" }, custom_id: `feedback_open:${order.id}` },
             ],
           }],
           allowed_mentions: { parse: [] },
