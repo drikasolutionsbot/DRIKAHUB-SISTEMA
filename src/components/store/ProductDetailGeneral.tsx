@@ -4,9 +4,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ProductImageUpload } from "./ProductImageUpload";
 import { useTenant } from "@/contexts/TenantContext";
-import { List, Zap, Shield } from "lucide-react";
+import { List, Zap, Shield, Wallet } from "lucide-react";
 import { useDiscordRoles } from "@/hooks/useDiscordRoles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  pushinpay: "PushinPay",
+  efi: "Efí (Gerencianet)",
+  abacatepay: "AbacatePay",
+  mercadopago: "Mercado Pago",
+  misticpay: "MisticPay",
+};
 
 interface Category {
   id: string;
