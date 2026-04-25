@@ -295,12 +295,6 @@ serve(async (req) => {
         });
       }
 
-      dmButtons.push({
-        type: 1,
-        components: [
-          { type: 2, style: 1, label: "Avaliar compra", emoji: { name: "⭐" }, custom_id: `feedback_order:${order.id}` },
-        ],
-      });
 
       await fetch(`${DISCORD_API}/channels/${dmChannelId}/messages`, {
         method: "POST",
@@ -308,6 +302,25 @@ serve(async (req) => {
         body: JSON.stringify({
           embeds: [deliveryEmbed],
           components: dmButtons,
+        }),
+      });
+
+      // ─── Segunda mensagem: pedido de avaliação (estilo referência) ───
+      const buyerMention = `<@${order.discord_user_id}>`;
+      await fetch(`${DISCORD_API}/channels/${dmChannelId}/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `Avalie o serviço de ${buyerMention} sobre este produto.\n-# Sua avaliação é muito importante para reputação dessa loja.`,
+          components: [{
+            type: 1,
+            components: [
+              { type: 2, style: 4, label: "Ruim :(", custom_id: `feedback_rate:${order.id}:1` },
+              { type: 2, style: 2, label: "Mediano", custom_id: `feedback_rate:${order.id}:3` },
+              { type: 2, style: 1, label: "Muito Bom!", custom_id: `feedback_rate:${order.id}:5` },
+            ],
+          }],
+          allowed_mentions: { parse: [] },
         }),
       });
     }
