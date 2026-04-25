@@ -114,10 +114,11 @@ serve(async (req) => {
     // 1. Load tenant for branding + bot token
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("name, logo_url, bot_name, bot_avatar_url")
+      .select("name, logo_url, bot_name, bot_avatar_url, language")
       .eq("id", tenant_id)
       .maybeSingle();
 
+    const lang: Lang = normLang((tenant as any)?.language);
     const storeBrand = {
       name: (tenant as any)?.bot_name || (tenant as any)?.name || "Loja",
       icon_url: (tenant as any)?.bot_avatar_url || (tenant as any)?.logo_url || undefined,
@@ -132,7 +133,8 @@ serve(async (req) => {
       .maybeSingle();
 
     const useCustom = tpl && (tpl as any).enabled !== false && (tpl as any).embed_data && Object.keys((tpl as any).embed_data).length > 0;
-    const fallback = DEFAULT_TEMPLATES[template_key];
+    const defaults = buildDefaultTemplates(lang);
+    const fallback = defaults[template_key];
     if (!useCustom && !fallback) {
       throw new Error(`No template found for key ${template_key}`);
     }
