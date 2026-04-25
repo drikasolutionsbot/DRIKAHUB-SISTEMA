@@ -275,7 +275,7 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
                 >
                   {(() => {
                     const label = embedConfig?.buy_button_label?.trim();
-                    return !label || label.toLowerCase() === L.buy_plain || label.toLowerCase() === "comprar" ? L.buy : label;
+                    return localizedOrCustom(label, L.buy);
                   })()}
                 </button>
               </>
