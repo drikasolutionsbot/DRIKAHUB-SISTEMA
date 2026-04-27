@@ -529,14 +529,16 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
     username,
   });
 
+  const lang = await resolveOrderLang(supabase, order);
+
   const reviewEmbed = new EmbedBuilder()
     .setAuthor({ name: username, iconURL: interaction.user.displayAvatarURL() })
-    .setTitle("Revisão do Pedido")
+    .setTitle(tr(lang, "order_review"))
     .setColor(embedColor)
     .addFields(
-      { name: "🛒 Carrinho", value: `1x ${orderName}`, inline: false },
-      { name: "Valor à vista", value: formatBRL(priceCents), inline: true },
-      { name: "📦 Em estoque", value: stockCount, inline: true },
+      { name: tr(lang, "cart"), value: `1x ${orderName}`, inline: false },
+      { name: tr(lang, "cash_value"), value: formatBRL(priceCents), inline: true },
+      { name: tr(lang, "in_stock"), value: stockCount, inline: true },
     )
     .setFooter({ text: checkoutFooterText, iconURL: storeLogo || undefined })
     .setTimestamp();
@@ -546,13 +548,13 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
   if (product.icon_url) reviewEmbed.setThumbnail(product.icon_url);
 
   const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`checkout_pay:${order.id}`).setLabel("Ir para o Pagamento").setEmoji("✅").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(`checkout_quantity:${order.id}`).setLabel("Editar Quantidade").setEmoji("✏️").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`approve_order:${order.id}`).setLabel("Confirmar manualmente").setEmoji("🛠️").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`checkout_pay:${order.id}`).setLabel(tr(lang, "go_to_payment")).setEmoji("✅").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`checkout_quantity:${order.id}`).setLabel(tr(lang, "edit_quantity")).setEmoji("✏️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`approve_order:${order.id}`).setLabel(tr(lang, "manual_confirm")).setEmoji("🛠️").setStyle(ButtonStyle.Primary),
   );
   const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`checkout_coupon:${order.id}`).setLabel("Usar Cupom").setEmoji("🏷️").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel("Cancelar").setEmoji("🗑️").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`checkout_coupon:${order.id}`).setLabel(tr(lang, "use_coupon")).setEmoji("🏷️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel(tr(lang, "cancel")).setEmoji("🗑️").setStyle(ButtonStyle.Danger),
   );
 
   await sendWithIdentity(checkoutThread, tenant, {
@@ -564,10 +566,10 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
   // Tell user where to go
   const threadLink = `https://discord.com/channels/${interaction.guild.id}/${checkoutThread.id}`;
   const linkRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setLabel("Ir para o carrinho").setStyle(ButtonStyle.Link).setURL(threadLink)
+    new ButtonBuilder().setLabel(tr(lang, "go_to_cart")).setStyle(ButtonStyle.Link).setURL(threadLink)
   );
 
-  await interaction.editReply({ content: "✅ | Seu carrinho foi criado com êxito.", components: [linkRow] });
+  await interaction.editReply({ content: tr(lang, "checkout_success"), components: [linkRow] });
 
   // ── Send "Carrinho aberto" log to logs channel ──
   await sendLog(interaction.guild, tenant, {
