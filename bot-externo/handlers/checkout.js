@@ -13,7 +13,11 @@ const { sendWithIdentity } = require("./webhookSender");
 const { DRIKA_COVER_URL, applyDrikaCover } = require("../drikaTemplate");
 const { tr, trf, resolveOrderLang } = require("../i18n");
 
-const formatBRL = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+const formatCurrency = (cents, currency = "BRL") => {
+  const code = (currency || "BRL").toUpperCase();
+  const locales = { BRL: "pt-BR", USD: "en-US", EUR: "de-DE" };
+  return new Intl.NumberFormat(locales[code] || "pt-BR", { style: "currency", currency: code }).format(cents / 100);
+};
 const formatDateTime = (dateObj = new Date()) => ({
   date: dateObj.toLocaleDateString("pt-BR"),
   time: dateObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
@@ -337,7 +341,7 @@ async function startCheckout(interaction, tenant, productId) {
     const options = fields.slice(0, 25).map((f) => ({
       label: f.name,
       value: `buy_field:${productId}:${f.id}`,
-      description: `Preço: ${formatBRL(f.price_cents)} | Estoque: ${stockMap[f.id] || 0}`,
+      description: `Preço: ${formatCurrency(f.price_cents)} | Estoque: ${stockMap[f.id] || 0}`,
     }));
 
     const autoDelivery = product.auto_delivery ? "⚡ **Entrega Automática!**\n\n" : "";
@@ -537,7 +541,7 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
     .setColor(embedColor)
     .addFields(
       { name: tr(lang, "cart"), value: `1x ${orderName}`, inline: false },
-      { name: tr(lang, "cash_value"), value: formatBRL(priceCents), inline: true },
+      { name: tr(lang, "cash_value"), value: formatCurrency(priceCents, product.currency || tenant.currency), inline: true },
       { name: tr(lang, "in_stock"), value: stockCount, inline: true },
     )
     .setFooter({ text: checkoutFooterText, iconURL: storeLogo || undefined })
@@ -576,7 +580,7 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
     title: "🛒 Carrinho aberto",
     description: `Usuário <@${userId}> abriu um carrinho.`,
     fields: [
-      { name: "**Detalhes**", value: `\`1x ${orderName} | ${formatBRL(priceCents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`1x ${orderName} | ${formatCurrency(priceCents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
     ],
     storeConfig,
@@ -601,7 +605,7 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
           description: `Usuário <@${current.discord_user_id}> deixou o pagamento expirar.`,
           color: 0xED4245,
           fields: [
-            { name: "**Detalhes**", value: `\`${current.product_name} | ${formatBRL(current.total_cents)}\``, inline: false },
+            { name: "**Detalhes**", value: `\`${current.product_name} | ${formatCurrency(current.total_cents)}\``, inline: false },
             { name: "**ID do Pedido**", value: `\`${current.id}\``, inline: false },
           ],
         });
@@ -709,7 +713,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       title: "🆕 Pedido solicitado",
       description: `Usuário <@${order.discord_user_id}> solicitou um pedido.`,
       fields: [
-        { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(priceCents)}\``, inline: false },
+        { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatCurrency(priceCents)}\``, inline: false },
         { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
         { name: "**Forma de Pagamento**", value: `\`💎 ${provLabel}\``, inline: false },
       ],
@@ -732,7 +736,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       title: "🆕 Pedido solicitado",
       description: `Usuário <@${order.discord_user_id}> solicitou um pedido.`,
       fields: [
-        { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(priceCents)}\``, inline: false },
+        { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatCurrency(priceCents)}\``, inline: false },
         { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
         { name: "**Forma de Pagamento**", value: "`💎 Pix – Estático`", inline: false },
       ],
@@ -842,7 +846,7 @@ async function startPaymentPolling(orderId, tenantId, channel, tenant, timeoutMi
                 description: `Usuário <@${paidOrder.discord_user_id}> teve o pagamento confirmado.`,
                 color: 0x57F287,
                 fields: [
-                  { name: "**Detalhes**", value: `\`${paidOrder.product_name} | ${formatBRL(paidOrder.total_cents)}\``, inline: false },
+                  { name: "**Detalhes**", value: `\`${paidOrder.product_name} | ${formatCurrency(paidOrder.total_cents)}\``, inline: false },
                   { name: "**Pedido**", value: `\`#${paidOrder.order_number}\``, inline: true },
                   { name: "**ID do Pedido**", value: `\`${orderId}\``, inline: false },
                 ],
@@ -912,7 +916,7 @@ async function approveOrder(interaction, tenant, orderId) {
     .setColor(approveEmbedColor)
     .addFields(
       { name: "📦 Produto", value: order.product_name, inline: true },
-      { name: "💰 Valor", value: formatBRL(order.total_cents), inline: true },
+      { name: "💰 Valor", value: formatCurrency(order.total_cents), inline: true },
       { name: "👤 Comprador", value: `<@${order.discord_user_id}>`, inline: true },
     )
     .setTimestamp();
@@ -926,7 +930,7 @@ async function approveOrder(interaction, tenant, orderId) {
     description: `Pedido **#${order.order_number}** aprovado por <@${interaction.user.id}>.`,
     color: 0x57F287,
     fields: [
-      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatCurrency(order.total_cents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
       { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
     ],
@@ -967,7 +971,7 @@ async function rejectOrder(interaction, tenant, orderId) {
     description: `Pedido **#${order.order_number}** recusado por <@${interaction.user.id}>.`,
     color: 0xED4245,
     fields: [
-      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatCurrency(order.total_cents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
       { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
     ],
@@ -995,7 +999,7 @@ async function cancelOrder(interaction, tenant, orderId) {
     description: `Usuário <@${order.discord_user_id}> cancelou o pedido.`,
     color: 0xED4245,
     fields: [
-      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`1x ${order.product_name} | ${formatCurrency(order.total_cents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
     ],
     storeConfig: cancelStoreConfig,
@@ -1047,7 +1051,7 @@ async function handleCouponModal(interaction, tenant, orderId) {
   await incrementCouponUsage(coupon.id, coupon.used_count);
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatBRL(order.total_cents)}~~ → **${formatBRL(newTotal)}**\nDesconto: **-${formatBRL(discount)}**`).setColor(0x57F287))],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("🏷️ Cupom Aplicado!").setDescription(`Cupom **${couponCode}** aplicado!\n\n~~${formatCurrency(order.total_cents)}~~ → **${formatCurrency(newTotal)}**\nDesconto: **-${formatCurrency(discount)}**`).setColor(0x57F287))],
   });
 
   await interaction.editReply({ content: "✅ Cupom aplicado!" });
@@ -1058,8 +1062,8 @@ async function handleCouponModal(interaction, tenant, orderId) {
     description: `Usuário <@${interaction.user.id}> aplicou um cupom.`,
     fields: [
       { name: "**Cupom**", value: `\`${couponCode}\``, inline: true },
-      { name: "**Desconto**", value: `\`-${formatBRL(discount)}\``, inline: true },
-      { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+      { name: "**Desconto**", value: `\`-${formatCurrency(discount)}\``, inline: true },
+      { name: "**Novo Total**", value: `\`${formatCurrency(newTotal)}\``, inline: true },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
     ],
   });
@@ -1095,7 +1099,7 @@ async function handleQuantityModal(interaction, tenant, orderId) {
   await updateOrderStatus(order.id, "pending_payment", { total_cents: newTotal });
 
   await sendWithIdentity(interaction.channel, tenant, {
-    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatBRL(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id))))],
+    embeds: [applyDrikaCover(new EmbedBuilder().setTitle("✏️ Quantidade Atualizada").setDescription(`Quantidade: **${qty}x**\nNovo total: **${formatCurrency(newTotal)}**`).setColor(await resolveOrderColor(order, await getStoreConfig(tenant.id))))],
   });
 
   await interaction.editReply({ content: `✅ Quantidade atualizada para ${qty}x!` });
@@ -1107,7 +1111,7 @@ async function handleQuantityModal(interaction, tenant, orderId) {
     fields: [
       { name: "**Produto**", value: `\`${order.product_name}\``, inline: true },
       { name: "**Quantidade**", value: `\`${qty}x\``, inline: true },
-      { name: "**Novo Total**", value: `\`${formatBRL(newTotal)}\``, inline: true },
+      { name: "**Novo Total**", value: `\`${formatCurrency(newTotal)}\``, inline: true },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
     ],
   });
@@ -1142,7 +1146,7 @@ async function markDelivered(interaction, tenant, orderId) {
     description: `Pedido **#${order.order_number}** marcado como entregue por <@${interaction.user.id}>.`,
     color: 0x57F287,
     fields: [
-      { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`${order.product_name} | ${formatCurrency(order.total_cents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
       { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
     ],
@@ -1183,7 +1187,7 @@ async function cancelManual(interaction, tenant, orderId) {
     description: `Pedido **#${order.order_number}** cancelado manualmente por <@${interaction.user.id}>.`,
     color: 0xED4245,
     fields: [
-      { name: "**Detalhes**", value: `\`${order.product_name} | ${formatBRL(order.total_cents)}\``, inline: false },
+      { name: "**Detalhes**", value: `\`${order.product_name} | ${formatCurrency(order.total_cents)}\``, inline: false },
       { name: "**ID do Pedido**", value: `\`${order.id}\``, inline: false },
       { name: "**Comprador**", value: `<@${order.discord_user_id}>`, inline: false },
     ],
@@ -1221,7 +1225,7 @@ async function viewVariations(interaction, tenant, productId) {
   const fieldLines = fields.map((f) => {
     const emoji = f.emoji || "•";
     const desc = f.description ? ` - ${f.description}` : "";
-    return `${emoji} **${f.name}** — ${formatBRL(f.price_cents)}${desc}`;
+    return `${emoji} **${f.name}** — ${formatCurrency(f.price_cents)}${desc}`;
   });
 
   return interaction.reply({
@@ -1246,7 +1250,7 @@ async function viewDetails(interaction, tenant, productId) {
     .setDescription(`${autoDeliveryText}${product.description || "Sem descrição."}`)
     .setColor(embedColor)
     .addFields(
-      { name: "💰 Preço", value: formatBRL(product.price_cents), inline: true },
+      { name: "💰 Preço", value: formatCurrency(product.price_cents), inline: true },
       { name: "📦 Tipo", value: product.type === "digital_auto" ? "Digital" : product.type === "service" ? "Serviço" : "Híbrido", inline: true },
     );
 

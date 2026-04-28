@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ProductImageUpload } from "./ProductImageUpload";
 import { useTenant } from "@/contexts/TenantContext";
-import { List, Zap, Shield, Wallet, Languages } from "lucide-react";
+import { List, Zap, Shield, Wallet, Languages, DollarSign } from "lucide-react";
 import { useDiscordRoles } from "@/hooks/useDiscordRoles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +43,7 @@ interface Product {
   payment_provider_key?: string | null;
   button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
   language?: string | null;
-}
+  currency?: string | null;
 
 interface ProductDetailGeneralProps {
   product: Product;
@@ -280,6 +280,33 @@ export const ProductDetailGeneral = ({ product, onChange, categories = [] }: Pro
             <SelectItem value="pt-BR">🇧🇷 Português (Brasil)</SelectItem>
             <SelectItem value="en">🇺🇸 English (US)</SelectItem>
             <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+          </SelectContent>
+        </Select>
+      </section>
+
+      {/* Section: Moeda do Produto */}
+      <section className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-foreground" />
+            <p className="text-sm font-bold">Moeda do Produto</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Define a moeda na qual o preço deste produto será exibido. Deixe em "Padrão da loja" para usar a moeda global.
+          </p>
+        </div>
+        <Select
+          value={product.currency || "default"}
+          onValueChange={(val) => onChange({ currency: val === "default" ? null : val })}
+        >
+          <SelectTrigger className="bg-muted border-border w-full max-w-sm">
+            <SelectValue placeholder="Padrão da loja" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">🌐 Padrão da loja</SelectItem>
+            <SelectItem value="BRL">🇧🇷 Real (BRL)</SelectItem>
+            <SelectItem value="USD">🇺🇸 Dólar (USD)</SelectItem>
+            <SelectItem value="EUR">🇪🇺 Euro (EUR)</SelectItem>
           </SelectContent>
         </Select>
       </section>

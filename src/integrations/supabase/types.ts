@@ -1397,6 +1397,7 @@ export type Database = {
           icon_url: string | null
           id: string
           language: string | null
+          currency: string | null
           name: string
           payment_provider_key: string | null
           price_cents: number
@@ -1423,6 +1424,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           language?: string | null
+          currency?: string | null
           name: string
           payment_provider_key?: string | null
           price_cents?: number
@@ -1449,6 +1451,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           language?: string | null
+          currency?: string | null
           name?: string
           payment_provider_key?: string | null
           price_cents?: number
@@ -2177,6 +2180,7 @@ export type Database = {
           email: string | null
           id: string
           language: string
+          currency: string
           logo_url: string | null
           name: string
           owner_discord_id: string | null
@@ -2223,6 +2227,7 @@ export type Database = {
           email?: string | null
           id?: string
           language?: string
+          currency?: string
           logo_url?: string | null
           name: string
           owner_discord_id?: string | null
@@ -2269,6 +2274,7 @@ export type Database = {
           email?: string | null
           id?: string
           language?: string
+          currency?: string
           logo_url?: string | null
           name?: string
           owner_discord_id?: string | null
