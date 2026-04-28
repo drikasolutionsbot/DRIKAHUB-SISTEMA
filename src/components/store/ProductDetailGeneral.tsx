@@ -44,6 +44,7 @@ interface Product {
   button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
   language?: string | null;
   currency?: string | null;
+}
 
 interface ProductDetailGeneralProps {
   product: Product;
