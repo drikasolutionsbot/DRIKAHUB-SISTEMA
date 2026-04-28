@@ -43,7 +43,6 @@ interface Product {
   payment_provider_key?: string | null;
   button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
   language?: string | null;
-  currency?: string | null;
 }
 
 interface ProductDetailGeneralProps {
@@ -297,8 +296,8 @@ export const ProductDetailGeneral = ({ product, onChange, categories = [] }: Pro
           </p>
         </div>
         <Select
-          value={product.currency || "default"}
-          onValueChange={(val) => onChange({ currency: val === "default" ? null : val })}
+          value={(product.embed_config?.currency as string) || "default"}
+          onValueChange={(val) => onChange({ embed_config: { ...product.embed_config, currency: val === "default" ? null : val } as any })}
         >
           <SelectTrigger className="bg-muted border-border w-full max-w-sm">
             <SelectValue placeholder="Padrão da loja" />

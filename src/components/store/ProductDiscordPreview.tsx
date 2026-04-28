@@ -59,8 +59,12 @@ interface ProductDiscordPreviewProps {
   embedConfig?: EmbedConfig;
 }
 
-const formatPrice = (cents: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+const formatPrice = (cents: number, currency: string = "BRL") => {
+  const code = (currency || "BRL").toUpperCase();
+  const locales: Record<string, string> = { BRL: "pt-BR", USD: "en-US", EUR: "de-DE" };
+  const locale = locales[code] || "pt-BR";
+  return new Intl.NumberFormat(locale, { style: "currency", currency: code }).format(cents / 100);
+};
 
 const typeLabels: Record<string, string> = {
   digital_auto: "Digital",
@@ -179,7 +183,7 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
               {cfg.show_price !== false && (
                 <div>
                   <p className="text-[#dcddde] text-[10px] font-semibold">**{localizedOrCustom(cfg.price_label, L.price)}**</p>
-                  <p className="text-[#dcddde] text-xs">{formatPrice(product.price_cents)}</p>
+                  <p className="text-[#dcddde] text-xs">{formatPrice(product.price_cents, (product as any).embed_config?.currency || tenant?.currency)}</p>
                 </div>
               )}
               {cfg.show_stock_field !== false && (
@@ -236,11 +240,11 @@ export const ProductDiscordPreview = ({ product, storeName, fields = [], embedCo
                 <div className="flex items-center gap-1.5">
                   {field.compare_price_cents && field.compare_price_cents > field.price_cents ? (
                     <>
-                      <span className="text-[#57F287] text-xs font-semibold">{formatPrice(field.price_cents)}</span>
-                      <span className="text-[#72767d] text-[10px] line-through">{formatPrice(field.compare_price_cents)}</span>
+                      <span className="text-[#57F287] text-xs font-semibold">{formatPrice(field.price_cents, (product as any).embed_config?.currency || tenant?.currency)}</span>
+                      <span className="text-[#72767d] text-[10px] line-through">{formatPrice(field.compare_price_cents, (product as any).embed_config?.currency || tenant?.currency)}</span>
                     </>
                   ) : (
-                    <span className="text-[#dcddde] text-xs">{formatPrice(field.price_cents)}</span>
+                    <span className="text-[#dcddde] text-xs">{formatPrice(field.price_cents, (product as any).embed_config?.currency || tenant?.currency)}</span>
                   )}
                 </div>
               </div>

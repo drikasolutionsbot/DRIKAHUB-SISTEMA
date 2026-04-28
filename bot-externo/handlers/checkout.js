@@ -541,7 +541,7 @@ async function processPurchase(interaction, tenant, product, priceCents, fieldId
     .setColor(embedColor)
     .addFields(
       { name: tr(lang, "cart"), value: `1x ${orderName}`, inline: false },
-      { name: tr(lang, "cash_value"), value: formatCurrency(priceCents, product.currency || tenant.currency), inline: true },
+      { name: tr(lang, "cash_value"), value: formatCurrency(priceCents, product.embed_config?.currency || tenant.currency), inline: true },
       { name: tr(lang, "in_stock"), value: stockCount, inline: true },
     )
     .setFooter({ text: checkoutFooterText, iconURL: storeLogo || undefined })
