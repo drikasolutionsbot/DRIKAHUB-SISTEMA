@@ -32,6 +32,8 @@ interface Product {
   role_id?: string | null;
   button_style?: import("@/components/discord/DiscordButtonStylePicker").DiscordButtonStyle;
   embed_config?: Record<string, unknown>;
+  language?: string | null;
+  currency?: string | null;
 }
 
 const StorePage = () => {
@@ -105,6 +107,7 @@ const StorePage = () => {
           role_id: product.role_id,
           payment_provider_key: (product as any).payment_provider_key ?? null,
           language: (product as any).language ?? null,
+          currency: (product as any).currency ?? null,
         },
       },
     });

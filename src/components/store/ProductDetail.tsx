@@ -41,6 +41,7 @@ interface Product {
   button_style?: DiscordButtonStyle;
   embed_config?: EmbedConfig;
   language?: string | null;
+  currency?: string | null;
 }
 
 interface ProductDetailProps {
