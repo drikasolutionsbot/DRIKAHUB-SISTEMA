@@ -637,12 +637,13 @@ async function goToPayment(interaction, tenant, orderId) {
 
 async function _goToPaymentInternal(interaction, tenant, orderId) {
   const order = await getOrder(orderId);
-  if (!order) return interaction.followUp({ content: "❌ Pedido não encontrado.", ephemeral: true });
-  if (order.status !== "pending_payment") return interaction.followUp({ content: `ℹ️ Pedido não está mais pendente.`, ephemeral: true });
+  const lang = await resolveOrderLang(supabase, order);
+  if (!order) return interaction.followUp({ content: tr(lang, "order_not_found"), ephemeral: true });
+  if (order.status !== "pending_payment") return interaction.followUp({ content: tr(lang, "order_no_longer_pending"), ephemeral: true });
 
   // Block if payment was already generated for this order
   if (order.payment_id) {
-    return interaction.followUp({ content: "ℹ️ O pagamento PIX já foi gerado para este pedido. Verifique acima.", ephemeral: true });
+    return interaction.followUp({ content: tr(lang, "pix_already_generated"), ephemeral: true });
   }
 
   // ── Validate stock before generating PIX ──
@@ -652,7 +653,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
       const fieldId = order.field_id;
       const sc = await countStock(order.product_id, order.tenant_id, fieldId || undefined);
       if (sc !== null && sc <= 0) {
-        return interaction.followUp({ content: "❌ Este produto está **sem estoque** no momento. Não é possível gerar o pagamento.", ephemeral: true });
+        return interaction.followUp({ content: tr(lang, "out_of_stock_payment"), ephemeral: true });
       }
     }
   }
@@ -660,7 +661,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
   const channel = interaction.channel;
   const preStoreConfig = await getStoreConfig(tenant.id);
   const preEmbedColor = await resolveOrderColor(order, preStoreConfig);
-  await sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setDescription("⏳ | Gerando QR Code...\nQuase lá, só mais um instante!").setColor(preEmbedColor))] });
+  await sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setDescription(tr(lang, "generating_qrcode")).setColor(preEmbedColor))] });
 
   const priceCents = order.total_cents;
   const amountBRL = priceCents / 100;
@@ -721,7 +722,7 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
   } else {
     // Static PIX
     if (!tenant.pix_key) {
-      return sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setTitle("❌ Erro").setDescription("Nenhum método de pagamento configurado.").setColor(0xED4245))] });
+      return sendWithIdentity(channel, tenant, { embeds: [applyDrikaCover(new EmbedBuilder().setTitle(tr(lang, "error")).setDescription(tr(lang, "no_payment_method")).setColor(0xED4245))] });
     }
     brcode = generateStaticBRCode(tenant.pix_key, tenant.name || "Loja", amountBRL, `PED${order.order_number}`);
     await updateOrderStatus(order.id, "pending_payment", { payment_provider: "static_pix" });
@@ -765,11 +766,11 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
 
   const pixEmbed = new EmbedBuilder()
     .setAuthor({ name: order.discord_username || "Comprador" })
-    .setTitle("Pagamento via PIX criado")
+    .setTitle(tr(lang, "pix_created_title"))
     .setDescription([
-      "🟢 **Ambiente Seguro**", "Seu pagamento será processado em um ambiente 100% seguro.\n",
-      "🟢 **Pagamento Instantâneo**", "Assim que confirmado, seu pedido será processado imediatamente.\n",
-      "**Código copia e cola**", `\`\`\`\n${brcode}\n\`\`\``,
+      tr(lang, "pix_secure_env"), tr(lang, "pix_secure_env_desc"),
+      tr(lang, "pix_instant_payment"), tr(lang, "pix_instant_payment_desc"),
+      tr(lang, "copy_paste_code"), `\`\`\`\n${brcode}\n\`\`\``,
     ].join("\n"))
     .setColor(embedColor)
     .setImage(qrImageUrl)
@@ -778,8 +779,8 @@ async function _goToPaymentInternal(interaction, tenant, orderId) {
   if (storeLogo) pixEmbed.setThumbnail(storeLogo);
 
   const pixRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`copy_pix:${order.id}`).setLabel("Código copia e cola").setEmoji("📋").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel("Cancelar").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`copy_pix:${order.id}`).setLabel(tr(lang, "copy_paste_button")).setEmoji("📋").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`checkout_cancel:${order.id}`).setLabel(tr(lang, "cancel")).setStyle(ButtonStyle.Danger),
   );
 
   await sendWithIdentity(channel, tenant, { embeds: [pixEmbed], components: [pixRow] });
